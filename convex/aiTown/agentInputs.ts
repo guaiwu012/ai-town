@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { agentId, conversationId, parseGameId } from './ids';
+import { agentId, conversationId, parseGameId, playerId } from './ids';
 import { Player, activity } from './player';
 import { Conversation, conversationInputs } from './conversation';
 import { movePlayer } from './movement';
@@ -8,6 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
+import { applyTip, resetBattleMatch } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -121,7 +122,10 @@ export const agentInputs = {
       descriptionIndex: v.number(),
     },
     handler: (game, now, args) => {
-      const description = Descriptions[args.descriptionIndex];
+      const usedNames = new Set(
+        [...game.playerDescriptions.values()].map((description) => description.name),
+      );
+      const description = selectUniqueDescription(args.descriptionIndex, usedNames);
       const playerId = Player.join(
         game,
         now,
@@ -152,4 +156,36 @@ export const agentInputs = {
       return { agentId };
     },
   }),
+  tipAgent: inputHandler({
+    args: {
+      playerId,
+      score: v.number(),
+    },
+    handler: (game, now, args) => {
+      return applyTip(game, now, args.playerId, args.score);
+    },
+  }),
+  resetBattle: inputHandler({
+    args: {},
+    handler: (game, now) => {
+      return resetBattleMatch(game, now);
+    },
+  }),
 };
+
+function selectUniqueDescription(descriptionIndex: number, usedNames: Set<string>) {
+  for (let i = 0; i < Descriptions.length; i++) {
+    const description = Descriptions[(descriptionIndex + i) % Descriptions.length];
+    if (!usedNames.has(description.name)) {
+      return description;
+    }
+  }
+  const description = Descriptions[descriptionIndex % Descriptions.length];
+  let suffix = 2;
+  let name = `${description.name} ${suffix}`;
+  while (usedNames.has(name)) {
+    suffix += 1;
+    name = `${description.name} ${suffix}`;
+  }
+  return { ...description, name };
+}

@@ -54,6 +54,14 @@ export class Agent {
     if (!player) {
       throw new Error(`Invalid player ID ${this.playerId}`);
     }
+    if (player.battle?.eliminated) {
+      delete player.pathfinding;
+      player.speed = 0;
+      return;
+    }
+    if (player.battle) {
+      return;
+    }
     if (this.inProgressOperation) {
       if (now < this.inProgressOperation.started + ACTION_TIMEOUT) {
         // Wait on the operation to finish.

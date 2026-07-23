@@ -4,13 +4,18 @@ import PixiGame from './PixiGame.tsx';
 import { useElementSize } from 'usehooks-ts';
 import { Stage } from '@pixi/react';
 import { ConvexProvider, useConvex, useQuery } from 'convex/react';
-import PlayerDetails from './PlayerDetails.tsx';
 import { api } from '../../convex/_generated/api';
 import { useWorldHeartbeat } from '../hooks/useWorldHeartbeat.ts';
 import { useHistoricalTime } from '../hooks/useHistoricalTime.ts';
 import { DebugTimeManager } from './DebugTimeManager.tsx';
 import { GameId } from '../../convex/aiTown/ids.ts';
 import { useServerGame } from '../hooks/serverGame.ts';
+import BattleRoyalePanel from './BattleRoyalePanel.tsx';
+import BattleBroadcastToasts from './BattleBroadcastToasts.tsx';
+import DeepSeekConfigGate, {
+  DeepSeekConfig,
+  readDeepSeekConfig,
+} from './DeepSeekConfigGate.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -20,6 +25,10 @@ export default function Game() {
     kind: 'player';
     id: GameId<'players'>;
   }>();
+  const [deepSeekConfig, setDeepSeekConfig] = useState<DeepSeekConfig | undefined>(() =>
+    readDeepSeekConfig(),
+  );
+  const [showDeepSeekConfig, setShowDeepSeekConfig] = useState(() => !readDeepSeekConfig());
   const [gameWrapperRef, { width, height }] = useElementSize();
 
   const worldStatus = useQuery(api.world.defaultWorldStatus);
@@ -42,43 +51,48 @@ export default function Game() {
   return (
     <>
       {SHOW_DEBUG_UI && <DebugTimeManager timeManager={timeManager} width={200} height={100} />}
-      <div className="mx-auto w-full max-w grid grid-rows-[240px_1fr] lg:grid-rows-[1fr] lg:grid-cols-[1fr_auto] lg:grow max-w-[1400px] min-h-[480px] game-frame">
-        {/* Game area */}
-        <div className="relative overflow-hidden bg-brown-900" ref={gameWrapperRef}>
-          <div className="absolute inset-0">
-            <div className="container">
-              <Stage width={width} height={height} options={{ backgroundColor: 0x7ab5ff }}>
-                {/* Re-propagate context because contexts are not shared between renderers.
+      <div className="relative h-screen w-screen overflow-hidden bg-brown-900" ref={gameWrapperRef}>
+        <div className="absolute inset-0">
+          <Stage width={width} height={height} options={{ backgroundColor: 0x203d3b }}>
+            {/* Re-propagate context because contexts are not shared between renderers.
 https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-531549215 */}
-                <ConvexProvider client={convex}>
-                  <PixiGame
-                    game={game}
-                    worldId={worldId}
-                    engineId={engineId}
-                    width={width}
-                    height={height}
-                    historicalTime={historicalTime}
-                    setSelectedElement={setSelectedElement}
-                  />
-                </ConvexProvider>
-              </Stage>
-            </div>
-          </div>
+            <ConvexProvider client={convex}>
+              <PixiGame
+                game={game}
+                worldId={worldId}
+                engineId={engineId}
+                width={width}
+                height={height}
+                historicalTime={historicalTime}
+                selectedPlayerId={selectedElement?.id}
+                setSelectedElement={setSelectedElement}
+              />
+            </ConvexProvider>
+          </Stage>
         </div>
-        {/* Right column area */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
+        <BattleBroadcastToasts feed={game.world.battle?.feed} />
         <div
-          className="flex flex-col overflow-y-auto shrink-0 px-4 py-6 sm:px-6 lg:w-96 xl:pr-6 border-t-8 sm:border-t-0 sm:border-l-8 border-brown-900  bg-brown-800 text-brown-100"
+          className="absolute right-4 top-4 bottom-4 z-10 flex w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden border border-amber-300/50 bg-brown-900/88 px-4 py-4 text-brown-100 shadow-2xl backdrop-blur-sm"
           ref={scrollViewRef}
         >
-          <PlayerDetails
+          <BattleRoyalePanel
             worldId={worldId}
-            engineId={engineId}
             game={game}
-            playerId={selectedElement?.id}
+            selectedPlayerId={selectedElement?.id}
             setSelectedElement={setSelectedElement}
-            scrollViewRef={scrollViewRef}
+            onEditDeepSeekConfig={() => setShowDeepSeekConfig(true)}
           />
         </div>
+        {showDeepSeekConfig && (
+          <DeepSeekConfigGate
+            initialConfig={deepSeekConfig}
+            onSave={(config) => {
+              setDeepSeekConfig(config);
+              setShowDeepSeekConfig(false);
+            }}
+          />
+        )}
       </div>
     </>
   );

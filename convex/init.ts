@@ -28,10 +28,10 @@ const init = mutation({
       worldStatus.engineId,
     );
     if (shouldCreate) {
-      const toCreate = args.numAgents !== undefined ? args.numAgents : Descriptions.length;
+      const toCreate = args.numAgents !== undefined ? args.numAgents : 10;
       for (let i = 0; i < toCreate; i++) {
         await insertInput(ctx, worldStatus.worldId, 'createAgent', {
-          descriptionIndex: i % Descriptions.length,
+          descriptionIndex: i,
         });
       }
     }

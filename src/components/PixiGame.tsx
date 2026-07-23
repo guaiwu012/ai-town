@@ -14,6 +14,8 @@ import { DebugPath } from './DebugPath.tsx';
 import { PositionIndicator } from './PositionIndicator.tsx';
 import { SHOW_DEBUG_UI } from './Game.tsx';
 import { ServerGame } from '../hooks/serverGame.ts';
+import { PixiBattleEffects } from './PixiBattleEffects.tsx';
+import { GameId } from '../../convex/aiTown/ids.ts';
 
 export const PixiGame = (props: {
   worldId: Id<'worlds'>;
@@ -22,6 +24,7 @@ export const PixiGame = (props: {
   historicalTime: number | undefined;
   width: number;
   height: number;
+  selectedPlayerId?: GameId<'players'>;
   setSelectedElement: SelectElement;
 }) => {
   // PIXI setup.
@@ -93,6 +96,18 @@ export const PixiGame = (props: {
     });
   }, [humanPlayerId]);
 
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const selected = props.selectedPlayerId && props.game.world.players.get(props.selectedPlayerId);
+    if (!viewport || !selected) {
+      return;
+    }
+    viewport.moveCenter(
+      selected.position.x * tileDim + tileDim / 2,
+      selected.position.y * tileDim + tileDim / 2,
+    );
+  }, [props.selectedPlayerId, props.game, tileDim]);
+
   return (
     <PixiViewport
       app={pixiApp}
@@ -125,6 +140,7 @@ export const PixiGame = (props: {
           historicalTime={props.historicalTime}
         />
       ))}
+      <PixiBattleEffects game={props.game} />
     </PixiViewport>
   );
 };

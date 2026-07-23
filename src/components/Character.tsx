@@ -14,6 +14,8 @@ export const Character = ({
   isSpeaking = false,
   emoji = '',
   isViewer = false,
+  hpRatio,
+  isEliminated = false,
   speed = 0.1,
   onClick,
 }: {
@@ -33,6 +35,8 @@ export const Character = ({
   emoji?: string;
   // Highlights the player.
   isViewer?: boolean;
+  hpRatio?: number;
+  isEliminated?: boolean;
   // The speed of the animation. Can be tuned depending on the side and speed of the NPC.
   speed?: number;
   onClick: () => void;
@@ -94,19 +98,72 @@ export const Character = ({
         <Text x={18} y={-10} scale={0.8} text={'💬'} anchor={{ x: 0.5, y: 0.5 }} />
       )}
       {isViewer && <ViewerIndicator />}
+      {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
       <AnimatedSprite
         ref={ref}
         isPlaying={isMoving}
         textures={spriteSheet.animations[direction]}
         animationSpeed={speed}
         anchor={{ x: 0.5, y: 0.5 }}
+        alpha={isEliminated ? 0.38 : 1}
       />
+      {isEliminated && (
+        <Text
+          x={0}
+          y={0}
+          scale={0.62}
+          text="KO"
+          anchor={{ x: 0.5, y: 0.5 }}
+          style={
+            new PIXI.TextStyle({
+              fill: '#ffdf5d',
+              fontFamily: 'VCR OSD Mono',
+              fontSize: 18,
+              stroke: '#231423',
+              strokeThickness: 4,
+            })
+          }
+        />
+      )}
       {emoji && (
-        <Text x={0} y={-24} scale={{ x: -0.8, y: 0.8 }} text={emoji} anchor={{ x: 0.5, y: 0.5 }} />
+        <Text
+          x={0}
+          y={-38}
+          scale={0.5}
+          text={emoji}
+          anchor={{ x: 0.5, y: 0.5 }}
+          style={
+            new PIXI.TextStyle({
+              fill: '#fff7c2',
+              fontFamily: 'VCR OSD Mono',
+              fontSize: 18,
+              stroke: '#231423',
+              strokeThickness: 4,
+            })
+          }
+        />
       )}
     </Container>
   );
 };
+
+function HealthBar({ ratio }: { ratio: number }) {
+  const draw = useCallback(
+    (g: PIXI.Graphics) => {
+      const clamped = Math.max(0, Math.min(1, ratio));
+      g.clear();
+      g.beginFill(0x231423, 0.9);
+      g.drawRect(-14, -28, 28, 5);
+      g.endFill();
+      g.beginFill(clamped > 0.45 ? 0x6ee7a8 : clamped > 0.2 ? 0xffdf5d : 0xff5f5f, 1);
+      g.drawRect(-13, -27, 26 * clamped, 3);
+      g.endFill();
+    },
+    [ratio],
+  );
+
+  return <Graphics draw={draw} />;
+}
 
 function ViewerIndicator() {
   const draw = useCallback((g: PIXI.Graphics) => {

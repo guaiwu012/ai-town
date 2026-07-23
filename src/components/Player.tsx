@@ -54,9 +54,14 @@ export const Player = ({
     return null;
   }
 
-  const isSpeaking = !![...game.world.conversations.values()].find(
-    (c) => c.isTyping?.playerId === player.id,
-  );
+  const activeActivity =
+    player.activity && player.activity.until > (historicalTime ?? Date.now())
+      ? player.activity
+      : undefined;
+  const isSpeaking =
+    activeActivity?.emoji === 'TALK' ||
+    activeActivity?.emoji === 'ALLY' ||
+    !![...game.world.conversations.values()].find((c) => c.isTyping?.playerId === player.id);
   const isThinking =
     !isSpeaking &&
     !![...game.world.agents.values()].find(
@@ -73,12 +78,10 @@ export const Player = ({
         isMoving={historicalLocation.speed > 0}
         isThinking={isThinking}
         isSpeaking={isSpeaking}
-        emoji={
-          player.activity && player.activity.until > (historicalTime ?? Date.now())
-            ? player.activity?.emoji
-            : undefined
-        }
+        emoji={activeActivity?.emoji}
         isViewer={isViewer}
+        hpRatio={player.battle ? player.battle.hp / player.battle.maxHp : undefined}
+        isEliminated={player.battle?.eliminated}
         textureUrl={character.textureUrl}
         spritesheetData={character.spritesheetData}
         speed={character.speed}

@@ -25,6 +25,7 @@ import { internal } from '../_generated/api';
 import { HistoricalObject } from '../engine/historicalObject';
 import { AgentDescription, serializedAgentDescription } from './agentDescription';
 import { parseMap, serializeMap } from '../util/object';
+import { ensureBattleState, tickBattleRoyale } from './battleRoyale';
 
 const gameState = v.object({
   world: v.object(serializedWorld),
@@ -163,6 +164,7 @@ export class Game extends AbstractGame {
   }
 
   beginStep(_now: number) {
+    ensureBattleState(this, _now);
     // Store the current location of all players in the history tracking buffer.
     this.historicalLocations.clear();
     for (const player of this.world.players.values()) {
@@ -190,6 +192,7 @@ export class Game extends AbstractGame {
     for (const agent of this.world.agents.values()) {
       agent.tick(this, now);
     }
+    tickBattleRoyale(this, now);
 
     // Save each player's location into the history buffer at the end of
     // each tick.

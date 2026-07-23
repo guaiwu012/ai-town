@@ -15,6 +15,7 @@ import { stopPlayer, findRoute, blocked, movePlayer } from './movement';
 import { inputHandler } from './inputHandler';
 import { characters } from '../../data/characters';
 import { PlayerDescription } from './playerDescription';
+import { battleStats, defaultBattleStats, type BattleStats } from './battleRoyale';
 
 const pathfinding = v.object({
   destination: point,
@@ -47,6 +48,7 @@ export const serializedPlayer = {
   human: v.optional(v.string()),
   pathfinding: v.optional(pathfinding),
   activity: v.optional(activity),
+  battle: v.optional(battleStats),
 
   // The last time they did something.
   lastInput: v.number(),
@@ -62,6 +64,7 @@ export class Player {
   human?: string;
   pathfinding?: Pathfinding;
   activity?: Activity;
+  battle?: BattleStats;
 
   lastInput: number;
 
@@ -70,11 +73,13 @@ export class Player {
   speed: number;
 
   constructor(serialized: SerializedPlayer) {
-    const { id, human, pathfinding, activity, lastInput, position, facing, speed } = serialized;
+    const { id, human, pathfinding, activity, battle, lastInput, position, facing, speed } =
+      serialized;
     this.id = parseGameId('players', id);
     this.human = human;
     this.pathfinding = pathfinding;
     this.activity = activity;
+    this.battle = battle ?? defaultBattleStats();
     this.lastInput = lastInput;
     this.position = position;
     this.facing = facing;
@@ -249,12 +254,13 @@ export class Player {
   }
 
   serialize(): SerializedPlayer {
-    const { id, human, pathfinding, activity, lastInput, position, facing, speed } = this;
+    const { id, human, pathfinding, activity, battle, lastInput, position, facing, speed } = this;
     return {
       id,
       human,
       pathfinding,
       activity,
+      battle,
       lastInput,
       position,
       facing,

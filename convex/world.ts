@@ -1,6 +1,6 @@
 import { ConvexError, v } from 'convex/values';
 import { internalMutation, mutation, query } from './_generated/server';
-import { characters } from '../data/characters';
+import { Descriptions, characters } from '../data/characters';
 import { insertInput } from './aiTown/insertInput';
 import {
   DEFAULT_NAME,
@@ -11,6 +11,9 @@ import {
 import { playerId } from './aiTown/ids';
 import { kickEngine, startEngine, stopEngine } from './aiTown/main';
 import { engineInsertInput } from './engine/abstractGame';
+import { defaultBattleState, defaultBattleStats } from './aiTown/battleRoyale';
+
+const TARGET_BATTLE_AGENT_COUNT = 10;
 
 export const defaultWorldStatus = query({
   handler: async (ctx) => {
@@ -178,6 +181,104 @@ export const sendWorldInput = mutation({
     return await engineInsertInput(ctx, args.engineId, args.name as any, args.args);
   },
 });
+
+export const resetBattle = mutation({
+  args: {
+    worldId: v.id('worlds'),
+  },
+  handler: async (ctx, args) => {
+    const world = await ctx.db.get(args.worldId);
+    if (!world) {
+      throw new Error(`Invalid world ID: ${args.worldId}`);
+    }
+    const now = Date.now();
+    const playerDescriptions = await ctx.db
+      .query('playerDescriptions')
+      .withIndex('worldId', (q) => q.eq('worldId', args.worldId))
+      .collect();
+    const agentDescriptions = await ctx.db
+      .query('agentDescriptions')
+      .withIndex('worldId', (q) => q.eq('worldId', args.worldId))
+      .collect();
+    const activePlayers = world.players.slice(0, TARGET_BATTLE_AGENT_COUNT);
+    const activePlayerIds = new Set(activePlayers.map((player) => player.id));
+    const activeAgents = world.agents.filter((agent) => activePlayerIds.has(agent.playerId));
+    const activeAgentIds = new Set(activeAgents.map((agent) => agent.id));
+    const agentsByPlayerId = new Map(activeAgents.map((agent) => [agent.playerId, agent]));
+    const playerDescriptionsByPlayerId = new Map(
+      playerDescriptions.map((description) => [description.playerId, description]),
+    );
+    const agentDescriptionsByAgentId = new Map(
+      agentDescriptions.map((description) => [description.agentId, description]),
+    );
+    const assignedDescriptions = activePlayers.map((_, index) => uniqueDescriptionForIndex(index));
+    for (const [index, player] of activePlayers.entries()) {
+      const description = assignedDescriptions[index];
+      const playerDescription = playerDescriptionsByPlayerId.get(player.id);
+      if (playerDescription) {
+        await ctx.db.patch(playerDescription._id, {
+          name: description.name,
+          description: description.identity,
+          character: description.character,
+        });
+      }
+      const agent = agentsByPlayerId.get(player.id);
+      const agentDescription = agent && agentDescriptionsByAgentId.get(agent.id);
+      if (agentDescription) {
+        await ctx.db.patch(agentDescription._id, {
+          identity: description.identity,
+          plan: description.plan,
+        });
+      }
+    }
+    await ctx.db.patch(args.worldId, {
+      battle: {
+        ...defaultBattleState(now),
+        feed: [
+          {
+            id: 1,
+            ts: now,
+            kind: 'system',
+            text: 'Match restarted. Everyone is back in the arena.',
+          },
+        ],
+        nextEventId: 2,
+      },
+      agents: activeAgents,
+      conversations: [],
+      players: activePlayers.map((player) => {
+        const { activity: _activity, pathfinding: _pathfinding, battle: _battle, ...rest } = player;
+        return {
+          ...rest,
+          speed: 0,
+          battle: defaultBattleStats(),
+        };
+      }),
+    });
+    for (const playerDescription of playerDescriptions) {
+      if (!activePlayerIds.has(playerDescription.playerId)) {
+        await ctx.db.delete(playerDescription._id);
+      }
+    }
+    for (const agentDescription of agentDescriptions) {
+      if (!activeAgentIds.has(agentDescription.agentId)) {
+        await ctx.db.delete(agentDescription._id);
+      }
+    }
+    return { players: activePlayers.length };
+  },
+});
+
+function uniqueDescriptionForIndex(index: number) {
+  const description = Descriptions[index % Descriptions.length];
+  if (index < Descriptions.length) {
+    return description;
+  }
+  return {
+    ...description,
+    name: `${description.name} ${Math.floor(index / Descriptions.length) + 1}`,
+  };
+}
 
 export const worldState = query({
   args: {
