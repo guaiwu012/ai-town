@@ -240,7 +240,7 @@ export const resetBattle = mutation({
             id: 1,
             ts: now,
             kind: 'system',
-            text: 'Match restarted. Everyone is back in the arena.',
+            text: '【系统】比赛已重启，所有 AI 返回战场。',
           },
         ],
         nextEventId: 2,

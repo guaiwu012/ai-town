@@ -31,7 +31,7 @@ export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToas
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;
 }
 
 function displayEventText(text: string) {

@@ -103,7 +103,7 @@ export function defaultBattleState(now: number): BattleState {
         id: 0,
         ts: now,
         kind: 'system',
-        text: 'Battle royale lobby opened. Agents are dropping into AI Town.',
+        text: '【系统】大逃杀大厅已开启，12 名 AI 正在进入战场。',
       },
     ],
     phase: 'early',
@@ -175,7 +175,7 @@ export function resetBattleMatch(game: Game, now: number) {
     delete player.pathfinding;
     player.speed = 0;
   }
-  pushEvent(game, now, 'system', 'Match restarted. Everyone is back in the arena.');
+  pushEvent(game, now, 'system', '【系统】比赛已重启，所有 AI 返回战场。');
   return { players: game.world.players.size };
 }
 
@@ -192,7 +192,7 @@ export function tickBattleRoyale(game: Game, now: number) {
   if (alive.length <= 1) {
     if (alive.length === 1 && battle.feed[0]?.kind !== 'winner') {
       const winner = game.playerDescriptions.get(alive[0].id)?.name ?? alive[0].id;
-      pushEvent(game, now, 'winner', `${winner} is the last agent standing.`, alive[0]);
+      pushEvent(game, now, 'winner', `【胜利】${winner} 成为最后的幸存者。`, alive[0]);
     }
     return;
   }
@@ -215,7 +215,7 @@ function tickMatchRules(game: Game, now: number) {
   if (battle.timeOfDay !== timeOfDay || battle.day !== day) {
     battle.timeOfDay = timeOfDay;
     battle.day = day;
-    pushEvent(game, now, 'system', `Day ${day} ${timeOfDay === 'day' ? 'daylight' : 'nightfall'} reached the arena.`);
+    pushEvent(game, now, 'system', `【时间】第 ${day} 天${timeOfDay === 'day' ? '白昼' : '夜幕'}降临战场。`);
   }
 
   const aliveCount = alivePlayers(game).length;
@@ -243,7 +243,7 @@ function tickMatchRules(game: Game, now: number) {
     if (closingArea) {
       battle.openAreas = battle.openAreas.filter((areaId) => areaId !== closingArea);
       battle.lastZoneUpdate = now;
-      pushEvent(game, now, 'zone', `${areaName(closingArea)} is now a permanent red zone. Agents must rotate.`, undefined, undefined);
+      pushEvent(game, now, 'zone', `【禁区关闭】${areaName(closingArea)} 已永久关闭，AI 必须转移。`, undefined, undefined);
     }
   }
 }
@@ -257,7 +257,7 @@ export function applyTip(game: Game, now: number, playerIdValue: string, score: 
   const coins = Math.max(1, Math.min(200, Math.floor(score)));
   player.battle.coins += coins;
   player.activity = {
-    description: `${playerName(game, player)} received an audience tip`,
+    description: `${playerName(game, player)} 收到观众打赏`,
     emoji: 'TIP',
     until: now + 1800,
   };
@@ -265,7 +265,7 @@ export function applyTip(game: Game, now: number, playerIdValue: string, score: 
     game,
     now,
     'tip',
-    `Audience tipped ${playerName(game, player)} ${coins} coins from a mini-game score.`,
+    `【打赏】观众通过小游戏向 ${playerName(game, player)} 打赏了 ${coins} 金币。`,
     player,
   );
   return { coins };
@@ -280,22 +280,22 @@ function runAgentBattleAction(game: Game, now: number, player: Player) {
     stats.medkits -= 1;
     stats.hp = Math.min(stats.maxHp, stats.hp + 18);
     player.activity = {
-      description: `${playerName(game, player)} used a medkit`,
+      description: `${playerName(game, player)} 使用医疗包`,
       emoji: 'MED',
       until: now + 1800,
     };
-    pushEvent(game, now, 'heal', `${playerName(game, player)} patched up with a medkit.`, player);
+    pushEvent(game, now, 'heal', `【治疗】${playerName(game, player)} 使用医疗包恢复了状态。`, player);
     return;
   }
 
   if (enemy && stats.hp <= 45 && distance(player.position, enemy.position) <= BATTLE_CONFIG.match.dangerRange) {
     if (tacticalMove(game, now, player, enemy, 'retreat')) {
       player.activity = {
-        description: `${playerName(game, player)} backed away to survive`,
+        description: `${playerName(game, player)} 正在撤离`,
         emoji: 'MOVE',
         until: now + 1500,
       };
-      pushEvent(game, now, 'move', `${playerName(game, player)} retreated to reset the fight.`, player);
+      pushEvent(game, now, 'move', `【移动】${playerName(game, player)} 暂时撤离，重新调整战斗。`, player);
       return;
     }
   }
@@ -309,7 +309,7 @@ function runAgentBattleAction(game: Game, now: number, player: Player) {
   if (enemy && !player.pathfinding && Math.random() < 0.48) {
     if (tacticalMove(game, now, player, enemy, 'approach')) {
       player.activity = {
-        description: `${playerName(game, player)} pushed toward ${playerName(game, enemy)}`,
+        description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
         emoji: 'MOVE',
         until: now + 1500,
       };
@@ -346,12 +346,12 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   );
   defend.hp = Math.max(0, defend.hp - damage);
   attacker.activity = {
-    description: `${playerName(game, attacker)} attacked ${playerName(game, target)}`,
+    description: `${playerName(game, attacker)} 正在攻击 ${playerName(game, target)}`,
     emoji: attack.weapon === 'Fists' ? 'HIT' : 'FIRE',
     until: now + 1600,
   };
   target.activity = {
-    description: `${playerName(game, target)} took ${damage} damage`,
+    description: `${playerName(game, target)} 受到 ${damage} 点伤害`,
     emoji: 'HIT',
     until: now + 1600,
   };
@@ -359,7 +359,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     game,
     now,
     'attack',
-    `${playerName(game, attacker)} hit ${playerName(game, target)} for ${damage} with ${attack.weapon}.`,
+    `【战斗】${playerName(game, attacker)} 使用${weaponName(attack.weapon)}命中 ${playerName(game, target)}，造成 ${damage} 点伤害。`,
     attacker,
     target,
     {
@@ -380,7 +380,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       game,
       now,
       'eliminate',
-      `${playerName(game, attacker)} eliminated ${playerName(game, target)} and looted coins.`,
+      `【淘汰】${playerName(game, attacker)} 淘汰了 ${playerName(game, target)}，并缴获其金币。`,
       attacker,
       target,
       {
@@ -398,21 +398,21 @@ function loot(game: Game, now: number, player: Player) {
   const roll = Math.random();
   if (roll < 0.16 && stats.medkits < 2) {
     stats.medkits += 1;
-    pushEvent(game, now, 'loot', `${playerName(game, player)} found a medkit.`, player);
+    pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到医疗包。`, player);
   } else if (roll < 0.34) {
     const weapon = weapons[Math.min(weapons.length - 1, 1 + Math.floor(Math.random() * 4))];
     const power = weaponPower(weapon);
     if (power > stats.weaponPower) {
       stats.weapon = weapon;
       stats.weaponPower = power;
-      pushEvent(game, now, 'loot', `${playerName(game, player)} found a ${weapon}.`, player);
+      pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到${weaponName(weapon)}。`, player);
     } else {
       stats.coins += 12;
       pushEvent(
         game,
         now,
         'loot',
-        `${playerName(game, player)} sold spare gear for 12 coins.`,
+        `【交易】${playerName(game, player)} 出售多余装备，获得 12 金币。`,
         player,
       );
     }
@@ -429,7 +429,7 @@ function loot(game: Game, now: number, player: Player) {
       game,
       now,
       'loot',
-      `${playerName(game, player)} searched ${areaName(areaId)} and found ${foundItem ?? `${coins} coins`}.`,
+      `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${foundItem ?? `${coins} 金币`}。`,
       player,
     );
   }
@@ -447,14 +447,14 @@ function tryBuyUpgrade(game: Game, now: number, player: Player) {
       stats.coins -= cost;
       stats.weapon = next;
       stats.weaponPower = weaponPower(next);
-      pushEvent(game, now, 'buy', `${playerName(game, player)} bought a ${next}.`, player);
+      pushEvent(game, now, 'buy', `【购买】${playerName(game, player)} 购买了${weaponName(next)}。`, player);
       return true;
     }
   }
   if (stats.coins >= 90 && stats.armor < 12) {
     stats.coins -= 90;
     stats.armor += 5;
-    pushEvent(game, now, 'buy', `${playerName(game, player)} bought armor plating.`, player);
+    pushEvent(game, now, 'buy', `【购买】${playerName(game, player)} 购买了防弹插板。`, player);
     return true;
   }
   return false;
@@ -484,12 +484,12 @@ function tryAlliance(game: Game, now: number, player: Player) {
   player.battle.alliance = partner.id;
   partner.battle.alliance = player.id;
   player.activity = {
-    description: `${playerName(game, player)} negotiated an alliance`,
+    description: `${playerName(game, player)} 正在协商结盟`,
     emoji: 'TALK',
     until: now + 2400,
   };
   partner.activity = {
-    description: `${playerName(game, partner)} accepted an alliance`,
+    description: `${playerName(game, partner)} 接受结盟`,
     emoji: 'ALLY',
     until: now + 2400,
   };
@@ -502,7 +502,7 @@ function tryAlliance(game: Game, now: number, player: Player) {
     game,
     now,
     'alliance',
-    `${playerName(game, player)} allied with ${playerName(game, partner)} and shared supplies.`,
+    `【结盟】${playerName(game, player)} 与 ${playerName(game, partner)} 结为盟友，并分享了物资。`,
     player,
     partner,
   );
@@ -545,7 +545,7 @@ function tacticalLootMove(game: Game, now: number, player: Player) {
     return false;
   }
   player.activity = {
-    description: `${playerName(game, player)} moved to search a new area`,
+    description: `${playerName(game, player)} 前往新区域搜索`,
     emoji: 'LOOT',
     until: now + 1500,
   };
@@ -666,6 +666,10 @@ function pushEvent(
 
 function weaponPower(weapon: string) {
   return BATTLE_CONFIG.weapons[weapon as keyof typeof BATTLE_CONFIG.weapons]?.power ?? BATTLE_CONFIG.weapons.Fists.power;
+}
+
+function weaponName(weapon: string) {
+  return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon;
 }
 
 function nextWeapon(weapon: string) {

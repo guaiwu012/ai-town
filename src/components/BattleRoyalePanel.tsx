@@ -472,7 +472,7 @@ function mapPositionForArea(areaId: string) {
 
 function displayAreaName(areaId: string) {
   const names: Record<string, string> = {
-    A01: '堡垒废墟', A02: '广播塔', A03: '智库书库', A04: '格斗场',
+    A01: '堡垒废墟', A02: '演播塔', A03: '智库书库', A04: '格斗笼',
     A05: '学院废墟', A06: '战地医院', A07: '训练场', A08: '暗巷市场',
     A09: '武器库', A10: '密林深处', A11: '法庭遗址', A12: '观测站废墟', S01: '真相之间',
   };
@@ -488,7 +488,7 @@ function displayPhase(phase?: string) {
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;
 }
 
 function displayEventText(text: string) {
