@@ -392,6 +392,49 @@ p[contenteditable='true']:empty::before {
   opacity: 0.62;
 }
 
+.overview-intervention-effect {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  width: 4.8rem;
+  justify-items: center;
+  transform: translate(-50%, -50%);
+  color: #ffe08a;
+  text-shadow: 0 0 12px rgba(255, 186, 74, 0.95);
+  animation: intervention-pulse 1.1s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.overview-intervention-effect span {
+  display: grid;
+  width: 2.3rem;
+  height: 2.3rem;
+  place-items: center;
+  border: 1px solid rgba(255, 221, 138, 0.95);
+  background: rgba(118, 67, 15, 0.76);
+  box-shadow: 0 0 0 6px rgba(244, 168, 41, 0.14), 0 0 26px rgba(244, 168, 41, 0.68);
+  font-size: 1.35rem;
+}
+
+.overview-intervention-effect small {
+  margin-top: 0.28rem;
+  padding: 0.16rem 0.28rem;
+  background: rgba(5, 14, 25, 0.88);
+  color: #fff0bf;
+  font-size: 0.56rem;
+  white-space: nowrap;
+}
+
+.overview-intervention-effect.is-damage span {
+  border-color: rgba(255, 101, 101, 0.96);
+  background: rgba(115, 21, 21, 0.76);
+  color: #ffb0a2;
+}
+
+@keyframes intervention-pulse {
+  50% { transform: translate(-50%, -64%) scale(1.08); }
+}
+
 .overview-area-label {
   display: inline-block;
   border: 1px solid rgba(231, 206, 162, 0.9);

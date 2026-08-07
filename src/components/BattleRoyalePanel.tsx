@@ -41,7 +41,6 @@ export default function BattleRoyalePanel({
 }: BattleRoyalePanelProps) {
   const sendInput = useMutation(api.aiTown.main.sendInput);
   const resetBattleMutation = useMutation(api.world.resetBattle);
-  const [tipCoins, setTipCoins] = useState(0);
   const [mineOpen, setMineOpen] = useState(false);
   const [mineBoard, setMineBoard] = useState(() => createMineBoard());
   const [mineStatus, setMineStatus] = useState<MineStatus>('ready');
@@ -121,26 +120,17 @@ export default function BattleRoyalePanel({
     });
   };
 
-  const cashOutMineGame = () => {
-    setTipCoins(liveMineReward);
-    setMineOpen(false);
-  };
-
-  const tipSelected = async () => {
-    if (!selected || selected.battle?.eliminated || tipCoins <= 0) {
-      return;
-    }
+  const cashOutMineGame = async () => {
     setPending(true);
     try {
       await sendInput({
         worldId,
-        name: 'tipAgent',
+        name: 'earnIntervention',
         args: {
-          playerId: selected.id,
-          score: tipCoins,
+          score: liveMineReward,
         },
       });
-      setTipCoins(0);
+      setMineOpen(false);
     } finally {
       setPending(false);
     }
@@ -178,7 +168,6 @@ export default function BattleRoyalePanel({
         name: 'resetBattle',
         args: {},
       });
-      setTipCoins(0);
     } finally {
       setPending(false);
     }
@@ -229,6 +218,12 @@ export default function BattleRoyalePanel({
               </div>
             );
           })}
+          {battle?.interventionEffect && battle.interventionEffect.until > Date.now() && (
+            <div className={`overview-intervention-effect is-${battle.interventionEffect.kind.split(':').pop()}`} style={mapPositionForArea(battle.interventionEffect.areaId ?? 'A01')}>
+              <span>{interventionEffectIcon(battle.interventionEffect.kind)}</span>
+              <small>{interventionEffectLabel(battle.interventionEffect.kind)}</small>
+            </div>
+          )}
           <div className="overview-zone-warning" style={{ left: '74%', top: '73%' }}>危险区收缩</div>
           <div className="overview-map-legend">
             <span><i className="legend-dot legend-dot-live" /> AI 直播中</span>
@@ -239,7 +234,7 @@ export default function BattleRoyalePanel({
         <div className="mt-2 grid grid-cols-3 gap-2 text-center">
           <Stat label="存活人数" value={aliveCount} />
           <Stat label="AI 总数" value={players.length} />
-          <Stat label="观众金币" value={tipCoins} />
+          <Stat label="可用干预点" value={`${battle?.interventionPoints ?? 0}/${battle?.interventionPointsMax ?? 30}`} />
         </div>
       </div>
 
@@ -266,7 +261,7 @@ export default function BattleRoyalePanel({
           <div className="arena-panel-title">干预点数</div>
           <div className="overview-bolts mt-2">{[0, 1, 2, 3, 4].map((bolt) => <span key={bolt} className={bolt < Math.min(5, battle?.interventionPoints ?? 0) ? 'is-on' : ''}>ϟ</span>)}</div>
           <div className="mt-1 text-right text-2xl text-amber-200">{battle?.interventionPoints ?? 0} / {battle?.interventionPointsMax ?? 30}</div>
-          <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs" onClick={openMineGame} disabled={pending}>玩小游戏赚金币</button>
+          <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs" onClick={openMineGame} disabled={pending}>扫雷补充干预点</button>
         </div>
 
         <div className="arena-panel p-3">
@@ -316,7 +311,7 @@ export default function BattleRoyalePanel({
                 </div>
                 <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[#b4c3cc]">
                   <span>{displayWeapon(stats.weapon)}</span>
-                  <span>{stats.coins} 金币</span>
+                  <span>{stats.coins} 物资</span>
                   <span>{stats.kills} 击杀</span>
                   <span>{stats.medkits} 医疗包</span>
                 </div>
@@ -340,7 +335,7 @@ export default function BattleRoyalePanel({
       <div className="arena-panel p-3">
         <h3 className="arena-panel-title">观众干预台</h3>
         <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-          <Stat label="可用金币" value={tipCoins} />
+          <Stat label="可用干预点" value={`${battle?.interventionPoints ?? 0}/${battle?.interventionPointsMax ?? 30}`} />
           <Stat label="扫雷棋盘" value={`${MINE_ROWS}×${MINE_COLS}`} />
         </div>
         <button
@@ -350,13 +345,7 @@ export default function BattleRoyalePanel({
         >
           开始扫雷
         </button>
-        <button
-          className="arena-action mt-2 h-12 w-full text-lg disabled:opacity-40"
-          onClick={tipSelected}
-          disabled={pending || !selected || tipCoins <= 0 || selected.battle?.eliminated}
-        >
-          打赏 {selected ? game.playerDescriptions.get(selected.id)?.name : 'AI'}
-        </button>
+        <div className="mt-2 text-center text-xs text-slate-300">扫雷得分会直接兑换为主办方干预点</div>
       </div>
       </aside>
 
@@ -453,7 +442,7 @@ export default function BattleRoyalePanel({
 
             <div className="mt-3 min-h-[28px] text-sm text-slate-200">
               {mineStatus === 'playing' &&
-                '翻开安全格赚取金币。可切换标记模式，或右键标记地雷。'}
+                '翻开安全格补充干预点。可切换标记模式，或右键标记地雷。'}
               {mineStatus === 'won' && '棋盘已清空，可以领取全部奖励并打赏 AI。'}
               {mineStatus === 'lost' && '踩到地雷，仍可领取已翻开安全格对应的部分奖励。'}
             </div>
@@ -463,7 +452,7 @@ export default function BattleRoyalePanel({
               onClick={cashOutMineGame}
               disabled={liveMineReward <= 0}
             >
-              领取 {liveMineReward} 金币
+              结算 {Math.max(1, Math.floor(liveMineReward / 25))} 点干预点
             </button>
           </div>
         </div>,
@@ -518,7 +507,24 @@ function displayPhase(phase?: string) {
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利', intervention: '主办方', story: '剧情', clue: '线索', mission: '任务', truth: '真相', heat: '热度' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', audience: '观众', winner: '胜利', intervention: '主办方', story: '剧情', areaStory: '区域剧情', clue: '线索', mission: '任务', truth: '真相', heat: '热度' } as Record<string, string>)[kind] ?? kind;
+}
+
+function interventionEffectIcon(kind: string) {
+  if (kind.includes('SUP')) return '▣';
+  if (kind.includes('ENV') || kind.includes('damage')) return '✦';
+  if (kind.includes('INF') || kind.includes('clue')) return '◈';
+  if (kind.includes('RUL') || kind.includes('alliance')) return '⟐';
+  return '◆';
+}
+
+function interventionEffectLabel(kind: string) {
+  if (kind.includes('SUP')) return '补给投放';
+  if (kind.includes('ENV')) return '环境干预';
+  if (kind.includes('INF')) return '情报干预';
+  if (kind.includes('RUL')) return '规则干预';
+  if (kind.includes('story')) return '区域剧情';
+  return '主办方干预';
 }
 
 function displayEventText(text: string) {

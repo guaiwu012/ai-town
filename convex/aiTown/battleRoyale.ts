@@ -7,6 +7,7 @@ import { blocked, movePlayer } from './movement';
 import { point } from '../util/types';
 import {
   BATTLE_CONFIG,
+  AREA_SPECIAL_EVENTS,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
@@ -95,6 +96,8 @@ export const battleState = v.object({
   disabledWeaponsUntil: v.optional(v.number()),
   bountyPlayerId: v.optional(playerId),
   temporaryAllianceUntil: v.optional(v.number()),
+  areaEventCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+  interventionEffect: v.optional(v.object({ kind: v.string(), areaId: v.optional(v.string()), playerId: v.optional(playerId), until: v.number() })),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -165,7 +168,8 @@ export function defaultBattleState(now: number): BattleState {
     truthRevealed: false,
     truthClues: [],
     storyTriggers: [],
-    operationCooldowns: [],
+  operationCooldowns: [],
+    areaEventCooldowns: [],
   };
 }
 
@@ -222,6 +226,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.truthClues ??= [];
   battle.storyTriggers ??= [];
   battle.operationCooldowns ??= [];
+  battle.areaEventCooldowns ??= [];
 }
 
 export function resetBattleMatch(game: Game, now: number) {
@@ -326,30 +331,50 @@ function tickMatchRules(game: Game, now: number) {
     battle.lastScoreEvent = now;
     pushEvent(game, now, 'heat', '【热度】战场沉寂过久，直播热度下降 5 点。');
   }
+  triggerAreaSpecialEvent(game, now);
   updateMissionProgress(game, now);
 }
 
-export function applyTip(game: Game, now: number, playerIdValue: string, score: number) {
-  ensureBattleState(game, now);
-  const player = game.world.players.get(playerIdValue as any);
-  if (!player || !player.battle || player.battle.eliminated) {
-    throw new Error('Cannot tip this agent.');
+function triggerAreaSpecialEvent(game: Game, now: number) {
+  const battle = game.world.battle!;
+  if (Math.random() > 0.035) return;
+  const candidates = AREA_SPECIAL_EVENTS.filter((event) => {
+    const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
+    return !cooldown || cooldown.until <= now;
+  });
+  const event = candidates[Math.floor(Math.random() * candidates.length)];
+  if (!event) return;
+  const affected = alivePlayers(game).filter((player) => player.battle?.areaId === event.areaId);
+  if (affected.length === 0) return;
+  for (const player of affected) {
+    const stats = player.battle!;
+    if (event.effect === 'damage') stats.hp = Math.max(1, stats.hp - event.value);
+    if (event.effect === 'stamina') stats.stamina = Math.max(0, (stats.stamina ?? 0) - event.value);
+    if (event.effect === 'stress') stats.stress = (stats.stress ?? 0) + event.value;
+    if (event.effect === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + event.value);
+    if (event.effect === 'supply') stats.coins += event.value;
+    if (event.effect === 'clue') collectTruthClue(game, now, `区域-${event.id}`, player);
   }
-  const coins = Math.max(1, Math.min(200, Math.floor(score)));
-  player.battle.coins += coins;
-  player.activity = {
-    description: `${playerName(game, player)} 收到观众打赏`,
-    emoji: 'TIP',
-    until: now + 1800,
-  };
-  pushEvent(
-    game,
-    now,
-    'tip',
-    `【打赏】观众通过小游戏向 ${playerName(game, player)} 打赏了 ${coins} 金币。`,
-    player,
-  );
-  return { coins };
+  if (event.effect === 'alliance' && affected.length >= 2) {
+    affected[0].battle!.alliance = affected[1].id;
+    affected[1].battle!.alliance = affected[0].id;
+    awardPopularity(game, now, 15, [affected[0], affected[1]]);
+  }
+  battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
+  battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
+  battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
+  pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」。`);
+}
+
+export function applyAudienceScore(game: Game, now: number, score: number) {
+  ensureBattleState(game, now);
+  const battle = game.world.battle!;
+  const points = Math.max(1, Math.min(8, Math.floor(score / 25)));
+  const before = battle.interventionPoints ?? 0;
+  battle.interventionPoints = Math.min(battle.interventionPointsMax ?? 30, before + points);
+  battle.interventionEarnedTotal = (battle.interventionEarnedTotal ?? 0) + (battle.interventionPoints - before);
+  pushEvent(game, now, 'audience', `【观众】扫雷挑战结算，主办方获得 ${battle.interventionPoints - before} 点干预点。`);
+  return { points: battle.interventionPoints - before, total: battle.interventionPoints };
 }
 
 export function applyIntervention(
@@ -402,6 +427,12 @@ export function applyIntervention(
     battle.operationCooldowns = (battle.operationCooldowns ?? []).filter((entry) => entry.id !== operation.id);
     battle.operationCooldowns.push({ id: operation.id, until: now + operation.cooldownMs });
   }
+  battle.interventionEffect = {
+    kind: operation.id,
+    areaId: operation.target === 'area' ? areaId : target?.battle?.areaId,
+    playerId: target?.id,
+    until: now + 7000,
+  };
   return { remainingPoints: battle.interventionPoints, operation: operation.name };
 }
 
@@ -517,7 +548,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       game,
       now,
       'eliminate',
-      `【淘汰】${playerName(game, attacker)} 淘汰了 ${playerName(game, target)}，并缴获其金币。`,
+      `【淘汰】${playerName(game, attacker)} 淘汰了 ${playerName(game, target)}，并缴获其物资。`,
       attacker,
       target,
       {
@@ -550,7 +581,7 @@ function loot(game: Game, now: number, player: Player) {
         game,
         now,
         'loot',
-        `【交易】${playerName(game, player)} 出售多余装备，获得 12 金币。`,
+        `【交易】${playerName(game, player)} 出售多余装备，获得 12 物资。`,
         player,
       );
     }
@@ -567,7 +598,7 @@ function loot(game: Game, now: number, player: Player) {
       game,
       now,
       'loot',
-      `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${foundItem ?? `${coins} 金币`}。`,
+      `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${foundItem ?? `${coins} 物资`}。`,
       player,
     );
     triggerCharacterStory(game, now, player, areaId, foundItem);
