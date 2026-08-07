@@ -19,7 +19,7 @@
 | 战斗、搜索、购买、结盟、治疗、禁区 | 完成，模型/规则统一执行 | `convex/aiTown/battleRoyale.ts` |
 | DeepSeek BYOK 战术决策 | 完成 | `DecisionDriver.tsx` + `submitAIDecision()` |
 | 驾驶权、超时回退与审计 | 完成 | `battleState` / `BattleStats` 决策字段 |
-| 逻辑区域图、多边形关卡、邻接迁移与红区伤害 | 完成基础版 | `data/battleArena.ts` + `moveToBattleArea()`；同区战术移动受多边形边界约束 |
+| 逻辑区域图、多边形关卡、地标碰撞、邻接迁移与红区伤害 | 完成基础版 | `data/battleArena.ts` + `moveToBattleArea()`；同区战术移动受多边形与地标可走性约束 |
 | 区域资源与物品即时效果 | 完成基础版 | `areaResources` + `ITEM_EFFECTS` |
 | 热度、连击、主线和隐藏任务 | 完成 | `battleRoyale.ts` |
 | 干预点与 17 个干预操作 | 完成 | `INTERVENTION_OPERATIONS` |
@@ -29,6 +29,7 @@
 | 剧情干预状态测试 | 完成 | `convex/aiTown/battleRoyale.test.ts` |
 | C12 身份卡、线索和真相之间 | 完成 | `battleRoyale.ts` |
 | 地图干预/剧情落点特效 | 完成 | `BattleRoyalePanel.tsx` + `index.css` |
+| 剧情封锁与角色行动审计 | 完成基础版 | 格斗笼封锁会拒绝移动；总览和角色抽屉显示倒计时、区域规则与最近结构化行动 |
 | CloudBase 前端、Convex 后端 | 已部署 | 见 README |
 | 直播跟随、自动导播、角色详情抽屉 | 完成基础版 | `Game.tsx` + `LiveBattleHud.tsx` + `BattleCharacterDrawer.tsx` |
 | 种子 RNG、行动日志和回放检查点 | 完成基础版 | `battleRoyale.ts`；回放时中止浏览器模型调度 |
