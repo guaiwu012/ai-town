@@ -17,6 +17,7 @@ export default function BattleReplayControls({
 }) {
   if (!battle) return null;
   const events = [...(battle.feed ?? [])].filter((event) => ['eliminate', 'attack', 'areaStory', 'globalStory', 'intervention', 'truth', 'betrayal'].includes(event.kind)).slice(0, 5);
+  const actions = [...(battle.actionLog ?? [])].slice(-4).reverse();
   return <section className="replay-controls pointer-events-auto">
     <div className="replay-header"><span>回放控制</span><small>种子 {battle.seed ?? '旧局'}</small></div>
     <div className="replay-actions">
@@ -27,5 +28,12 @@ export default function BattleReplayControls({
     <div className="replay-events">
       {events.length ? events.map((event) => <button key={event.id} onClick={() => onJump(event.ts)}>{event.text}</button>) : <span>等待关键事件</span>}
     </div>
+    <div className="replay-events replay-actions-log">
+      {actions.map((entry) => <button key={entry.id} onClick={() => onJump(entry.ts)}>{entry.source === 'model' ? '模型' : '规则'} · {actionName(entry.action)}{entry.targetAreaId ? ` → ${entry.targetAreaId}` : entry.targetPlayerId ? ` → ${entry.targetPlayerId}` : ''} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</button>)}
+    </div>
   </section>;
+}
+
+function actionName(action: string) {
+  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查', fallback: '规则回退' } as Record<string, string>)[action] ?? action;
 }
