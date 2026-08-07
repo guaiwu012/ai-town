@@ -1,6 +1,6 @@
-import { BaseTexture, ISpritesheetData, Spritesheet } from 'pixi.js';
+import { BaseTexture, ISpritesheetData, Rectangle, Spritesheet, Texture } from 'pixi.js';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AnimatedSprite, Container, Graphics, Text } from '@pixi/react';
+import { AnimatedSprite, Container, Graphics, Sprite, Text } from '@pixi/react';
 import * as PIXI from 'pixi.js';
 
 export const Character = ({
@@ -16,6 +16,7 @@ export const Character = ({
   isViewer = false,
   hpRatio,
   isEliminated = false,
+  battleCharacterId,
   speed = 0.1,
   onClick,
 }: {
@@ -37,6 +38,7 @@ export const Character = ({
   isViewer?: boolean;
   hpRatio?: number;
   isEliminated?: boolean;
+  battleCharacterId?: string;
   // The speed of the animation. Can be tuned depending on the side and speed of the NPC.
   speed?: number;
   onClick: () => void;
@@ -99,6 +101,7 @@ export const Character = ({
       )}
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
+      {battleCharacterId && <BattleIdentityMarker characterId={battleCharacterId} eliminated={isEliminated} />}
       <AnimatedSprite
         ref={ref}
         isPlaying={isMoving}
@@ -163,6 +166,19 @@ function HealthBar({ ratio }: { ratio: number }) {
   );
 
   return <Graphics draw={draw} />;
+}
+
+function BattleIdentityMarker({ characterId, eliminated }: { characterId: string; eliminated: boolean }) {
+  const index = Math.max(0, Number(characterId.slice(1)) - 1) % 12;
+  const baseTexture = BaseTexture.from('/ai-town/assets/battle/contestant-portraits.png');
+  const col = index % 4;
+  const row = Math.floor(index / 4);
+  const portrait = new Texture(baseTexture, new Rectangle(col * 362, row * 362, 362, 362));
+  return <>
+    <Graphics draw={(g) => { g.clear(); g.beginFill(eliminated ? 0x442c42 : 0x0c1d2b, 0.96); g.lineStyle(1.5, eliminated ? 0x92566b : 0x70e6ca, 0.95); g.drawCircle(0, -41, 13); g.endFill(); }} />
+    <Sprite texture={portrait} x={0} y={-41} width={23} height={23} anchor={{ x: 0.5, y: 0.5 }} alpha={eliminated ? 0.38 : 1} />
+    <Text x={0} y={-58} scale={0.28} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 3 })} />
+  </>;
 }
 
 function ViewerIndicator() {
