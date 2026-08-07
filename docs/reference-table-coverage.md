@@ -26,7 +26,7 @@
 | `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency`；`adjacentAreaIds()`；`moveToBattleArea()` | 运行中 | 区域移动已强制相邻与开放校验；Pixi tile map 仍只承担局部寻路和视觉表现。 |
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |
-| `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 高影响物品已有稀有度、交易价值和效果；全部物品的价格、合成、使用条件仍待补齐。 |
+| `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 高影响物品已有稀有度、交易价值和效果；食物/饮料/药草会恢复饱食或压力，全部物品的价格、合成、使用条件仍待补齐。 |
 | `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点、六边形边界、出生落点、地标障碍和邻接 | 部分抽象 | 同区战术移动和跨区落点已使用关卡多边形与地标可走性；逐瓦片碰撞、完整寻路网格与地标交互仍在接入。 |
 | `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
 

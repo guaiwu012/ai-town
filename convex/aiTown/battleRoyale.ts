@@ -1233,7 +1233,7 @@ function loot(game: Game, now: number, player: Player) {
     const foundItem = weightedAreaItem(game, pool);
     if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
       stats.inventory = [...(stats.inventory ?? []), foundItem];
-      applyItemEffect(game, now, player, foundItem);
+      applyBattleItemEffect(game, now, player, foundItem);
     }
     pushEvent(
       game,
@@ -1252,13 +1252,15 @@ function loot(game: Game, now: number, player: Player) {
   }
 }
 
-function applyItemEffect(game: Game, now: number, player: Player, item: string) {
+export function applyBattleItemEffect(game: Game, now: number, player: Player, item: string) {
   const effect = ITEM_EFFECTS[item];
   if (!effect) return;
   const stats = player.battle!;
   if (effect.kind === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + effect.value);
   if (effect.kind === 'armor') stats.armor += effect.value;
   if (effect.kind === 'stamina') stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + effect.value);
+  if (effect.kind === 'satiety') stats.satiety = Math.min(100, (stats.satiety ?? 0) + effect.value);
+  if (effect.kind === 'stress') stats.stress = Math.max(0, (stats.stress ?? 0) + effect.value);
   if (effect.kind === 'clue') collectTruthClue(game, now, `物品-${item}`, player);
   if (effect.kind === 'weapon' && effect.value > stats.weaponPower) {
     stats.weapon = item === '手枪' ? 'Pistol' : item === '突击步枪' ? 'Rifle' : 'Fists';

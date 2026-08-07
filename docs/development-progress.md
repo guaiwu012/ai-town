@@ -20,7 +20,7 @@
 | DeepSeek BYOK 战术决策 | 完成 | `DecisionDriver.tsx` + `submitAIDecision()` |
 | 驾驶权、超时回退与审计 | 完成 | `battleState` / `BattleStats` 决策字段 |
 | 逻辑区域图、多边形关卡、地标碰撞、邻接迁移与红区伤害 | 完成基础版 | `data/battleArena.ts` + `moveToBattleArea()`；同区战术移动受多边形与地标可走性约束 |
-| 区域资源与物品即时效果 | 完成基础版 | `areaResources` + `ITEM_EFFECTS` |
+| 区域资源与物品即时效果 | 完成基础版 | `areaResources` + `ITEM_EFFECTS`；食物/饮料可恢复饱食或压力并影响后续 AI 决策 |
 | 热度、连击、主线和隐藏任务 | 完成 | `battleRoyale.ts` |
 | 干预点与 17 个干预操作 | 完成 | `INTERVENTION_OPERATIONS` |
 | 扫雷结算干预点 | 完成 | `BattleRoyalePanel.tsx` |

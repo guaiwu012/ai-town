@@ -1,4 +1,4 @@
-import { applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -185,5 +185,19 @@ describe('battle royale host intervention rules', () => {
     expect(hungry.battle.stress).toBe(32);
     expect(medic.battle.stress).toBeCloseTo(30 - 60 / 18);
     expect(medic.battle.zoneTime).toBe(21);
+  });
+
+  it('applies consumable food and calming item effects through the production item layer', () => {
+    const player = createPlayer('p:12', 'C12', 'A12');
+    player.battle.satiety = 60;
+    player.battle.stress = 18;
+    const game = createGame([player]);
+
+    applyBattleItemEffect(game, 2_000, player, '军用口粮');
+    applyBattleItemEffect(game, 2_000, player, '罐装咖啡');
+
+    expect(player.battle.satiety).toBe(88);
+    expect(player.battle.stress).toBe(8);
+    expect(game.world.battle.feed.filter((event: any) => event.kind === 'item')).toHaveLength(2);
   });
 });

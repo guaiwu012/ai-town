@@ -127,9 +127,11 @@ export function adjacentAreaIds(areaId: string) {
     .flatMap(([a, b]) => a === areaId ? [b] : b === areaId ? [a] : []);
 }
 
-export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' | 'clue' | 'weapon'; value: number }> = {
+export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' | 'satiety' | 'stress' | 'clue' | 'weapon'; value: number }> = {
   '急救包': { kind: 'heal', value: 20 }, '止痛药': { kind: 'heal', value: 10 }, '防弹插板': { kind: 'armor', value: 5 },
   '运动饮料': { kind: 'stamina', value: 20 }, '蛋白棒': { kind: 'stamina', value: 15 }, '营养补充剂': { kind: 'stamina', value: 18 },
+  '军用口粮': { kind: 'satiety', value: 28 }, '午餐盒': { kind: 'satiety', value: 24 }, '走私食品': { kind: 'satiety', value: 22 }, '野果': { kind: 'satiety', value: 16 }, '茶水间补给': { kind: 'satiety', value: 18 },
+  '罐装咖啡': { kind: 'stress', value: -10 }, '药草': { kind: 'stress', value: -8 },
   '加密档案': { kind: 'clue', value: 1 }, '医疗记录终端': { kind: 'clue', value: 1 }, '监控日志碎片': { kind: 'clue', value: 1 },
   '手枪': { kind: 'weapon', value: 20 }, '突击步枪': { kind: 'weapon', value: 35 }, '木矛': { kind: 'weapon', value: 14 },
 };
