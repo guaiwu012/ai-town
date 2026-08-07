@@ -531,7 +531,7 @@ function displayPhase(phase?: string) {
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', trade: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', audience: '观众', winner: '胜利', intervention: '主办方', story: '剧情', areaStory: '区域剧情', globalStory: '全局事件', clue: '线索', mission: '任务', truth: '真相', heat: '热度', decision: '决策', reaction: '反应', investigate: '调查', resource: '资源', item: '物品' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', trade: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', betrayal: '背叛', audience: '观众', winner: '胜利', intervention: '主办方', story: '剧情', areaStory: '区域剧情', globalStory: '全局事件', clue: '线索', mission: '任务', truth: '真相', heat: '热度', decision: '决策', reaction: '反应', investigate: '调查', resource: '资源', item: '物品' } as Record<string, string>)[kind] ?? kind;
 }
 
 function displayDecisionAction(action: string) {

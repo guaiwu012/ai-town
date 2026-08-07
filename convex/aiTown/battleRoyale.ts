@@ -857,6 +857,8 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
 function attack(game: Game, now: number, attacker: Player, target: Player) {
   const attack = attacker.battle!;
   const defend = target.battle!;
+  const relation = relationshipBetween(game, attacker, target);
+  const betrayal = attack.alliance === target.id || (relation?.strength ?? 0) >= 70;
   const areaId = attacker.battle?.areaId;
   if (areaId && areaId === target.battle?.areaId) {
     const entry = game.world.battle?.areaBattleRounds?.find((candidate) => candidate.areaId === areaId);
@@ -893,6 +895,13 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     },
   );
   awardPopularity(game, now, 10, [attacker, target]);
+  if (betrayal) {
+    attack.alliance = undefined;
+    defend.alliance = undefined;
+    pushEvent(game, now, 'betrayal', `【背叛】${playerName(game, attacker)} 背叛了 ${playerName(game, target)}。`, attacker, target);
+    awardPopularity(game, now, 30, [attacker, target]);
+    updateRelationship(game, attacker, target, -30, '背叛');
+  }
 
   if (defend.hp <= 0) {
     defend.eliminated = true;
@@ -1082,6 +1091,12 @@ function updateRelationship(game: Game, first: Player, second: Player, delta: nu
   }
   edge.strength = Math.max(-100, Math.min(100, edge.strength + delta));
   edge.lastReason = reason;
+}
+
+function relationshipBetween(game: Game, first: Player, second: Player) {
+  const a = first.battle?.characterId;
+  const b = second.battle?.characterId;
+  return game.world.battle?.relationshipEdges?.find((edge) => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a));
 }
 
 function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
