@@ -19,12 +19,20 @@ function createPlayer(id: string, characterId: string, areaId: string): any {
 
 function createGame(players: TestPlayer[]) {
   const playerMap = new Map(players.map((player) => [player.id, player]));
+  const width = 80;
+  const height = 60;
   return {
     world: {
       battle: defaultBattleState(1_000),
       players: playerMap,
+      conversations: new Map(),
     },
     playerDescriptions: new Map(players.map((player) => [player.id, { name: player.battle.characterId }])),
+    worldMap: {
+      width,
+      height,
+      objectTiles: [Array.from({ length: width }, () => Array.from({ length: height }, () => -1))],
+    },
   } as any;
 }
 
@@ -135,5 +143,26 @@ describe('battle royale host intervention rules', () => {
     expect(second.player.battle).toEqual(first.player.battle);
     expect(second.game.world.battle.rngState).toBe(first.game.world.battle.rngState);
     expect(second.game.world.battle.feed).toEqual(first.game.world.battle.feed);
+  });
+
+  it('reproduces seeded search loot and local movement from the same accepted log', () => {
+    const buildFixture = () => {
+      const player = createPlayer('p:12', 'C12', 'A12');
+      player.position = { x: 17, y: 5 };
+      const game = createGame([player]);
+      game.world.battle = defaultBattleState(1_000, 20260807);
+      return { game, player };
+    };
+    const log = [{ id: 1, ts: 2_000, playerId: 'p:12', action: 'search', source: 'model', accepted: true }];
+    const first = buildFixture();
+    const second = buildFixture();
+
+    expect(replayRecordedActions(first.game, log)).toMatchObject({ applied: 1, rejected: 0 });
+    expect(replayRecordedActions(second.game, log)).toMatchObject({ applied: 1, rejected: 0 });
+    expect(first.player.battle.inventory).toEqual(second.player.battle.inventory);
+    expect(first.player.battle.coins).toBe(second.player.battle.coins);
+    expect(first.game.world.battle.areaResources).toEqual(second.game.world.battle.areaResources);
+    expect(first.game.world.battle.rngState).toBe(second.game.world.battle.rngState);
+    expect(first.player.pathfinding).toEqual(second.player.pathfinding);
   });
 });
