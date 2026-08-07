@@ -137,7 +137,7 @@ export const battleState = v.object({
   rngState: v.optional(v.number()),
   ruleVersion: v.optional(v.string()),
   actionLog: v.optional(v.array(v.object({
-    id: v.number(), ts: v.number(), playerId: v.optional(playerId), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
+    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
     ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(),
@@ -426,7 +426,7 @@ export function submitAIDecision(game: Game, now: number, args: {
       player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
     }
     pushEvent(game, now, 'decision', `【决策】${player ? playerName(game, player) : 'AI'} 的模型动作被拒绝：${reason}。`, player);
-    recordReplayAction(game, now, player, args.action, 'model', false, reason);
+    recordReplayAction(game, now, player, args.action, 'model', false, reason, args.targetPlayerId, args.targetAreaId);
     return { accepted: false, reason };
   };
   if (battle.decisionDriverId !== args.driverId || (battle.decisionDriverUntil ?? 0) <= now) return fail('驾驶权已失效');
@@ -447,7 +447,7 @@ export function submitAIDecision(game: Game, now: number, args: {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
     pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}：${safeReason || '基于当前局势'}。`, player, target);
   }
-  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason);
+  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId);
   return result;
 }
 
@@ -1514,10 +1514,12 @@ function recordReplayAction(
   source: 'model' | 'rule',
   accepted: boolean,
   reason?: string,
+  targetPlayerId?: string,
+  targetAreaId?: string,
 ) {
   const battle = game.world.battle!;
   const log = battle.actionLog ?? (battle.actionLog = []);
-  log.push({ id: battle.nextActionId!++, ts: now, playerId: player?.id, action, source, accepted, reason: reason?.slice(0, 140) });
+  log.push({ id: battle.nextActionId!++, ts: now, playerId: player?.id, targetPlayerId: targetPlayerId as any, targetAreaId, action, source, accepted, reason: reason?.slice(0, 140) });
   if (log.length > 480) log.splice(0, log.length - 480);
 }
 
