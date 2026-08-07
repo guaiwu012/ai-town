@@ -645,6 +645,29 @@ export function applyIntervention(
     case 'INF_04': announce(`${playerName(game, target!)}的位置已被标记：${areaName(target!.battle!.areaId ?? 'A01')}。`); break;
     case 'REC_01': announce(`${playerName(game, target!)}的关系档案已被公开侦察。`); break;
     case 'REC_02': battle.hiddenMissions![0] && (battle.hiddenMissions![0].status = `已揭示：${battle.hiddenMissions![0].status}`); announce('一条隐藏任务已被侦察揭示。'); break;
+    case 'STO_01':
+      if (areaId !== 'A04') throw new Error('拆除笼门只能作用于格斗笼。');
+      battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== 'A04_02');
+      announce('格斗笼门锁被主办方拆除，参赛者获得撤离窗口。'); break;
+    case 'STO_02':
+      if (areaId !== 'A06') throw new Error('替换药品只能作用于战地医院。');
+      affected.forEach((player) => { player.battle!.medkits += 1; player.battle!.hp = Math.min(player.battle!.maxHp, player.battle!.hp + 12); });
+      announce('战地医院的过期药品已替换为有效药品。'); break;
+    case 'STO_03':
+      if (areaId !== 'A10') throw new Error('激怒野兽只能作用于密林深处。');
+      affected.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - 48); });
+      announce('密林野兽被激怒，袭击伤害翻倍。'); break;
+    case 'STO_04':
+      if (areaId !== 'A10') throw new Error('驱赶野兽只能作用于密林深处。');
+      affected.forEach((player) => { player.battle!.hp = Math.min(player.battle!.maxHp, player.battle!.hp + 15); player.battle!.stress = Math.max(0, (player.battle!.stress ?? 0) - 15); });
+      announce('野兽已被驱赶，密林暂时恢复平静。'); break;
+    case 'STO_05':
+      if (areaId !== 'A11' || affected.length < 2) throw new Error('法庭遗址至少需要两名角色。');
+      allyPlayers(game, now, affected[0], affected[1]); announce('主办方强制开启法庭谈判。'); break;
+    case 'STO_06':
+      battle.globalEffects = (battle.globalEffects ?? []).map((effect) => effect.id === 'GLB_02' ? { ...effect, until: effect.until + 60000 } : effect);
+      if (!battle.globalEffects.some((effect) => effect.id === 'GLB_02')) battle.globalEffects.push({ id: 'GLB_02', until: now + 60000 });
+      announce('全图停电被延长 60 秒。'); break;
     case 'TRU_01': unlockTruth(game, now, target!); break;
   }
   battle.interventionPoints! -= operation.cost;

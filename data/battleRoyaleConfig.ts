@@ -154,6 +154,12 @@ export const INTERVENTION_OPERATIONS = [
   { id: 'INF_04', name: '标记位置', category: '信息', cost: 1, cooldownMs: 30000, target: 'player', description: '公开指定角色的位置。' },
   { id: 'REC_01', name: '关系侦察', category: '侦察', cost: 1, cooldownMs: 15000, target: 'player', description: '公布指定角色的一条关系。' },
   { id: 'REC_02', name: '任务侦察', category: '侦察', cost: 3, cooldownMs: 0, target: 'global', description: '揭示一条隐藏任务。' },
+  { id: 'STO_01', name: '拆除笼门', category: '剧情', cost: 2, cooldownMs: 30000, target: 'area', description: '解除格斗笼的剧情封锁，参赛者可撤离。' },
+  { id: 'STO_02', name: '替换有效药品', category: '剧情', cost: 1, cooldownMs: 30000, target: 'area', description: '战地医院的角色获得有效药品。' },
+  { id: 'STO_03', name: '激怒野兽', category: '剧情', cost: 3, cooldownMs: 120000, target: 'area', description: '密林野兽袭击伤害翻倍。' },
+  { id: 'STO_04', name: '驱赶野兽', category: '剧情', cost: 2, cooldownMs: 60000, target: 'area', description: '驱赶密林野兽，恢复区域内角色状态。' },
+  { id: 'STO_05', name: '强制开庭', category: '剧情', cost: 4, cooldownMs: 0, target: 'area', description: '无视人数条件，在法庭遗址强制开启谈判。' },
+  { id: 'STO_06', name: '延长停电', category: '剧情', cost: 3, cooldownMs: 60000, target: 'global', description: '将全图停电延长 60 秒。' },
   { id: 'TRU_01', name: '开启真相之间', category: '剧情', cost: 5, cooldownMs: 0, target: 'player', description: 'C12 集齐线索后开启真相结局。' },
 ] as const;
 
