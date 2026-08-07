@@ -144,6 +144,7 @@ export const battleState = v.object({
     ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(),
   }))),
   lastReplayCheckpointAt: v.optional(v.number()),
+  lastVitalsUpdate: v.optional(v.number()),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -237,6 +238,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     actionLog: [],
     replayCheckpoints: [],
     lastReplayCheckpointAt: now,
+    lastVitalsUpdate: now,
   };
 }
 
@@ -319,6 +321,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.actionLog ??= [];
   battle.replayCheckpoints ??= [];
   battle.lastReplayCheckpointAt ??= now;
+  battle.lastVitalsUpdate ??= now;
 }
 
 function defaultRelationshipEdges() {
@@ -469,6 +472,7 @@ export function reportAIDecisionFailure(game: Game, now: number, args: { driverI
 
 function tickMatchRules(game: Game, now: number) {
   const battle = game.world.battle!;
+  applyBattleVitals(game, now);
   const elapsed = Math.max(0, now - battle.started);
   const dayLength = BATTLE_CONFIG.match.dayMs + BATTLE_CONFIG.match.nightMs;
   const cycleMs = elapsed % dayLength;
@@ -545,6 +549,30 @@ function tickMatchRules(game: Game, now: number) {
   triggerRelationshipDrama(game, now);
   refreshAreaResources(game, now);
   updateMissionProgress(game, now);
+}
+
+export function applyBattleVitals(game: Game, now: number) {
+  const battle = game.world.battle!;
+  const last = battle.lastVitalsUpdate ?? now;
+  const elapsedSeconds = Math.floor((now - last) / 1000);
+  if (elapsedSeconds < 10) return;
+  battle.lastVitalsUpdate = now;
+  for (const player of alivePlayers(game)) {
+    const stats = player.battle!;
+    stats.satiety = Math.max(0, (stats.satiety ?? BATTLE_CONFIG.runtime.satietyStart) - elapsedSeconds / 20);
+    stats.zoneTime = Math.max(0, (stats.zoneTime ?? BATTLE_CONFIG.runtime.zoneTimeStart) - elapsedSeconds / 15);
+    if (stats.areaId === 'A06') {
+      stats.stress = Math.max(0, (stats.stress ?? 0) - elapsedSeconds / 18);
+      stats.zoneTime = Math.min(stats.maxZoneTime ?? 40, (stats.zoneTime ?? 0) + elapsedSeconds / 12);
+    }
+    if ((stats.satiety ?? 0) <= 20) {
+      stats.stamina = Math.max(0, (stats.stamina ?? 0) - Math.ceil(elapsedSeconds / 20));
+      stats.stress = (stats.stress ?? 0) + Math.ceil(elapsedSeconds / 30);
+    }
+    if ((stats.stress ?? 0) >= (stats.stressThreshold ?? 80)) {
+      player.activity = { description: `${playerName(game, player)} 压力过高，正在寻找撤离路线`, emoji: 'ALERT', until: now + 4000 };
+    }
+  }
 }
 
 function triggerRelationshipDrama(game: Game, now: number) {
@@ -1018,6 +1046,15 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   }
 
   const enemy = nearestEnemy(game, player);
+  if ((stats.stress ?? 0) >= (stats.stressThreshold ?? 80)) {
+    const destination = adjacentAreaIds(stats.areaId ?? 'A01')
+      .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
+      .sort((first, second) => areaDanger(first) - areaDanger(second))[0];
+    if (destination && moveToBattleArea(game, now, player, destination)) {
+      pushEvent(game, now, 'reaction', `【压力】${playerName(game, player)} 压力过高，撤离至${areaName(destination)}。`, player);
+      return;
+    }
+  }
   if (stats.hp <= 36 && stats.medkits > 0) {
     stats.medkits -= 1;
     stats.hp = Math.min(stats.maxHp, stats.hp + 18);
@@ -1077,6 +1114,10 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     return;
   }
   wander(game, now, player);
+}
+
+function areaDanger(areaId: string) {
+  return BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.danger ?? 99;
 }
 
 function attack(game: Game, now: number, attacker: Player, target: Player) {

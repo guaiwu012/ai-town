@@ -1,4 +1,4 @@
-import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
+import { applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -164,5 +164,26 @@ describe('battle royale host intervention rules', () => {
     expect(first.game.world.battle.areaResources).toEqual(second.game.world.battle.areaResources);
     expect(first.game.world.battle.rngState).toBe(second.game.world.battle.rngState);
     expect(first.player.pathfinding).toEqual(second.player.pathfinding);
+  });
+
+  it('turns hunger into stamina pressure while the hospital restores stress and zone time', () => {
+    const hungry = createPlayer('p:5', 'C05', 'A05');
+    hungry.battle.satiety = 20;
+    hungry.battle.stamina = 50;
+    hungry.battle.stress = 30;
+    hungry.battle.zoneTime = 20;
+    const medic = createPlayer('p:6', 'C06', 'A06');
+    medic.battle.stress = 30;
+    medic.battle.zoneTime = 20;
+    const game = createGame([hungry, medic]);
+    game.world.battle.lastVitalsUpdate = 1_000;
+
+    applyBattleVitals(game, 61_000);
+
+    expect(hungry.battle.satiety).toBe(17);
+    expect(hungry.battle.stamina).toBe(47);
+    expect(hungry.battle.stress).toBe(32);
+    expect(medic.battle.stress).toBeCloseTo(30 - 60 / 18);
+    expect(medic.battle.zoneTime).toBe(21);
   });
 });
