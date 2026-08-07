@@ -31,6 +31,7 @@ type BattleRoyalePanelProps = {
   setSelectedElement: SelectElement;
   onEditDeepSeekConfig: () => void;
   onBackToLive: () => void;
+  onMatchReset: () => void;
   onFollowPlayer: (playerId: GameId<'players'>) => void;
   launchModal?: 'mine' | 'reset';
   onLaunchModalHandled: () => void;
@@ -43,6 +44,7 @@ export default function BattleRoyalePanel({
   setSelectedElement,
   onEditDeepSeekConfig,
   onBackToLive,
+  onMatchReset,
   onFollowPlayer,
   launchModal,
   onLaunchModalHandled,
@@ -503,7 +505,7 @@ export default function BattleRoyalePanel({
             <p className="mt-3 text-sm leading-6 text-slate-200">这会重置 12 名 AI、区域资源、关系、剧情、热度、干预点、模型决策计数和当前回合进度。</p>
             <div className="mt-5 flex justify-end gap-2">
               <button className="live-hud-button" onClick={() => setResetConfirmOpen(false)} disabled={pending}>取消</button>
-              <button className="live-hud-button live-hud-danger" onClick={async () => { await resetMatch(); setResetConfirmOpen(false); onBackToLive(); }} disabled={pending}>{pending ? '重置中…' : '确认新开局'}</button>
+              <button className="live-hud-button live-hud-danger" onClick={async () => { await resetMatch(); setResetConfirmOpen(false); onMatchReset(); }} disabled={pending}>{pending ? '重置中…' : '确认新开局'}</button>
             </div>
           </div>
         </div>, document.body)}

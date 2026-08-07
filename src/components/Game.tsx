@@ -20,6 +20,7 @@ import DecisionDriver from './DecisionDriver.tsx';
 import LiveBattleHud from './LiveBattleHud.tsx';
 import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
 import BattleReplayControls from './BattleReplayControls.tsx';
+import { selectDirectorTarget } from '../lib/battleDirector.ts';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -57,21 +58,15 @@ export default function Game() {
 
   const scrollViewRef = useRef<HTMLDivElement>(null);
 
-  const selectDirectorTarget = () => {
-    if (!game) return undefined;
-    const alive = [...game.world.players.values()].filter((player) => player.battle && !player.battle.eliminated);
-    const featuredEvent = (game.world.battle?.feed ?? []).find((event) =>
-      ['eliminate', 'attack', 'intervention', 'areaStory', 'globalStory', 'story', 'alliance', 'betrayal'].includes(event.kind) &&
-      event.actor && alive.some((player) => player.id === event.actor),
-    );
-    const actor = featuredEvent?.actor ? game.world.players.get(featuredEvent.actor as GameId<'players'>) : undefined;
-    return actor?.id ?? alive.sort((a, b) => (b.battle?.heat ?? 0) - (a.battle?.heat ?? 0))[0]?.id;
-  };
-
   useEffect(() => {
     if (cameraMode !== 'auto' || !game) return;
-    const target = selectDirectorTarget();
-    if (target) setFocusPlayerId(target);
+    const target = selectDirectorTarget(
+      [...game.world.players.values()]
+        .filter((player) => player.battle)
+        .map((player) => ({ id: player.id, alive: !player.battle!.eliminated, heat: player.battle!.heat ?? 0 })),
+      game.world.battle?.feed ?? [],
+    );
+    if (target) setFocusPlayerId(target as GameId<'players'>);
   }, [cameraMode, game]);
 
   useEffect(() => {
@@ -98,6 +93,15 @@ export default function Game() {
   const handleSelection = (element: { kind: 'player'; id: GameId<'players'> } | undefined) => {
     setSelectedElement(element);
     if (element) followPlayer(element.id);
+  };
+  const handleMatchReset = () => {
+    setViewMode('live');
+    setCameraMode('auto');
+    setFocusPlayerId(undefined);
+    setSelectedElement(undefined);
+    setDrawerOpen(false);
+    setReplayActive(false);
+    setReplayTime(undefined);
   };
   return (
     <>
@@ -154,6 +158,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             setSelectedElement={handleSelection}
             onEditDeepSeekConfig={() => setShowDeepSeekConfig(true)}
             onBackToLive={() => setViewMode('live')}
+            onMatchReset={handleMatchReset}
             onFollowPlayer={followPlayer}
             launchModal={launchModal}
             onLaunchModalHandled={() => setLaunchModal(undefined)}

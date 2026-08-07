@@ -1,66 +1,67 @@
-# AI Battleground Engineering Plan
+# AI 大逃杀实施架构与验收
 
-This plan maps the reference repository's configuration tables to the local Convex + Pixi runtime.
+最后更新：2026-08-07。本文档描述当前实现，不把已上线的能力重新写成待办。
 
-## Reference mapping
+## 产品边界
 
-| Reference table | Local runtime owner | Current status |
+- **直播跟随**是默认入口：Pixi 战场、角色活动、弹道与中文公屏不被总览遮挡。
+- **战略总览**提供 13 区状态、资源、任务、热度、干预点和参赛者入口；点击区域或角色可切回直播镜头。
+- DeepSeek 使用浏览器 BYOK。密钥仅在浏览器 `localStorage` 和对 DeepSeek 的请求头出现，永不发送给 Convex、日志或公屏。
+- Convex 是比赛规则、行动校验、种子 RNG、状态迁移和事件播报的唯一权威；导播、抽屉打开状态和回放时间均是本地观众偏好。
+
+## 运行时数据流
+
+```mermaid
+flowchart LR
+  U["观众浏览器"] -->|"BYOK 结构化动作"| DS["DeepSeek API"]
+  DS -->|"move/search/..."| V["Convex submitAIDecision"]
+  V -->|"校验或规则回退"| S["Battle State"]
+  S --> E["行动日志 / 检查点 / 中文事件流"]
+  E --> P["Pixi 直播、战略总览、角色抽屉、回放控件"]
+  U -->|"扫雷得分 / 主办方干预"| V
+```
+
+## 已运行架构
+
+| 层级 | 权威模块 | 当前行为 |
 | --- | --- | --- |
-| Character runtime attributes | `data/battleRoyaleConfig.ts` + `battleStats` | Implemented: HP, stamina, satiety, zone time, stress, heat |
-| Relationship graph | `BATTLE_CONFIG.relationships` + `relationshipEdges` + alliance target selection | Implemented: seed links, hidden-link reveal, and durable strength changes for alliance, trade, attack and intervention |
-| Area definition and adjacency | `BATTLE_CONFIG.areas` and `adjacency` | Implemented as authoritative IDs; map geometry remains the existing Pixi map |
-| Area resource pools and item definitions | `BATTLE_CONFIG.areaItems` + loot runtime | Implemented: searches emit configured item IDs and fill inventory |
-| Global game config | `BATTLE_CONFIG.match`, `runtime`, `zone`, `weapons` | Implemented: no battle constants in UI or engine loops |
-| Dynamic restricted zone | `tickMatchRules` and `world.battle.openAreas` | Implemented: phase, day/night, scheduled area closure, public broadcast |
-| Log event routing | `world.battle.feed` and `BattleBroadcastToasts` | Implemented: public top-of-screen feed; event kinds remain extensible |
-| Audience intervention | `earnIntervention` + `applyAudienceScore` | Implemented: minesweeper score converts to capped host intervention points |
-| Heat, combo and missions | `battleState` + `awardPopularity` | Implemented: heat score, combo multiplier, hidden missions and intervention rewards |
-| Regional special stories | `AREA_SPECIAL_EVENTS` + battle tick | Implemented: 24 regional rows and 3 global events dispatch primary prerequisites and runtime effects; exact branch content remains P1 work |
-| C12 truth line | `CHARACTER_STORIES` + `unlockTruth` | Implemented: identity card, three clues and a five-point unlock |
-| LLM tactical decisions | `DecisionDriver.tsx` + `submitAIDecision()` | Implemented: browser-local BYOK calls produce constrained actions; Convex validates and records a rules-AI fallback |
+| 比赛规则 | `convex/aiTown/battleRoyale.ts` | 统一执行模型动作和规则 AI 回退；校验角色、冷却、距离、物品、区域邻接、禁区和剧情前置。 |
+| AI 调度 | `src/components/DecisionDriver.tsx` | 租约持有者每 12 秒调度存活角色；全局最多 240 次，超时/错误/无效输出立即由规则 AI 接管。 |
+| 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、邻接、资源、禁区和视觉标签共享同一数据源。 |
+| 内容规则 | `AREA_SPECIAL_EVENTS`、`GLOBAL_SPECIAL_EVENTS`、`relationshipEdges`、`ITEM_DEFINITIONS` | 24 条区域剧情、3 条全局事件、关系戏剧、物品稀有度/价值、资源刷新和区域 buff 进入循环。 |
+| 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |
+| 回放基础 | `battleState.seed/rngState/actionLog/replayCheckpoints` | 已验证行动和规则 RNG 持久化；回放绝不请求模型或读取密钥。 |
 
-## Development tasks
+## 回放契约
 
-### P0: demo foundation
+每个新局写入 `seed` 与规则版本。服务器端随机数只能通过 `battleRandom()` 取得；`actionLog` 以独立 `nextActionId` 记录每次模型提交和规则回退，`replayCheckpoints` 每 30 秒写入轻量定位点。
 
-- Keep all contestant, area, weapon, item and timing values in the config module.
-- Validate IDs at startup and fail loudly for missing profiles or unknown item pools.
-- Add a deterministic seeded relationship generator for non-seed links.
-- Add Convex migration coverage for old worlds that only have the original battle fields.
-- Verify reset is idempotent and always produces the configured contestant count.
+当前客户端回放是历史时间查看器：暂停、倍速、跳到关键事件，并让玩家通过角色抽屉审计当时最近的决策。完整“从任意检查点重建全部世界状态”的播放器仍属于后续内容生产，需要固定行动夹具和状态还原器后才可宣称完成。
 
-### P0: LLM decision integrity
+## 单一重置契约
 
-- Replace browser-only DS configuration with a server-side, scoped credential strategy.
-- Add a structured LLM battle-decision action and validate every proposed action in Convex.
-- Record decision inputs, model output, validation result and fallback reason for observability.
+`world.resetBattle` 是唯一允许新开局的 mutation。它重建 12 名唯一角色、初始关系、资源、剧情、干预点、模型预算与新种子；成功后浏览器回到直播跟随、清空手动锁定/抽屉/回放并恢复自动导播。旧的 `sendInput(resetBattle)` 已移除。
 
-### P1: agent simulation
+## 验收状态
 
-- Split battle decisions into perception, utility scoring and action execution.
-- Add explicit states: search, trade, talk, ally, flee, buy, attack, heal and investigate.
-- Make area adjacency constrain movement and use area buffs in action scoring.
-- Add relationship strength changes for alliance, trade, hit, betrayal and elimination.
-- Add structured trade offers instead of the current direct coin transfer.
+### 已自动验证
 
-### P1: viewer systems
+- 区域配置与邻接、模型动作白名单、12 名角色/24 条剧情/3 条全局事件、物品元数据。
+- 同一 seed 的 RNG 序列、剧情干预和关系规则。
+- 自动导播热点优先、淘汰角色过滤与稳定热度回退。
+- `npm test`、`npm run build`、Convex 类型检查。
 
-- Add per-action heat score breakdowns to the viewer audit log.
-- Add durable per-agent decision history beside the public feed.
+### 已云端验收
 
-### P2: content and production
+- Convex 演示局重置成功并生成 12 名角色。
+- 当前云端状态可读取模型决策、拒绝原因、规则回退、区域资源、关系边和剧情事件。
+- CloudBase 静态前端已发布；地址以 README 的部署章节为准。
 
-- Replace placeholder character sprites with a complete 12-character sprite set.
-- Replace the generic tile map with the 13-area battle map while preserving the current camera and hit effects.
-- Add exact prerequisites, branching consequences and one-time guards for every regional story row.
-- Add replay fixtures for a fixed seed so combat, alliances and zone closure are reproducible in CI.
+### 尚未完成，不能误报为成品
 
-## Acceptance criteria
+1. 为 24 条剧情逐条补齐原配表的全部道具消耗、分支文案和后果。
+2. 建立 Pixi 可碰撞网格、障碍物与完整导航寻路；当前权威的是逻辑区域邻接，不是像素碰撞。
+3. 用固定 seed + 已验证行动日志实现全世界状态重建的 CI 回放夹具。
+4. 将 12 名角色图集进一步接为场内精灵与每区独立可交互地标。
 
-- `npm run build` passes.
-- A reset creates exactly `BATTLE_CONFIG.match.agentCount` agents with unique names.
-- Every agent has a profile, area ID, heat score, inventory and derived runtime values.
-- Combat uses weapon range/power from the configuration and emits public attack/hit/elimination events.
-- Search emits an item from the configured area pool and does not exceed inventory capacity.
-- The reference map image is available in the build as a temporary art reference.
-- The DS key remains browser-local and is never stored in Convex or committed to the repository.
+具体配表映射和未消费字段见 [参考配表覆盖矩阵](./reference-table-coverage.md)，交付资产与发布检查见 [P2 交付说明](./p2-delivery.md)。

@@ -78,6 +78,8 @@ export const battleState = v.object({
   started: v.number(),
   lastTick: v.number(),
   nextEventId: v.number(),
+  // Replay actions have their own sequence: several actions may occur between feed events.
+  nextActionId: v.optional(v.number()),
   feed: v.array(battleEvent),
   phase: v.optional(v.string()),
   day: v.optional(v.number()),
@@ -184,6 +186,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     started: now,
     lastTick: 0,
     nextEventId: 1,
+    nextActionId: 1,
       feed: [
       {
         id: 0,
@@ -309,6 +312,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.seed ??= now >>> 0;
   battle.rngState ??= battle.seed || 1;
   battle.ruleVersion ??= 'p2.0';
+  battle.nextActionId ??= 1;
   battle.actionLog ??= [];
   battle.replayCheckpoints ??= [];
   battle.lastReplayCheckpointAt ??= now;
@@ -1501,7 +1505,7 @@ function recordReplayAction(
 ) {
   const battle = game.world.battle!;
   const log = battle.actionLog ?? (battle.actionLog = []);
-  log.push({ id: battle.nextEventId, ts: now, playerId: player?.id, action, source, accepted, reason: reason?.slice(0, 140) });
+  log.push({ id: battle.nextActionId!++, ts: now, playerId: player?.id, action, source, accepted, reason: reason?.slice(0, 140) });
   if (log.length > 480) log.splice(0, log.length - 480);
 }
 
