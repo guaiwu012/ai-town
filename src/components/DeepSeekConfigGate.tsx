@@ -53,38 +53,38 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-brown-900/92 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[#040d18]/92 p-4 backdrop-blur-sm">
       <form
-        className="w-full max-w-[440px] border-2 border-amber-300 bg-brown-900 p-5 text-brown-50 shadow-2xl"
+        className="arena-console w-full max-w-[440px] p-5 text-[#e8dfd5] shadow-2xl"
         onSubmit={submit}
       >
-        <div className="text-xs uppercase tracking-wide text-amber-200">DeepSeek setup</div>
-        <h2 className="font-display text-4xl leading-none text-amber-100">DS API</h2>
+        <div className="arena-kicker">DeepSeek setup</div>
+        <h2 className="arena-heading font-display text-4xl leading-none">DS API</h2>
 
-        <label className="mt-4 block text-sm text-brown-200">
+        <label className="mt-4 block text-sm text-[#9eb0bb]">
           Base URL
           <input
-            className="mt-1 w-full border-brown-500 bg-brown-800 text-brown-50 focus:border-amber-300 focus:ring-amber-300"
+            className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={baseUrl}
             onChange={(event) => setBaseUrl(event.target.value)}
             spellCheck={false}
           />
         </label>
 
-        <label className="mt-3 block text-sm text-brown-200">
+        <label className="mt-3 block text-sm text-[#9eb0bb]">
           Model
           <input
-            className="mt-1 w-full border-brown-500 bg-brown-800 text-brown-50 focus:border-amber-300 focus:ring-amber-300"
+            className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={model}
             onChange={(event) => setModel(event.target.value)}
             spellCheck={false}
           />
         </label>
 
-        <label className="mt-3 block text-sm text-brown-200">
+        <label className="mt-3 block text-sm text-[#9eb0bb]">
           API Key
           <input
-            className="mt-1 w-full border-brown-500 bg-brown-800 text-brown-50 focus:border-amber-300 focus:ring-amber-300"
+            className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={apiKey}
             onChange={(event) => setApiKey(event.target.value)}
             spellCheck={false}
@@ -94,7 +94,7 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
         </label>
 
         <button
-          className="mt-5 h-12 w-full border-2 border-amber-300 bg-amber-500 text-lg text-brown-900 disabled:opacity-40"
+          className="arena-action arena-action-primary mt-5 h-12 w-full text-lg disabled:opacity-40"
           disabled={!apiKey.trim() || !baseUrl.trim() || !model.trim()}
           type="submit"
         >
