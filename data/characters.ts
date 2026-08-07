@@ -74,6 +74,12 @@ export const Descriptions = [
     identity: `Nico is quiet, precise, and suspicious of easy deals. Nico prefers short conversations, clean routes, and ambushes only when the odds look excellent.`,
     plan: 'You want to avoid attention until the final fight.',
   },
+  {
+    name: 'Nora',
+    character: 'f8',
+    identity: `Nora is an identityless observer who records every contradiction in the arena. Nora rarely speaks first, but notices hidden routes and protects the truth at a cost.`,
+    plan: 'You want to collect three clues and reach the truth chamber.',
+  },
 ];
 
 export const characters = [

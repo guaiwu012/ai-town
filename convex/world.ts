@@ -12,8 +12,9 @@ import { playerId } from './aiTown/ids';
 import { kickEngine, startEngine, stopEngine } from './aiTown/main';
 import { engineInsertInput } from './engine/abstractGame';
 import { defaultBattleState, defaultBattleStats } from './aiTown/battleRoyale';
+import { BATTLE_CONFIG, profileForIndex } from '../data/battleRoyaleConfig';
 
-const TARGET_BATTLE_AGENT_COUNT = 10;
+const TARGET_BATTLE_AGENT_COUNT = BATTLE_CONFIG.match.agentCount;
 
 export const defaultWorldStatus = query({
   handler: async (ctx) => {
@@ -246,15 +247,20 @@ export const resetBattle = mutation({
       },
       agents: activeAgents,
       conversations: [],
-      players: activePlayers.map((player) => {
+      players: activePlayers.map((player, index) => {
         const { activity: _activity, pathfinding: _pathfinding, battle: _battle, ...rest } = player;
         return {
           ...rest,
           speed: 0,
-          battle: defaultBattleStats(),
+          battle: defaultBattleStats(profileForIndex(index)),
         };
       }),
     });
+    for (let index = activePlayers.length; index < TARGET_BATTLE_AGENT_COUNT; index++) {
+      await insertInput(ctx, args.worldId, 'createAgent', {
+        descriptionIndex: index,
+      });
+    }
     for (const playerDescription of playerDescriptions) {
       if (!activePlayerIds.has(playerDescription.playerId)) {
         await ctx.db.delete(playerDescription._id);

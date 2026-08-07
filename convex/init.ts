@@ -8,6 +8,7 @@ import { Id } from './_generated/dataModel';
 import { createEngine } from './aiTown/main';
 import { ENGINE_ACTION_DURATION } from './constants';
 import { detectMismatchedLLMProvider } from './util/llm';
+import { BATTLE_CONFIG } from '../data/battleRoyaleConfig';
 
 const init = mutation({
   args: {
@@ -28,7 +29,7 @@ const init = mutation({
       worldStatus.engineId,
     );
     if (shouldCreate) {
-      const toCreate = args.numAgents !== undefined ? args.numAgents : 10;
+      const toCreate = args.numAgents !== undefined ? args.numAgents : BATTLE_CONFIG.match.agentCount;
       for (let i = 0; i < toCreate; i++) {
         await insertInput(ctx, worldStatus.worldId, 'createAgent', {
           descriptionIndex: i,

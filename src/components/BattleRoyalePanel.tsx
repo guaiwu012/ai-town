@@ -6,8 +6,8 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import { SelectElement } from './Player';
+import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
 
-const TARGET_AGENT_COUNT = 10;
 const MINE_ROWS = 8;
 const MINE_COLS = 8;
 const MINE_COUNT = 10;
@@ -147,15 +147,6 @@ export default function BattleRoyalePanel({
         name: 'resetBattle',
         args: {},
       });
-      for (let i = players.length; i < TARGET_AGENT_COUNT; i++) {
-        await sendInput({
-          worldId,
-          name: 'createAgent',
-          args: {
-            descriptionIndex: i,
-          },
-        });
-      }
       setTipCoins(0);
     } finally {
       setPending(false);
@@ -172,6 +163,24 @@ export default function BattleRoyalePanel({
           <Stat label="Agents" value={players.length} />
           <Stat label="Tip Ready" value={tipCoins} />
         </div>
+        <div className="mt-2 border border-brown-500 bg-brown-900/70 p-2 text-xs text-brown-100">
+          <div className="flex justify-between gap-2">
+            <span>Match schema</span>
+            <span className="text-amber-200">12 contestants / 13 areas</span>
+          </div>
+          <div className="mt-1 flex justify-between gap-2">
+            <span>Configured relations</span>
+            <span className="text-sky-200">4 seed links</span>
+          </div>
+        </div>
+        <details className="mt-2 border border-brown-500 bg-brown-900/70 p-2 text-xs text-brown-100">
+          <summary className="cursor-pointer text-amber-200">Arena layout reference</summary>
+          <img
+            className="mt-2 w-full border border-brown-500 bg-black/30"
+            src="/ai-town/assets/reference/battle-map-layout.png"
+            alt="Configured battle royale area layout"
+          />
+        </details>
         <button
           className="mt-3 h-9 w-full border border-amber-300/70 bg-brown-700 text-sm text-amber-100 disabled:opacity-40"
           onClick={resetMatch}
@@ -222,6 +231,12 @@ export default function BattleRoyalePanel({
                   <span>{stats.coins} coins</span>
                   <span>{stats.kills} K</span>
                   <span>{stats.medkits} kits</span>
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-sky-200">
+                  <span>Heat {stats.heat ?? 0}</span>
+                  <span>{stats.areaId ?? 'A01'}</span>
+                  <span>Stamina {Math.ceil(stats.stamina ?? 0)}</span>
+                  <span>Bag {(stats.inventory ?? []).length}/{BATTLE_CONFIG.match.maxInventorySlots}</span>
                 </div>
                 {player.activity && player.activity.until > Date.now() && (
                   <div className="mt-1 truncate text-xs text-amber-200">

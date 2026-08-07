@@ -14,6 +14,7 @@ const eventStyles: Record<string, string> = {
   move: 'border-clay-100 bg-clay-700/86 text-white',
   heal: 'border-emerald-200 bg-emerald-700/88 text-white',
   buy: 'border-purple-200 bg-purple-700/88 text-white',
+  zone: 'border-orange-200 bg-orange-700/90 text-white',
   system: 'border-brown-200 bg-brown-900/86 text-brown-50',
 };
 
