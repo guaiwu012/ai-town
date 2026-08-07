@@ -113,7 +113,7 @@ async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerI
     role: `${name} (${stats.characterId})`,
     persona: { codename: profile.codename, strength: profile.strength, mind: profile.mind, psyche: profile.psyche, social: profile.social, aggression: profile.aggro, cooperation: profile.coop, riskPreference: profile.risk },
     self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), satiety: Math.ceil(stats.satiety ?? 0), zoneTime: Math.ceil(stats.zoneTime ?? 0), stress: Math.ceil(stats.stress ?? 0), stressThreshold: stats.stressThreshold, weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
-    openAreas: game.world.battle?.openAreas, relationships,
+    openAreas: game.world.battle?.openAreas, zoneClosesAt: game.world.battle?.zoneClosesAt, relationships,
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
     instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","reason":"不超过70字中文理由"}。攻击、结盟、交易只可选同区域目标。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',

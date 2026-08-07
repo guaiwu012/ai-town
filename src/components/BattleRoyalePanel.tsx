@@ -97,6 +97,7 @@ export default function BattleRoyalePanel({
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
   const eventFeed = (battle?.feed ?? []).slice(0, 6);
+  const zoneCountdownSeconds = Math.max(0, Math.ceil(((battle?.zoneClosesAt ?? Date.now()) - Date.now()) / 1000));
 
   const mineStats = useMemo(() => getMineStats(mineBoard), [mineBoard]);
   const liveMineReward = getMineReward(mineStats, mineStatus);
@@ -203,6 +204,7 @@ export default function BattleRoyalePanel({
             <span>{battle?.timeOfDay === 'night' ? '夜间' : '白天'}</span>
             <span>{displayPhase(battle?.phase)}</span>
             <span>{openAreas.length} 个区域开放</span>
+            <span>禁区收缩 {formatCountdown(zoneCountdownSeconds)}</span>
           </div>
         </div>
         <div className="overview-map-frame">
@@ -246,7 +248,7 @@ export default function BattleRoyalePanel({
               <small>{interventionEffectLabel(battle.interventionEffect.kind)}</small>
             </div>
           )}
-          <div className="overview-zone-warning" style={{ left: '74%', top: '73%' }}>危险区收缩</div>
+          <div className="overview-zone-warning" style={{ left: '74%', top: '73%' }}>禁区收缩 {formatCountdown(zoneCountdownSeconds)}</div>
           <div className="overview-map-legend">
             <span><i className="legend-dot legend-dot-live" /> AI 直播中</span>
             <span><i className="legend-dot legend-dot-hot" /> 高热度</span>
@@ -558,6 +560,12 @@ function displayWeapon(weapon: string) {
 
 function displayPhase(phase?: string) {
   return ({ early: '前期阶段', mid: '中期阶段', late: '决胜阶段' } as Record<string, string>)[phase ?? 'early'] ?? '战斗阶段';
+}
+
+function formatCountdown(totalSeconds: number) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
 function displayEventKind(kind: string) {

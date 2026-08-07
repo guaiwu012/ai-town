@@ -14,7 +14,7 @@
 
 | 模块 | 状态 | 实现位置 |
 | --- | --- | --- |
-| 角色与初始属性、生存状态 | 完成基础版 | `data/battleRoyaleConfig.ts` + `applyBattleVitals()`；饱食、体力、压力阈值和区域停留会影响规则 AI |
+| 禁区预警与收缩倒计时 | 完成基础版 | `battle.zoneClosesAt`；中文预警、战略总览倒计时和 DeepSeek 上下文共享同一时间点 |
 | 12 名角色、区域、关系、物品池 | 完成 | `data/battleRoyaleConfig.ts` |
 | 战斗、搜索、购买、结盟、治疗、禁区 | 完成，模型/规则统一执行 | `convex/aiTown/battleRoyale.ts` |
 | DeepSeek BYOK 战术决策 | 完成 | `DecisionDriver.tsx` + `submitAIDecision()` |

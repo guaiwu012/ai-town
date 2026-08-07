@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -199,5 +199,23 @@ describe('battle royale host intervention rules', () => {
     expect(player.battle.satiety).toBe(88);
     expect(player.battle.stress).toBe(8);
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'item')).toHaveLength(2);
+  });
+
+  it('announces the zone warning once and schedules the next closure after it contracts', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    game.world.battle.zoneClosesAt = 31_000;
+    game.world.battle.lastTick = 1_000_000;
+
+    tickBattleRoyale(game, 2_000);
+    expect(game.world.battle.lastZoneWarningAt).toBe(31_000);
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('禁区预警'))).toBe(true);
+    const warningCount = game.world.battle.feed.filter((event: any) => event.text.includes('禁区预警')).length;
+    tickBattleRoyale(game, 3_000);
+    expect(game.world.battle.feed.filter((event: any) => event.text.includes('禁区预警'))).toHaveLength(warningCount);
+
+    tickBattleRoyale(game, 31_000);
+    expect(game.world.battle.openAreas).toHaveLength(12);
+    expect(game.world.battle.zoneClosesAt).toBe(31_000 + 90_000);
   });
 });

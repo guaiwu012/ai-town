@@ -86,6 +86,8 @@ export const battleState = v.object({
   timeOfDay: v.optional(v.union(v.literal('day'), v.literal('night'))),
   openAreas: v.optional(v.array(v.string())),
   lastZoneUpdate: v.optional(v.number()),
+  zoneClosesAt: v.optional(v.number()),
+  lastZoneWarningAt: v.optional(v.number()),
   popularity: v.optional(v.number()),
   popularityPeak: v.optional(v.number()),
   comboCount: v.optional(v.number()),
@@ -202,6 +204,8 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     timeOfDay: 'day',
     openAreas: BATTLE_CONFIG.areas.map((area) => area.id),
     lastZoneUpdate: now,
+    zoneClosesAt: now + BATTLE_CONFIG.zone.earlyIntervalMs,
+    lastZoneWarningAt: 0,
     popularity: 0,
     popularityPeak: 0,
     comboCount: 0,
@@ -281,6 +285,8 @@ export function ensureBattleState(game: Game, now: number) {
   battle.timeOfDay ??= 'day';
   battle.openAreas ??= BATTLE_CONFIG.areas.map((area) => area.id);
   battle.lastZoneUpdate ??= now;
+  battle.zoneClosesAt ??= battle.lastZoneUpdate + BATTLE_CONFIG.zone.earlyIntervalMs;
+  battle.lastZoneWarningAt ??= 0;
   battle.popularity ??= 0;
   battle.popularityPeak ??= battle.popularity;
   battle.comboCount ??= 0;
@@ -492,10 +498,21 @@ function tickMatchRules(game: Game, now: number) {
     : phase === 'mid'
       ? BATTLE_CONFIG.zone.midIntervalMs
       : BATTLE_CONFIG.zone.earlyIntervalMs;
+  const zoneClosesAt = battle.zoneClosesAt ?? ((battle.lastZoneUpdate ?? now) + interval);
+  battle.zoneClosesAt = zoneClosesAt;
+  if (
+    battle.openAreas && battle.openAreas.length > 3
+    && now >= zoneClosesAt - BATTLE_CONFIG.zone.warningMs
+    && battle.lastZoneWarningAt !== zoneClosesAt
+  ) {
+    battle.lastZoneWarningAt = zoneClosesAt;
+    battle.interventionEffect = { kind: 'zone-warning', until: zoneClosesAt };
+    pushEvent(game, now, 'zone', `【禁区预警】${Math.ceil((zoneClosesAt - now) / 1000)} 秒后将收缩，请尽快规划转移。`);
+  }
   if (
     battle.openAreas &&
     battle.openAreas.length > 3 &&
-    now >= (battle.lastZoneUpdate ?? battle.started) + interval
+    now >= zoneClosesAt
   ) {
     const openNormalAreas = battle.openAreas.filter((areaId) => areaId !== 'S01');
     const areaCounts = new Map<string, number>();
@@ -509,6 +526,7 @@ function tickMatchRules(game: Game, now: number) {
     if (closingArea) {
       battle.openAreas = battle.openAreas.filter((areaId) => areaId !== closingArea);
       battle.lastZoneUpdate = now;
+      battle.zoneClosesAt = now + interval;
       pushEvent(game, now, 'zone', `【禁区关闭】${areaName(closingArea)} 已永久关闭，AI 必须转移。`, undefined, undefined);
       for (const player of alivePlayers(game).filter((candidate) => candidate.battle?.areaId === closingArea)) {
         const destination = adjacentAreaIds(closingArea).find((areaId) => battle.openAreas?.includes(areaId));
