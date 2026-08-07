@@ -348,6 +348,197 @@ p[contenteditable='true']:empty::before {
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34);
 }
 
+.overview-console {
+  color: #e8dfd5;
+  background: rgba(3, 12, 23, 0.78);
+  border: 1px solid rgba(169, 181, 190, 0.58);
+  box-shadow: 0 0 0 2px rgba(18, 39, 56, 0.76), 0 24px 60px rgba(0, 0, 0, 0.32);
+}
+
+.overview-map-frame {
+  position: relative;
+  height: calc(100% - 76px);
+  min-height: 280px;
+  overflow: hidden;
+  border: 1px solid rgba(125, 147, 159, 0.72);
+  background: #071422;
+}
+
+.overview-map-frame > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.92) contrast(1.08) brightness(0.86);
+}
+
+.overview-map-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(4, 14, 26, 0.02), rgba(4, 14, 26, 0.32));
+}
+
+.overview-area-marker {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.overview-area-marker.is-closed {
+  filter: grayscale(0.75);
+  opacity: 0.62;
+}
+
+.overview-area-label {
+  display: inline-block;
+  border: 1px solid rgba(231, 206, 162, 0.9);
+  background: rgba(7, 17, 29, 0.9);
+  color: #efe2cf;
+  padding: 0.2rem 0.38rem;
+  font-size: 0.56rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.overview-area-agents {
+  display: flex;
+  justify-content: center;
+  gap: 0.2rem;
+  margin-top: 0.25rem;
+}
+
+.overview-agent-dot {
+  display: grid;
+  min-width: 2.3rem;
+  justify-items: center;
+  color: #61e0c3;
+  font-size: 1rem;
+  line-height: 1;
+  text-shadow: 0 0 8px rgba(97, 224, 195, 0.78);
+}
+
+.overview-agent-dot small {
+  max-width: 3.4rem;
+  overflow: hidden;
+  color: #eef0e6;
+  font-size: 0.48rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-agent-dot.is-selected {
+  color: #ffd166;
+  transform: scale(1.18);
+}
+
+.overview-agent-dot.is-out {
+  color: #ff5d5d;
+  filter: grayscale(1);
+}
+
+.overview-zone-warning {
+  position: absolute;
+  z-index: 2;
+  border: 1px solid #f04f4f;
+  background: rgba(64, 12, 17, 0.88);
+  color: #ff8c7f;
+  padding: 0.22rem 0.38rem;
+  font-size: 0.52rem;
+  letter-spacing: 0.12em;
+}
+
+.overview-map-legend {
+  position: absolute;
+  bottom: 0.55rem;
+  left: 0.65rem;
+  z-index: 3;
+  display: flex;
+  gap: 0.7rem;
+  color: #b7c5ce;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 0.46rem;
+  height: 0.46rem;
+  margin-right: 0.2rem;
+  border-radius: 50%;
+}
+
+.legend-dot-live { background: #61e0c3; }
+.legend-dot-hot { background: #ffd166; }
+.legend-dot-closed { background: #ff5d5d; }
+
+.overview-heat-number {
+  color: #f0dfc7;
+  font-size: 3.25rem;
+  font-weight: 400;
+  line-height: 0.9;
+}
+
+.overview-heat-grade {
+  color: #e2b85e;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
+.overview-heat-grade span { color: #7fbdad; }
+
+.overview-heat-bar {
+  height: 0.65rem;
+  border: 1px solid rgba(202, 169, 106, 0.8);
+  background: #102032;
+}
+
+.overview-heat-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, #4bd1b2, #e2b85e);
+}
+
+.overview-trend {
+  display: flex;
+  height: 5.3rem;
+  align-items: flex-end;
+  gap: 0.32rem;
+  border-bottom: 1px solid rgba(99, 141, 159, 0.6);
+  background: repeating-linear-gradient(0deg, rgba(59, 108, 126, 0.12) 0 1px, transparent 1px 24px);
+}
+
+.overview-trend i {
+  flex: 1;
+  min-width: 0.35rem;
+  border-top: 2px solid #69e0bf;
+  background: linear-gradient(180deg, rgba(105, 224, 191, 0.62), rgba(105, 224, 191, 0.05));
+}
+
+.overview-bolts {
+  display: flex;
+  gap: 0.65rem;
+  color: #344656;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.overview-bolts .is-on { color: #e8af32; text-shadow: 0 0 8px rgba(232, 175, 50, 0.45); }
+.overview-alert { color: #ff765f; font-size: 1.3rem; }
+
+@media (max-width: 900px) {
+  .overview-console {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(420px, 1fr) auto;
+    overflow-y: auto;
+  }
+
+  .overview-map-frame { min-height: 360px; }
+  .overview-rail { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; }
+  .overview-feed { grid-column: 1; }
+}
+
 @media (max-width: 800px) {
   .arena-console {
     border-width: 0;

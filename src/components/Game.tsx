@@ -73,7 +73,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         <BattleBroadcastToasts feed={game.world.battle?.feed} />
         <div
-          className="arena-console absolute right-4 top-4 bottom-4 z-10 flex w-[380px] max-w-[calc(100vw-2rem)] flex-col overflow-y-auto overflow-x-hidden px-4 py-4 backdrop-blur-sm"
+          className="pointer-events-none absolute inset-3 z-10 flex flex-col"
           ref={scrollViewRef}
         >
           <BattleRoyalePanel

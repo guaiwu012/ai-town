@@ -65,6 +65,18 @@ export default function BattleRoyalePanel({
     ? game.world.players.get(selectedPlayerId)
     : players.find((player) => !player.battle?.eliminated);
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
+  const battle = game.world.battle;
+  const heat = Math.min(999, 180 + players.reduce((sum, player) => sum + (player.battle?.heat ?? 0), 0));
+  const heatGrade = heat >= 700 ? 'S' : heat >= 500 ? 'A' : heat >= 300 ? 'B' : 'C';
+  const hotPlayer = players.reduce(
+    (current, player) => (player.battle?.heat ?? 0) > (current?.battle?.heat ?? 0) ? player : current,
+    players[0],
+  );
+  const openAreas = battle?.openAreas ?? BATTLE_CONFIG.areas.map((area) => area.id);
+  const activeTask = hotPlayer
+    ? `让观众支持 ${game.playerDescriptions.get(hotPlayer.id)?.name ?? '高热度 AI'}`
+    : '等待 AI 进入战场';
+  const eventFeed = (battle?.feed ?? []).slice(0, 6);
 
   const mineStats = useMemo(() => getMineStats(mineBoard), [mineBoard]);
   const liveMineReward = getMineReward(mineStats, mineStatus);
@@ -154,54 +166,101 @@ export default function BattleRoyalePanel({
   };
 
   return (
-    <section className="flex min-h-full min-w-0 flex-col gap-4">
-      <header className="arena-panel p-3">
-        <div className="arena-kicker">Live battle control</div>
-        <h2 className="arena-heading mt-1 font-display text-4xl leading-none">AI Battleground</h2>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+    <>
+    <section className="overview-console pointer-events-auto grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_350px] grid-rows-[minmax(0,1fr)_148px] gap-2 p-2">
+      <div className="overview-map arena-panel relative min-h-0 p-2">
+        <div className="overview-map-heading absolute left-5 top-4 z-10">
+          <div className="arena-kicker">Live battle overview</div>
+          <h2 className="arena-heading mt-1 font-display text-4xl leading-none">AI Battleground</h2>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-widest text-slate-300">
+            <span>Day {battle?.day ?? 1}</span>
+            <span>{battle?.timeOfDay ?? 'day'}</span>
+            <span>{battle?.phase ?? 'early'} phase</span>
+            <span>{openAreas.length} zones open</span>
+          </div>
+        </div>
+        <div className="overview-map-frame">
+          <img src="/ai-town/assets/reference/battle-arena-map.png" alt="AI battle royale overview map" />
+          {BATTLE_CONFIG.areas.filter((area) => area.id !== 'S01').map((area) => {
+            const occupants = players.filter((player) => player.battle?.areaId === area.id);
+            return (
+              <div
+                key={area.id}
+                className={`overview-area-marker ${openAreas.includes(area.id) ? '' : 'is-closed'}`}
+                style={mapPositionForArea(area.id)}
+              >
+                <div className="overview-area-label">{area.name}</div>
+                <div className="overview-area-agents">
+                  {occupants.map((player) => {
+                    const stats = player.battle!;
+                    const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
+                    return (
+                      <button
+                        key={player.id}
+                        className={`overview-agent-dot ${selected?.id === player.id ? 'is-selected' : ''} ${stats.eliminated ? 'is-out' : ''}`}
+                        title={`${name} · ${stats.weapon} · ${Math.ceil(stats.hp)} HP`}
+                        onClick={() => setSelectedElement({ kind: 'player', id: player.id })}
+                      >
+                        <span>{area.owner === stats.characterId ? '◆' : '●'}</span>
+                        <small>{name}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+          <div className="overview-zone-warning" style={{ left: '74%', top: '73%' }}>ZONE CLOSING</div>
+          <div className="overview-map-legend">
+            <span><i className="legend-dot legend-dot-live" /> live AI</span>
+            <span><i className="legend-dot legend-dot-hot" /> high heat</span>
+            <span><i className="legend-dot legend-dot-closed" /> closed zone</span>
+          </div>
+        </div>
+        <div className="mt-2 grid grid-cols-3 gap-2 text-center">
           <Stat label="Alive" value={aliveCount} />
           <Stat label="Agents" value={players.length} />
-          <Stat label="Tip Ready" value={tipCoins} />
+          <Stat label="Audience Bank" value={tipCoins} />
         </div>
-        <div className="arena-map-frame mt-3">
-          <img src="/ai-town/assets/reference/battle-arena-map.png" alt="AI battle royale area map" />
-          <span className="arena-map-chip" style={{ left: '8%', top: '18%' }}>A12 OBSERVATORY</span>
-          <span className="arena-map-chip" style={{ left: '39%', top: '46%' }}>A08 MARKET</span>
-          <span className="arena-map-chip" style={{ right: '6%', top: '56%' }}>A04 PIT</span>
-          <span className="arena-map-chip" style={{ left: '37%', bottom: '8%' }}>A03 ARCHIVE</span>
-          <span className="arena-map-chip" style={{ right: '7%', bottom: '12%' }}>A05 ACADEMY</span>
-        </div>
-        <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-          <div className="arena-stat">
-            <div className="arena-stat-label">Schema</div>
-            <div className="mt-1 text-sm text-[#e2b85e]">12 agents / 13 zones</div>
-          </div>
-          <div className="arena-stat">
-            <div className="arena-stat-label">Relations</div>
-            <div className="mt-1 text-sm text-[#6fe1c2]">4 seed links</div>
-          </div>
-        </div>
-        <button
-          className="arena-action mt-3 h-9 w-full text-sm disabled:opacity-40"
-          onClick={resetMatch}
-          disabled={pending}
-        >
-          Restart Match
-        </button>
-        <button
-          className="arena-action mt-2 h-9 w-full text-sm"
-          onClick={onEditDeepSeekConfig}
-        >
-          DS API
-        </button>
-      </header>
+      </div>
 
-      <div className="arena-panel p-3">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="arena-panel-title">Contestants</h3>
-          <span className="text-xs text-[#87a0b2]">select to follow</span>
+      <aside className="overview-rail min-h-0 space-y-2 overflow-y-auto pr-0.5">
+        <div className="arena-panel p-3">
+          <div className="arena-panel-title">Live Heat</div>
+          <div className="mt-2 flex items-end justify-between gap-3">
+            <strong className="overview-heat-number">{heat}</strong>
+            <span className="overview-heat-grade">{heatGrade} <span>→</span> {Math.min(999, heat + 65)}</span>
+          </div>
+          <div className="overview-heat-bar mt-2"><div style={{ width: `${Math.min(100, heat / 8)}%` }} /></div>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400"><span>stream audience</span><span>+{Math.max(12, aliveCount * 3)} / min</span></div>
         </div>
-        <div className="space-y-2">
+
+        <div className="arena-panel p-3">
+          <div className="arena-panel-title">Heat Trend</div>
+          <div className="overview-trend mt-2" aria-label="Live heat trend">
+            {[28, 34, 31, 42, 46, 44, 58, 62, 59, 72, 78, 91].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}
+          </div>
+          <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wider text-slate-500"><span>last 5 min</span><span>now</span></div>
+        </div>
+
+        <div className="arena-panel p-3">
+          <div className="arena-panel-title">Intervention Points</div>
+          <div className="overview-bolts mt-2">{[0, 1, 2, 3, 4].map((bolt) => <span key={bolt} className={bolt < Math.min(5, Math.ceil(tipCoins / 50)) ? 'is-on' : ''}>ϟ</span>)}</div>
+          <div className="mt-1 text-right text-2xl text-amber-200">{tipCoins}</div>
+          <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs" onClick={openMineGame} disabled={pending}>PLAY FOR COINS</button>
+        </div>
+
+        <div className="arena-panel p-3">
+          <div className="flex items-center justify-between"><div className="arena-panel-title">Task</div><span className="overview-alert">!</span></div>
+          <div className="mt-2 text-sm text-amber-100">Mainline: reach S-grade viewership</div>
+          <div className="mt-1 text-xs text-slate-300">Current: {heatGrade}-grade · {heat}</div>
+          <div className="mt-3 border-t border-slate-600/60 pt-2 text-xs text-slate-300">Hidden task: {activeTask}</div>
+          <div className="mt-1 text-xs text-emerald-300">Status: tracking live feed</div>
+        </div>
+
+        <div className="arena-panel p-3">
+          <div className="mb-2 flex items-center justify-between"><h3 className="arena-panel-title">Contestants</h3><span className="text-[10px] uppercase tracking-wider text-slate-500">select to follow</span></div>
+          <div className="space-y-2">
           {players.map((player) => {
             const stats = player.battle!;
             const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
@@ -246,7 +305,7 @@ export default function BattleRoyalePanel({
             );
           })}
         </div>
-      </div>
+        </div>
 
       <div className="arena-panel p-3">
         <h3 className="arena-panel-title">Intervention Deck</h3>
@@ -269,6 +328,24 @@ export default function BattleRoyalePanel({
           Tip {selected ? game.playerDescriptions.get(selected.id)?.name : 'agent'}
         </button>
       </div>
+      </aside>
+
+      <div className="overview-feed arena-panel min-h-0 overflow-hidden p-3">
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="arena-panel-title">Public Broadcast</h3>
+          <span className="text-[10px] uppercase tracking-wider text-slate-500">live event stream</span>
+        </div>
+        <div className="grid gap-0.5">
+          {eventFeed.length === 0 && <div className="py-2 text-xs text-slate-500">Waiting for the first live event...</div>}
+          {eventFeed.map((event) => (
+            <div key={event.id} className="arena-feed-row flex items-center gap-3 truncate py-1 text-xs">
+              <span className="arena-feed-tag shrink-0">[{event.kind}]</span>
+              <span className="truncate text-slate-200">{event.text}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
 
       {mineOpen &&
         createPortal(
@@ -362,7 +439,7 @@ export default function BattleRoyalePanel({
         </div>,
           document.body,
         )}
-    </section>
+    </>
   );
 }
 
@@ -373,6 +450,24 @@ function Stat({ label, value }: { label: string; value: string | number }) {
       <div className="arena-stat-value mt-1">{value}</div>
     </div>
   );
+}
+
+function mapPositionForArea(areaId: string) {
+  const positions: Record<string, { left: string; top: string }> = {
+    A01: { left: '17%', top: '19%' },
+    A02: { left: '8%', top: '49%' },
+    A03: { left: '36%', top: '86%' },
+    A04: { left: '70%', top: '45%' },
+    A05: { left: '79%', top: '79%' },
+    A06: { left: '79%', top: '16%' },
+    A07: { left: '77%', top: '39%' },
+    A08: { left: '47%', top: '45%' },
+    A09: { left: '26%', top: '58%' },
+    A10: { left: '52%', top: '18%' },
+    A11: { left: '60%', top: '77%' },
+    A12: { left: '21%', top: '8%' },
+  };
+  return positions[areaId] ?? { left: '50%', top: '50%' };
 }
 
 function createMineBoard(safeCellId?: number) {
