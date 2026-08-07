@@ -496,20 +496,17 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   if (!event) return;
   const affected = alivePlayers(game).filter((player) => player.battle?.areaId === event.areaId);
   if (affected.length === 0) return;
-  for (const player of affected) {
-    const stats = player.battle!;
-    if (event.effect === 'damage') stats.hp = Math.max(1, stats.hp - event.value);
-    if (event.effect === 'stamina') stats.stamina = Math.max(0, (stats.stamina ?? 0) - event.value);
-    if (event.effect === 'stress') stats.stress = (stats.stress ?? 0) + event.value;
-    if (event.effect === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + event.value);
-    if (event.effect === 'supply') stats.coins += event.value;
-    if (event.effect === 'clue') collectTruthClue(game, now, `区域-${event.id}`, player);
+  const randomPlayer = affected[Math.floor(Math.random() * affected.length)];
+  if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15));
+  if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 15; });
+  if (event.effect === 'surgery') randomPlayer.battle!.hp = Math.max(randomPlayer.battle!.hp, Math.floor(randomPlayer.battle!.maxHp * 0.8));
+  if (event.effect === 'autoTrade' && affected.length >= 2) allyPlayers(game, now, affected[0], affected[1]);
+  if (event.effect === 'revealRelation') {
+    const hidden = battle.relationshipEdges?.find((edge) => edge.hidden);
+    if (hidden) hidden.hidden = false;
   }
-  if (event.effect === 'alliance' && affected.length >= 2) {
-    affected[0].battle!.alliance = affected[1].id;
-    affected[1].battle!.alliance = affected[0].id;
-    awardPopularity(game, now, 15, [affected[0], affected[1]]);
-  }
+  if (['broker', 'c12Anomaly', 'replay', 'zoneWarning'].includes(event.effect)) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+  if (event.effect === 'truth' && randomPlayer.battle?.characterId === 'C12') unlockTruth(game, now, randomPlayer);
   battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
   battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
   battle.consumedAreaStories!.push(event.id);
