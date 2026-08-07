@@ -19,7 +19,7 @@ import {
   profileForIndex,
   profileForCharacterId,
 } from '../../data/battleRoyaleConfig';
-import { battleAreaSpawnPoints } from '../../data/battleArena';
+import { battleAreaSpawnPoints, isPointInBattleArea } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -1456,7 +1456,7 @@ function randomOpenTile(game: Game, player: Player) {
       x: 1 + Math.floor(battleRandom(game) * (game.worldMap.width - 2)),
       y: 1 + Math.floor(battleRandom(game) * (game.worldMap.height - 2)),
     };
-    if (!blocked(game, Date.now(), candidate, player.id)) {
+    if (isInPlayerBattleArea(game, player, candidate) && !blocked(game, Date.now(), candidate, player.id)) {
       return candidate;
     }
   }
@@ -1474,12 +1474,16 @@ function openTilesNear(game: Game, player: Player, origin: { x: number; y: numbe
         x: Math.max(1, Math.min(game.worldMap.width - 2, origin.x + dx)),
         y: Math.max(1, Math.min(game.worldMap.height - 2, origin.y + dy)),
       };
-      if (!blocked(game, Date.now(), candidate, player.id)) {
+      if (isInPlayerBattleArea(game, player, candidate) && !blocked(game, Date.now(), candidate, player.id)) {
         candidates.push(candidate);
       }
     }
   }
   return candidates;
+}
+
+function isInPlayerBattleArea(game: Game, player: Player, point: { x: number; y: number }) {
+  return isPointInBattleArea(player.battle?.areaId ?? 'A01', point, game.worldMap.width, game.worldMap.height);
 }
 
 export function battleRandom(game: Game) {

@@ -1,5 +1,5 @@
 import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
-import { BATTLE_ARENA_ZONES, battleAreaSpawnPoints } from './battleArena';
+import { BATTLE_ARENA_ZONES, battleAreaSpawnPoints, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
   test('has a valid 13-area graph and an anchor for every area', () => {
@@ -15,6 +15,7 @@ describe('battle royale P0/P1 configuration', () => {
     for (const zone of BATTLE_ARENA_ZONES) {
       expect(zone.polygon).toHaveLength(6);
       expect(battleAreaSpawnPoints(zone.id, 80, 60).length).toBeGreaterThanOrEqual(4);
+      expect(isPointInBattleArea(zone.id, { x: zone.anchor.x * 80, y: zone.anchor.y * 60 }, 80, 60)).toBe(true);
     }
   });
 

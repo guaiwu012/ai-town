@@ -36,4 +36,18 @@ export function battleAreaSpawnPoints(areaId: string, mapWidth: number, mapHeigh
   }));
 }
 
+export function isPointInBattleArea(areaId: string, point: { x: number; y: number }, mapWidth: number, mapHeight: number) {
+  const polygon = BATTLE_ARENA_ZONES.find((zone) => zone.id === areaId)?.polygon;
+  if (!polygon) return false;
+  const x = point.x / mapWidth;
+  const y = point.y / mapHeight;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i];
+    const b = polygon[j];
+    if ((a.y > y) !== (b.y > y) && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
 export const BATTLE_ARENA_ART = '/ai-town/assets/battle/arena-live-map.png';
