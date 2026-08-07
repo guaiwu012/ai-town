@@ -27,7 +27,7 @@
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |
 | `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 高影响物品已有稀有度、交易价值和效果；全部物品的价格、合成、使用条件仍待补齐。 |
-| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点和邻接 | 开发中 | 已有共享区域布局数据与原创战场底图；碰撞层、寻路网格与完整地标交互仍在接入。 |
+| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点、六边形边界、出生落点和邻接 | 部分抽象 | 同区战术移动和跨区落点已使用关卡多边形；像素级碰撞、完整寻路网格与地标交互仍在接入。 |
 | `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
 
 ## 系统表
@@ -35,7 +35,7 @@
 | 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
 | --- | --- | --- | --- |
 | `系统/配表_游戏全局配置` | `BATTLE_CONFIG.match`、`runtime`、`zone`、`weapons` | 部分抽象 | 角色行为频率、完整资源/淘汰/结算参数和所有数值公式未逐列同步；部分当前数值为 Demo 节奏调优值。 |
-| `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`（24 条）；`GLOBAL_SPECIAL_EVENTS`；`triggerAreaSpecialEvent()`；`CHARACTER_STORIES` | 部分抽象 | 已记录停留、搜索、战斗、夜晚、人数、权限卡与 C12 等主要前置，执行次数上限及 3 条全局事件；剧情文本分支和非主干的全部道具后果仍待补齐。 |
+| `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`（24 条）；`GLOBAL_SPECIAL_EVENTS`；`triggerAreaSpecialEvent()`；`CHARACTER_STORIES` | 部分抽象 | 已记录停留、搜索、战斗、夜晚、人数、权限卡与 C12 等主要前置、执行次数和效果中文审计；剧情文本分支和非主干的全部道具后果仍待补齐。 |
 | `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx` | 部分抽象 | 17 个操作可选择目标并执行基础效果，剧情拆笼、换药、野兽、开庭和延长停电均已接入；次数上限、双胜规则、资源移除/隐藏和操作专属视觉没有完全按表覆盖。 |
 | `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
 | `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |
