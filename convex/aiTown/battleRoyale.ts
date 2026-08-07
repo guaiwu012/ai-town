@@ -847,6 +847,17 @@ function interventionReaction(operationId: string) {
   return { description: '察觉主办方干预，调整行动', emoji: 'ALERT' };
 }
 
+export function replayRecordedAction(
+  game: Game,
+  now: number,
+  entry: { playerId?: string; action: string; targetPlayerId?: string; targetAreaId?: string },
+) {
+  const player = entry.playerId ? game.world.players.get(entry.playerId as any) : undefined;
+  if (!player?.battle || player.battle.eliminated) return { accepted: false, reason: '回放角色不可用' };
+  const target = entry.targetPlayerId ? game.world.players.get(entry.targetPlayerId as any) : undefined;
+  return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动');
+}
+
 function executeBattleAction(
   game: Game,
   now: number,
