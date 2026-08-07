@@ -1,4 +1,4 @@
-import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats } from './battleRoyale';
+import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -77,5 +77,19 @@ describe('battle royale host intervention rules', () => {
     expect(patient.battle.medkits).toBe(1);
     expect(patient.battle.hp).toBe(62);
     expect(patient.battle.interventionKind).toBe('STO_02');
+  });
+
+  it('replays a recorded structured action through the production executor', () => {
+    const player = createPlayer('p:12', 'C12', 'A12');
+    player.battle.hp = 40;
+    player.battle.medkits = 1;
+    const game = createGame([player]);
+
+    const result = replayRecordedAction(game, 2_000, { playerId: player.id, action: 'heal' });
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(player.battle.hp).toBe(62);
+    expect(player.battle.medkits).toBe(0);
+    expect(game.world.battle.decisionCount).toBe(0);
   });
 });
