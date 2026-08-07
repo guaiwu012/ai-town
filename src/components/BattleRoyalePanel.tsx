@@ -6,7 +6,7 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import { SelectElement } from './Player';
-import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
+import { BATTLE_CONFIG, INTERVENTION_OPERATIONS } from '../../data/battleRoyaleConfig';
 
 const MINE_ROWS = 8;
 const MINE_COLS = 8;
@@ -66,16 +66,14 @@ export default function BattleRoyalePanel({
     : players.find((player) => !player.battle?.eliminated);
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
   const battle = game.world.battle;
-  const heat = Math.min(999, 180 + players.reduce((sum, player) => sum + (player.battle?.heat ?? 0), 0));
+  const heat = battle?.popularity ?? 0;
   const heatGrade = heat >= 700 ? 'S' : heat >= 500 ? 'A' : heat >= 300 ? 'B' : 'C';
   const hotPlayer = players.reduce(
     (current, player) => (player.battle?.heat ?? 0) > (current?.battle?.heat ?? 0) ? player : current,
     players[0],
   );
   const openAreas = battle?.openAreas ?? BATTLE_CONFIG.areas.map((area) => area.id);
-  const activeTask = hotPlayer
-    ? `让观众支持 ${game.playerDescriptions.get(hotPlayer.id)?.name ?? '高热度 AI'}`
-    : '等待 AI 进入战场';
+  const activeTask = battle?.hiddenMissions?.[0];
   const eventFeed = (battle?.feed ?? []).slice(0, 6);
 
   const mineStats = useMemo(() => getMineStats(mineBoard), [mineBoard]);
@@ -143,6 +141,27 @@ export default function BattleRoyalePanel({
         },
       });
       setTipCoins(0);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const intervene = async (opId: string) => {
+    if (pending) return;
+    const operation = INTERVENTION_OPERATIONS.find((item) => item.id === opId);
+    if (!operation) return;
+    setPending(true);
+    try {
+      await sendInput({
+        worldId,
+        name: 'intervene',
+        args: {
+          opId,
+          targetPlayerId: operation.target === 'player' || operation.target === 'pair' || opId === 'TRU_01' ? selected?.id : undefined,
+          secondPlayerId: operation.target === 'pair' ? hotPlayer?.id !== selected?.id ? hotPlayer?.id : players.find((player) => player.id !== selected?.id)?.id : undefined,
+          targetAreaId: operation.target === 'area' ? selected?.battle?.areaId ?? 'A01' : undefined,
+        },
+      });
     } finally {
       setPending(false);
     }
@@ -232,7 +251,7 @@ export default function BattleRoyalePanel({
             <span className="overview-heat-grade">{heatGrade} <span>→</span> {Math.min(999, heat + 65)}</span>
           </div>
           <div className="overview-heat-bar mt-2"><div style={{ width: `${Math.min(100, heat / 8)}%` }} /></div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-400"><span>直播观众增长</span><span>+{Math.max(12, aliveCount * 3)} / 分钟</span></div>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400"><span>连击倍率</span><span>×{battle?.comboMultiplier ?? 1} · {battle?.comboCount ?? 0} 连击</span></div>
         </div>
 
         <div className="arena-panel p-3">
@@ -245,17 +264,28 @@ export default function BattleRoyalePanel({
 
         <div className="arena-panel p-3">
           <div className="arena-panel-title">干预点数</div>
-          <div className="overview-bolts mt-2">{[0, 1, 2, 3, 4].map((bolt) => <span key={bolt} className={bolt < Math.min(5, Math.ceil(tipCoins / 50)) ? 'is-on' : ''}>ϟ</span>)}</div>
-          <div className="mt-1 text-right text-2xl text-amber-200">{tipCoins}</div>
+          <div className="overview-bolts mt-2">{[0, 1, 2, 3, 4].map((bolt) => <span key={bolt} className={bolt < Math.min(5, battle?.interventionPoints ?? 0) ? 'is-on' : ''}>ϟ</span>)}</div>
+          <div className="mt-1 text-right text-2xl text-amber-200">{battle?.interventionPoints ?? 0} / {battle?.interventionPointsMax ?? 30}</div>
           <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs" onClick={openMineGame} disabled={pending}>玩小游戏赚金币</button>
         </div>
 
         <div className="arena-panel p-3">
           <div className="flex items-center justify-between"><div className="arena-panel-title">任务</div><span className="overview-alert">!</span></div>
           <div className="mt-2 text-sm text-amber-100">主线：达到 S 级直播热度</div>
-          <div className="mt-1 text-xs text-slate-300">当前：{heatGrade} 级 · {heat}</div>
-          <div className="mt-3 border-t border-slate-600/60 pt-2 text-xs text-slate-300">隐藏任务：{activeTask}</div>
-          <div className="mt-1 text-xs text-emerald-300">状态：正在追踪直播事件</div>
+          <div className="mt-1 text-xs text-slate-300">当前：{heatGrade} 级 · {heat} / 500</div>
+          <div className="mt-3 border-t border-slate-600/60 pt-2 text-xs text-slate-300">隐藏任务：{activeTask ? `「${activeTask.title}」${activeTask.description}` : '等待生成'}</div>
+          <div className="mt-1 text-xs text-emerald-300">状态：{activeTask?.status ?? '进行中'} · 真相线索 {battle?.truthClues?.length ?? 0}/3</div>
+        </div>
+
+        <div className="arena-panel p-3">
+          <div className="arena-panel-title">主办方干预</div>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {['SUP_01', 'RUL_01', 'INF_01', 'ENV_04'].map((opId) => {
+              const operation = INTERVENTION_OPERATIONS.find((item) => item.id === opId)!;
+              return <button key={opId} className="arena-action h-10 text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < operation.cost} onClick={() => intervene(opId)}>{operation.name} · {operation.cost}点</button>;
+            })}
+          </div>
+          {selected?.battle?.characterId === 'C12' && <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < 5} onClick={() => intervene('TRU_01')}>开启真相之间 · 5点</button>}
         </div>
 
         <div className="arena-panel p-3">
@@ -362,7 +392,7 @@ export default function BattleRoyalePanel({
                 className="arena-action h-9 px-3 text-sm"
                 onClick={() => setMineOpen(false)}
               >
-                Close
+                关闭
               </button>
             </div>
 
@@ -473,7 +503,7 @@ function mapPositionForArea(areaId: string) {
 function displayAreaName(areaId: string) {
   const names: Record<string, string> = {
     A01: '堡垒废墟', A02: '演播塔', A03: '智库书库', A04: '格斗笼',
-    A05: '学院废墟', A06: '战地医院', A07: '训练场', A08: '暗巷市场',
+    A05: '学园废墟', A06: '战地医院', A07: '训练场', A08: '暗巷市场',
     A09: '武器库', A10: '密林深处', A11: '法庭遗址', A12: '观测站废墟', S01: '真相之间',
   };
   return names[areaId] ?? areaId;
@@ -488,7 +518,7 @@ function displayPhase(phase?: string) {
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利', intervention: '主办方', story: '剧情', clue: '线索', mission: '任务', truth: '真相', heat: '热度' } as Record<string, string>)[kind] ?? kind;
 }
 
 function displayEventText(text: string) {

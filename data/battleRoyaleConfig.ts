@@ -107,6 +107,50 @@ export const BATTLE_CONFIG = {
 
 export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
 
+export const INTERVENTION_OPERATIONS = [
+  { id: 'ENV_01', name: '制造障碍', category: '环境', cost: 3, cooldownMs: 60000, target: 'area', description: '在区域内制造障碍，区域内角色受到 8 点伤害。' },
+  { id: 'ENV_02', name: '极端天气', category: '环境', cost: 5, cooldownMs: 180000, target: 'area', description: '区域暴雨，区域内角色失去 16 点体力。' },
+  { id: 'ENV_03', name: '提前关闭', category: '环境', cost: 5, cooldownMs: 0, target: 'area', description: '立即关闭一个仍开放的区域。' },
+  { id: 'ENV_04', name: '激活陷阱', category: '环境', cost: 2, cooldownMs: 30000, target: 'area', description: '触发区域机关，对区域内角色造成 12 点伤害。' },
+  { id: 'SUP_01', name: '投放补给', category: '补给', cost: 2, cooldownMs: 60000, target: 'area', description: '区域内存活角色各获得医疗包与 20 金币。' },
+  { id: 'SUP_02', name: '盛宴补给', category: '补给', cost: 3, cooldownMs: 120000, target: 'area', description: '区域内角色恢复生命和体力。' },
+  { id: 'SUP_03', name: '陷阱补给', category: '补给', cost: 1, cooldownMs: 30000, target: 'area', description: '伪装补给造成 10 点伤害。' },
+  { id: 'SUP_05', name: '赞助角色', category: '补给', cost: 3, cooldownMs: 90000, target: 'player', description: '指定角色获得 35 金币与护甲。' },
+  { id: 'RUL_01', name: '临时联盟', category: '规则', cost: 4, cooldownMs: 0, target: 'pair', description: '强制两名角色结盟 45 秒。' },
+  { id: 'RUL_02', name: '禁用武器', category: '规则', cost: 5, cooldownMs: 0, target: 'global', description: '全场 30 秒内只能使用拳头。' },
+  { id: 'RUL_04', name: '悬赏追杀', category: '规则', cost: 4, cooldownMs: 60000, target: 'player', description: '指定角色成为悬赏目标，击倒者额外获得金币。' },
+  { id: 'INF_01', name: '真实情报', category: '信息', cost: 1, cooldownMs: 20000, target: 'player', description: '指定角色获得一条真相线索。' },
+  { id: 'INF_02', name: '虚假情报', category: '信息', cost: 1, cooldownMs: 20000, target: 'player', description: '指定角色压力升高。' },
+  { id: 'INF_03', name: '匿名挑拨', category: '信息', cost: 2, cooldownMs: 45000, target: 'pair', description: '两名角色关系紧张，打破联盟。' },
+  { id: 'INF_04', name: '标记位置', category: '信息', cost: 1, cooldownMs: 30000, target: 'player', description: '公开指定角色的位置。' },
+  { id: 'REC_01', name: '关系侦察', category: '侦察', cost: 1, cooldownMs: 15000, target: 'player', description: '公布指定角色的一条关系。' },
+  { id: 'REC_02', name: '任务侦察', category: '侦察', cost: 3, cooldownMs: 0, target: 'global', description: '揭示一条隐藏任务。' },
+  { id: 'TRU_01', name: '开启真相之间', category: '剧情', cost: 5, cooldownMs: 0, target: 'player', description: 'C12 集齐线索后开启真相结局。' },
+] as const;
+
+export const CHARACTER_STORIES: Record<string, { areaId: string; item: string; title: string; score: number; effect: string }> = {
+  C01: { areaId: 'A01', item: '军籍牌', title: '故地', score: 15, effect: 'armor' },
+  C02: { areaId: 'A02', item: '演播档案带', title: '镜头背后', score: 15, effect: 'clue' },
+  C03: { areaId: 'A03', item: '策略手稿', title: '棋局', score: 10, effect: 'coins' },
+  C04: { areaId: 'A04', item: '血染刺套', title: '笼中兽', score: 20, effect: 'weapon' },
+  C05: { areaId: 'A05', item: '学生档案', title: '档案里的名字', score: 15, effect: 'clue' },
+  C06: { areaId: 'A06', item: '未署名病历', title: '未完成的手术', score: 15, effect: 'medkit' },
+  C07: { areaId: 'A07', item: '奖牌', title: '未竟的终点线', score: 10, effect: 'stamina' },
+  C08: { areaId: 'A08', item: '欠条', title: '债', score: 20, effect: 'coins' },
+  C09: { areaId: 'A09', item: '武器清单', title: '武器清单', score: 10, effect: 'weapon' },
+  C10: { areaId: 'A10', item: '鸟羽护符', title: '森林的低语', score: 15, effect: 'clue' },
+  C11: { areaId: 'A11', item: '案件卷宗', title: '未结的案子', score: 20, effect: 'clue' },
+  C12: { areaId: 'A12', item: '空白身份卡', title: '空', score: 10, effect: 'truthPath' },
+};
+
+export const HIDDEN_MISSIONS = [
+  { id: 'HID_01', title: '守护者', description: '确保阮清进入最后三人。', targetA: 'C05' },
+  { id: 'HID_02', title: '猎人', description: '让阿隼被淘汰。', targetA: 'C09' },
+  { id: 'HID_03', title: '丘比特', description: '让夏语甜与何屿维持联盟。', targetA: 'C02', targetB: 'C07' },
+  { id: 'HID_04', title: '破坏者', description: '让亲属或旧友发生冲突。' },
+  { id: 'HID_06', title: '无名真相', description: '帮助 N-00 开启真相之间。', targetA: 'C12' },
+] as const;
+
 export function profileForIndex(index: number) {
   return BATTLE_CONFIG.characters[index % BATTLE_CONFIG.characters.length];
 }

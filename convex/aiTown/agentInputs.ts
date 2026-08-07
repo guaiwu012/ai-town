@@ -8,7 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
-import { applyTip, resetBattleMatch } from './battleRoyale';
+import { applyIntervention, applyTip, resetBattleMatch } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -164,6 +164,15 @@ export const agentInputs = {
     handler: (game, now, args) => {
       return applyTip(game, now, args.playerId, args.score);
     },
+  }),
+  intervene: inputHandler({
+    args: {
+      opId: v.string(),
+      targetAreaId: v.optional(v.string()),
+      targetPlayerId: v.optional(playerId),
+      secondPlayerId: v.optional(playerId),
+    },
+    handler: (game, now, args) => applyIntervention(game, now, args),
   }),
   resetBattle: inputHandler({
     args: {},

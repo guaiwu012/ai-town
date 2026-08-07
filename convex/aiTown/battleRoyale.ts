@@ -5,7 +5,14 @@ import { playerId } from './ids';
 import { distance } from '../util/geometry';
 import { blocked, movePlayer } from './movement';
 import { point } from '../util/types';
-import { BATTLE_CONFIG, profileForIndex, profileForCharacterId } from '../../data/battleRoyaleConfig';
+import {
+  BATTLE_CONFIG,
+  CHARACTER_STORIES,
+  HIDDEN_MISSIONS,
+  INTERVENTION_OPERATIONS,
+  profileForIndex,
+  profileForCharacterId,
+} from '../../data/battleRoyaleConfig';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -59,6 +66,35 @@ export const battleState = v.object({
   timeOfDay: v.optional(v.union(v.literal('day'), v.literal('night'))),
   openAreas: v.optional(v.array(v.string())),
   lastZoneUpdate: v.optional(v.number()),
+  popularity: v.optional(v.number()),
+  popularityPeak: v.optional(v.number()),
+  comboCount: v.optional(v.number()),
+  comboMultiplier: v.optional(v.number()),
+  scoreTimestamps: v.optional(v.array(v.number())),
+  lastScoreEvent: v.optional(v.number()),
+  interventionPoints: v.optional(v.number()),
+  interventionPointsMax: v.optional(v.number()),
+  interventionEarnedTotal: v.optional(v.number()),
+  interventionSpentTotal: v.optional(v.number()),
+  heatMilestoneClaimed: v.optional(v.number()),
+  hiddenMissions: v.optional(v.array(v.object({
+    id: v.string(),
+    title: v.string(),
+    description: v.string(),
+    status: v.string(),
+    targetA: v.optional(v.string()),
+    targetB: v.optional(v.string()),
+  }))),
+  completedMissionIds: v.optional(v.array(v.string())),
+  truthPathKnown: v.optional(v.boolean()),
+  truthUnlocked: v.optional(v.boolean()),
+  truthRevealed: v.optional(v.boolean()),
+  truthClues: v.optional(v.array(v.string())),
+  storyTriggers: v.optional(v.array(v.string())),
+  operationCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+  disabledWeaponsUntil: v.optional(v.number()),
+  bountyPlayerId: v.optional(playerId),
+  temporaryAllianceUntil: v.optional(v.number()),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -111,6 +147,25 @@ export function defaultBattleState(now: number): BattleState {
     timeOfDay: 'day',
     openAreas: BATTLE_CONFIG.areas.map((area) => area.id),
     lastZoneUpdate: now,
+    popularity: 0,
+    popularityPeak: 0,
+    comboCount: 0,
+    comboMultiplier: 1,
+    scoreTimestamps: [],
+    lastScoreEvent: now,
+    interventionPoints: BATTLE_CONFIG.match.initialInterventionPoints,
+    interventionPointsMax: BATTLE_CONFIG.match.maxInterventionPoints,
+    interventionEarnedTotal: 0,
+    interventionSpentTotal: 0,
+    heatMilestoneClaimed: 0,
+    hiddenMissions: HIDDEN_MISSIONS.slice(0, 2).map((mission) => ({ ...mission, status: '进行中' })),
+    completedMissionIds: [],
+    truthPathKnown: false,
+    truthUnlocked: false,
+    truthRevealed: false,
+    truthClues: [],
+    storyTriggers: [],
+    operationCooldowns: [],
   };
 }
 
@@ -148,6 +203,25 @@ export function ensureBattleState(game: Game, now: number) {
   battle.timeOfDay ??= 'day';
   battle.openAreas ??= BATTLE_CONFIG.areas.map((area) => area.id);
   battle.lastZoneUpdate ??= now;
+  battle.popularity ??= 0;
+  battle.popularityPeak ??= battle.popularity;
+  battle.comboCount ??= 0;
+  battle.comboMultiplier ??= 1;
+  battle.scoreTimestamps ??= [];
+  battle.lastScoreEvent ??= now;
+  battle.interventionPoints ??= BATTLE_CONFIG.match.initialInterventionPoints;
+  battle.interventionPointsMax ??= BATTLE_CONFIG.match.maxInterventionPoints;
+  battle.interventionEarnedTotal ??= 0;
+  battle.interventionSpentTotal ??= 0;
+  battle.heatMilestoneClaimed ??= 0;
+  battle.hiddenMissions ??= HIDDEN_MISSIONS.slice(0, 2).map((mission) => ({ ...mission, status: '进行中' }));
+  battle.completedMissionIds ??= [];
+  battle.truthPathKnown ??= false;
+  battle.truthUnlocked ??= false;
+  battle.truthRevealed ??= false;
+  battle.truthClues ??= [];
+  battle.storyTriggers ??= [];
+  battle.operationCooldowns ??= [];
 }
 
 export function resetBattleMatch(game: Game, now: number) {
@@ -246,6 +320,13 @@ function tickMatchRules(game: Game, now: number) {
       pushEvent(game, now, 'zone', `【禁区关闭】${areaName(closingArea)} 已永久关闭，AI 必须转移。`, undefined, undefined);
     }
   }
+
+  if (now - (battle.lastScoreEvent ?? now) > 120000 && (battle.popularity ?? 0) >= 5) {
+    battle.popularity = Math.max(0, (battle.popularity ?? 0) - 5);
+    battle.lastScoreEvent = now;
+    pushEvent(game, now, 'heat', '【热度】战场沉寂过久，直播热度下降 5 点。');
+  }
+  updateMissionProgress(game, now);
 }
 
 export function applyTip(game: Game, now: number, playerIdValue: string, score: number) {
@@ -269,6 +350,59 @@ export function applyTip(game: Game, now: number, playerIdValue: string, score: 
     player,
   );
   return { coins };
+}
+
+export function applyIntervention(
+  game: Game,
+  now: number,
+  args: { opId: string; targetAreaId?: string; targetPlayerId?: string; secondPlayerId?: string },
+) {
+  ensureBattleState(game, now);
+  const battle = game.world.battle!;
+  const operation = INTERVENTION_OPERATIONS.find((candidate) => candidate.id === args.opId);
+  if (!operation) throw new Error('未知干预操作。');
+  const cooldown = battle.operationCooldowns?.find((entry) => entry.id === operation.id);
+  if (cooldown && cooldown.until > now) throw new Error(`${operation.name}仍在冷却。`);
+  if ((battle.interventionPoints ?? 0) < operation.cost) throw new Error('干预点不足。');
+  const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
+  const second = args.secondPlayerId ? game.world.players.get(args.secondPlayerId as any) : undefined;
+  const areaId = args.targetAreaId ?? target?.battle?.areaId ?? 'A01';
+  const affected = alivePlayers(game).filter((player) => player.battle?.areaId === areaId);
+  const announce = (text: string) => pushEvent(game, now, 'intervention', `【主办方】${text}`);
+
+  if (operation.target === 'area' && !BATTLE_CONFIG.areas.some((area) => area.id === areaId)) throw new Error('无效区域。');
+  if (operation.target === 'player' && !target) throw new Error('请选择角色。');
+  if (operation.target === 'pair' && (!target || !second || target.id === second.id)) throw new Error('请选择两名不同角色。');
+
+  switch (operation.id) {
+    case 'ENV_01': affected.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - 8); }); announce(`${areaName(areaId)}升起障碍物，区域内角色受到冲击。`); break;
+    case 'ENV_02': affected.forEach((player) => { player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - 16); }); announce(`${areaName(areaId)}遭遇极端天气，体力被迅速消耗。`); break;
+    case 'ENV_03':
+      if (!battle.openAreas?.includes(areaId) || areaId === 'S01') throw new Error('该区域不能关闭。');
+      battle.openAreas = battle.openAreas.filter((id) => id !== areaId); announce(`${areaName(areaId)}被主办方提前划为禁区。`); break;
+    case 'ENV_04': case 'SUP_03':
+      affected.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - (operation.id === 'ENV_04' ? 12 : 10)); }); announce(`${areaName(areaId)}的${operation.id === 'ENV_04' ? '机关' : '补给箱'}被激活。`); break;
+    case 'SUP_01': affected.forEach((player) => { player.battle!.medkits += 1; player.battle!.coins += 20; }); announce(`补给已投放至${areaName(areaId)}。`); break;
+    case 'SUP_02': affected.forEach((player) => { player.battle!.hp = Math.min(player.battle!.maxHp, player.battle!.hp + 20); player.battle!.stamina = player.battle!.maxStamina; }); announce(`${areaName(areaId)}开启盛宴补给。`); break;
+    case 'SUP_05': target!.battle!.coins += 35; target!.battle!.armor += 4; announce(`${playerName(game, target!)}获得品牌赞助。`); break;
+    case 'RUL_01': target!.battle!.alliance = second!.id; second!.battle!.alliance = target!.id; battle.temporaryAllianceUntil = now + 45000; announce(`${playerName(game, target!)}与${playerName(game, second!)}被规则强制结盟。`); awardPopularity(game, now, 20, [target!, second!]); break;
+    case 'RUL_02': battle.disabledWeaponsUntil = now + 30000; announce('武器规则已冻结，全场进入徒手阶段。'); break;
+    case 'RUL_04': battle.bountyPlayerId = target!.id; announce(`${playerName(game, target!)}成为悬赏目标。`); break;
+    case 'INF_01': collectTruthClue(game, now, `情报-${target!.battle!.characterId}`, target!); announce(`${playerName(game, target!)}收到了一条真实情报。`); break;
+    case 'INF_02': target!.battle!.stress = (target!.battle!.stress ?? 0) + 20; announce(`${playerName(game, target!)}被虚假情报扰乱。`); break;
+    case 'INF_03': target!.battle!.alliance = undefined; second!.battle!.alliance = undefined; announce(`匿名消息挑拨了${playerName(game, target!)}与${playerName(game, second!)}。`); awardPopularity(game, now, 25, [target!, second!]); break;
+    case 'INF_04': announce(`${playerName(game, target!)}的位置已被标记：${areaName(target!.battle!.areaId ?? 'A01')}。`); break;
+    case 'REC_01': announce(`${playerName(game, target!)}的关系档案已被公开侦察。`); break;
+    case 'REC_02': battle.hiddenMissions![0] && (battle.hiddenMissions![0].status = `已揭示：${battle.hiddenMissions![0].status}`); announce('一条隐藏任务已被侦察揭示。'); break;
+    case 'TRU_01': unlockTruth(game, now, target!); break;
+  }
+  battle.interventionPoints! -= operation.cost;
+  battle.interventionSpentTotal! += operation.cost;
+  if (operation.cooldownMs > 0) {
+    battle.operationCooldowns = (battle.operationCooldowns ?? []).filter((entry) => entry.id !== operation.id);
+    battle.operationCooldowns.push({ id: operation.id, until: now + operation.cooldownMs });
+  }
+  return { remainingPoints: battle.interventionPoints, operation: operation.name };
 }
 
 function runAgentBattleAction(game: Game, now: number, player: Player) {
@@ -340,9 +474,11 @@ function runAgentBattleAction(game: Game, now: number, player: Player) {
 function attack(game: Game, now: number, attacker: Player, target: Player) {
   const attack = attacker.battle!;
   const defend = target.battle!;
+  const weaponsDisabled = (game.world.battle?.disabledWeaponsUntil ?? 0) > now;
+  const effectiveWeaponPower = weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower;
   const damage = Math.max(
     2,
-    Math.floor(attack.weaponPower * (0.55 + Math.random() * 0.35) - defend.armor),
+    Math.floor(effectiveWeaponPower * (0.55 + Math.random() * 0.35) - defend.armor),
   );
   defend.hp = Math.max(0, defend.hp - damage);
   attacker.activity = {
@@ -359,7 +495,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     game,
     now,
     'attack',
-    `【战斗】${playerName(game, attacker)} 使用${weaponName(attack.weapon)}命中 ${playerName(game, target)}，造成 ${damage} 点伤害。`,
+    `【战斗】${playerName(game, attacker)} 使用${weaponName(weaponsDisabled ? 'Fists' : attack.weapon)}命中 ${playerName(game, target)}，造成 ${damage} 点伤害。`,
     attacker,
     target,
     {
@@ -368,6 +504,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       damage,
     },
   );
+  awardPopularity(game, now, 10, [attacker, target]);
 
   if (defend.hp <= 0) {
     defend.eliminated = true;
@@ -388,6 +525,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
         to: target.position,
       },
     );
+    awardPopularity(game, now, 25 + (game.world.battle?.bountyPlayerId === target.id ? 15 : 0), [attacker]);
   } else if (Math.random() < 0.72) {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
@@ -432,6 +570,10 @@ function loot(game: Game, now: number, player: Player) {
       `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${foundItem ?? `${coins} 金币`}。`,
       player,
     );
+    triggerCharacterStory(game, now, player, areaId, foundItem);
+    if (foundItem && ['加密档案', '医疗记录终端', '监控日志碎片', '案件卷宗', '演播档案带'].includes(foundItem)) {
+      collectTruthClue(game, now, foundItem, player);
+    }
   }
   if (!tacticalLootMove(game, now, player)) {
     wander(game, now, player);
@@ -506,7 +648,95 @@ function tryAlliance(game: Game, now: number, player: Player) {
     player,
     partner,
   );
+  awardPopularity(game, now, 20, [player, partner]);
   return true;
+}
+
+function awardPopularity(game: Game, now: number, baseScore: number, participants: Player[]) {
+  const battle = game.world.battle!;
+  const timestamps = (battle.scoreTimestamps ?? []).filter((timestamp) => now - timestamp <= 60000);
+  timestamps.push(now);
+  battle.scoreTimestamps = timestamps;
+  const comboMultiplier = timestamps.length >= 5 ? 2 : timestamps.length >= 3 ? 1.5 : 1;
+  const participantMultiplier = Math.max(1, ...participants.map((player) => 1 + (player.battle?.heat ?? 0) / 500));
+  const gained = Math.max(1, Math.round(baseScore * comboMultiplier * participantMultiplier));
+  battle.popularity = (battle.popularity ?? 0) + gained;
+  battle.popularityPeak = Math.max(battle.popularityPeak ?? 0, battle.popularity);
+  battle.comboCount = timestamps.length;
+  battle.comboMultiplier = comboMultiplier;
+  battle.lastScoreEvent = now;
+  const milestones = Math.floor(battle.popularity / BATTLE_CONFIG.match.heatRewardStep);
+  const newRewards = Math.max(0, milestones - (battle.heatMilestoneClaimed ?? 0));
+  if (newRewards) {
+    battle.interventionPoints = Math.min(battle.interventionPointsMax ?? 30, (battle.interventionPoints ?? 0) + newRewards);
+    battle.interventionEarnedTotal = (battle.interventionEarnedTotal ?? 0) + newRewards;
+    battle.heatMilestoneClaimed = milestones;
+    pushEvent(game, now, 'heat', `【热度】直播热度达到 ${battle.popularity}，主办方获得 ${newRewards} 点干预点。`);
+  }
+}
+
+function triggerCharacterStory(game: Game, now: number, player: Player, areaId: string, foundItem?: string) {
+  const stats = player.battle!;
+  const story = CHARACTER_STORIES[stats.characterId ?? ''];
+  const battle = game.world.battle!;
+  const triggerId = `${stats.characterId}:${story?.title}`;
+  if (!story || story.areaId !== areaId || story.item !== foundItem || battle.storyTriggers?.includes(triggerId)) return;
+  battle.storyTriggers!.push(triggerId);
+  if (story.effect === 'armor') stats.armor += 10;
+  if (story.effect === 'coins') stats.coins += 25;
+  if (story.effect === 'weapon') stats.weaponPower += 8;
+  if (story.effect === 'medkit') stats.medkits += 1;
+  if (story.effect === 'stamina') stats.stamina = stats.maxStamina;
+  if (story.effect === 'truthPath') battle.truthPathKnown = true;
+  if (story.effect === 'clue') collectTruthClue(game, now, `剧情-${stats.characterId}`, player);
+  pushEvent(game, now, 'story', `【剧情】${playerName(game, player)}触发角色剧情「${story.title}」。`, player);
+  awardPopularity(game, now, story.score, [player]);
+}
+
+function collectTruthClue(game: Game, now: number, clue: string, player: Player) {
+  const battle = game.world.battle!;
+  if (battle.truthClues?.includes(clue)) return;
+  battle.truthClues!.push(clue);
+  player.battle!.clues = (player.battle!.clues ?? 0) + 1;
+  pushEvent(game, now, 'clue', `【线索】${playerName(game, player)}获得真相线索「${clue}」。`, player);
+}
+
+function unlockTruth(game: Game, now: number, player: Player) {
+  const battle = game.world.battle!;
+  if (player.battle?.characterId !== 'C12') throw new Error('只有 N-00 能进入真相之间。');
+  if (!battle.truthPathKnown || (battle.truthClues?.length ?? 0) < 3) throw new Error('真相路径尚未满足：需要空白身份卡与 3 条线索。');
+  if (battle.truthRevealed) throw new Error('真相已经揭示。');
+  battle.truthUnlocked = true;
+  battle.truthRevealed = true;
+  player.battle.areaId = 'S01';
+  pushEvent(game, now, 'truth', '【真相】N-00 进入真相之间，制造者日志向全场公开。', player);
+  awardPopularity(game, now, 100, [player]);
+  completeMission(game, now, 'HID_06');
+}
+
+function updateMissionProgress(game: Game, now: number) {
+  const battle = game.world.battle!;
+  if ((battle.popularity ?? 0) >= 500 && !battle.completedMissionIds?.includes('MAIN_S')) {
+    battle.completedMissionIds!.push('MAIN_S');
+    pushEvent(game, now, 'mission', '【任务】主线目标完成：直播热度达到 S 级。');
+  }
+  const c05 = alivePlayers(game).find((player) => player.battle?.characterId === 'C05');
+  if (c05 && alivePlayers(game).length <= 3) completeMission(game, now, 'HID_01');
+  const c09 = [...game.world.players.values()].find((player) => player.battle?.characterId === 'C09');
+  if (c09?.battle?.eliminated) completeMission(game, now, 'HID_02');
+  const c02 = alivePlayers(game).find((player) => player.battle?.characterId === 'C02');
+  const c07 = alivePlayers(game).find((player) => player.battle?.characterId === 'C07');
+  if (c02?.battle?.alliance === c07?.id) completeMission(game, now, 'HID_03');
+}
+
+function completeMission(game: Game, now: number, missionId: string) {
+  const battle = game.world.battle!;
+  const mission = battle.hiddenMissions?.find((candidate) => candidate.id === missionId);
+  if (!mission || battle.completedMissionIds?.includes(missionId)) return;
+  mission.status = '已完成';
+  battle.completedMissionIds!.push(missionId);
+  pushEvent(game, now, 'mission', `【任务】隐藏任务「${mission.title}」已完成。`);
+  awardPopularity(game, now, missionId === 'HID_06' ? 0 : 45, []);
 }
 
 function alivePlayers(game: Game) {
