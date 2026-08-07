@@ -1,5 +1,6 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
+import { AREA_SPECIAL_EVENTS } from '../../data/battleRoyaleConfig';
 
 export default function BattleCharacterDrawer({ game, playerId, onClose }: {
   game: ServerGame;
@@ -11,6 +12,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
   const stats = player.battle;
   const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
   const relationships = (game.world.battle?.relationshipEdges ?? []).filter((edge) => !edge.hidden && (edge.a === stats.characterId || edge.b === stats.characterId));
+  const areaStories = AREA_SPECIAL_EVENTS.filter((event) => event.areaId === stats.areaId).map((event) => ({ event, count: game.world.battle?.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0 }));
   return (
     <aside className="character-drawer pointer-events-auto" aria-label={`${name}角色详情`}>
       <div className="character-drawer-header">
@@ -34,6 +36,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
         {relationships.length ? relationships.map((edge) => <p key={edge.id}>{relationshipLabel(edge.type)} · 强度 {edge.strength}{edge.lastReason ? ` · ${edge.lastReason}` : ''}</p>) : <p>暂无公开关系</p>}
       </DrawerSection>
       <DrawerSection title="线索与任务"><p>真相线索 {game.world.battle?.truthClues?.length ?? 0}/3</p></DrawerSection>
+      <DrawerSection title="区域剧情">{areaStories.length ? areaStories.map(({ event, count }) => <p key={event.id}>{event.title} · {count}/{event.maxTriggers} 次</p>) : <p>当前区域暂无特殊剧情</p>}</DrawerSection>
     </aside>
   );
 }

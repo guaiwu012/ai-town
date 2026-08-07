@@ -646,7 +646,18 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   if (count) count.count += 1; else battle.areaEventCounts!.push({ id: event.id, count: 1 });
   if ((battle.areaEventCounts!.find((entry) => entry.id === event.id)?.count ?? 0) >= event.maxTriggers) battle.consumedAreaStories!.push(event.id);
   battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
-  pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」。`);
+  pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」：${areaEffectSummary(event.effect)}。`, randomPlayer);
+}
+
+function areaEffectSummary(effect: string) {
+  const summaries: Record<string, string> = {
+    turret: '哨戒炮命中一名参赛者', blizzard: '区域体力下降并累积压力', broadcast: '直播热度上升', replay: '获得一条真相线索',
+    revealRelation: '一条隐藏关系被公开', blackout: '区域内参赛者压力上升', collapse: '地板塌陷造成伤害', lockdown: '格斗笼封锁生效',
+    stress: '黑板留言引发压力', surgery: '濒危参赛者被紧急救治', expiredMedicine: '药品失效并增加压力', falseGunshot: '假枪声诱导一名参赛者转移',
+    autoTrade: '两名参赛者交换了物资并尝试结盟', broker: '信息贩子出售真相线索', explosion: '弹药殉爆造成伤害', beast: '野兽袭击一名参赛者',
+    lost: '迷雾将一名参赛者引向相邻区域', zoneWarning: '林中低语提供禁区线索', trial: '法庭促成谈判', c12Anomaly: '异常数据留下真相线索', truth: '制造者日志开始解锁',
+  };
+  return summaries[effect] ?? '战场状态发生变化';
 }
 
 function areaEventEligible(game: Game, now: number, eventId: string, areaId: string) {
