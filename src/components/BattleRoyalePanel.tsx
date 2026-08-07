@@ -46,6 +46,9 @@ export default function BattleRoyalePanel({
   const [mineStatus, setMineStatus] = useState<MineStatus>('ready');
   const [flagMode, setFlagMode] = useState(false);
   const [pending, setPending] = useState(false);
+  const [targetAreaId, setTargetAreaId] = useState('A01');
+  const [targetPlayerId, setTargetPlayerId] = useState<string | undefined>();
+  const [secondTargetPlayerId, setSecondTargetPlayerId] = useState<string | undefined>();
 
   const players = useMemo(
     () =>
@@ -63,6 +66,7 @@ export default function BattleRoyalePanel({
   const selected = selectedPlayerId
     ? game.world.players.get(selectedPlayerId)
     : players.find((player) => !player.battle?.eliminated);
+  const interventionTarget = targetPlayerId ? game.world.players.get(targetPlayerId as GameId<'players'>) : selected;
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
   const battle = game.world.battle;
   const heat = battle?.popularity ?? 0;
@@ -147,9 +151,9 @@ export default function BattleRoyalePanel({
         name: 'intervene',
         args: {
           opId,
-          targetPlayerId: operation.target === 'player' || operation.target === 'pair' || opId === 'TRU_01' ? selected?.id : undefined,
-          secondPlayerId: operation.target === 'pair' ? hotPlayer?.id !== selected?.id ? hotPlayer?.id : players.find((player) => player.id !== selected?.id)?.id : undefined,
-          targetAreaId: operation.target === 'area' ? selected?.battle?.areaId ?? 'A01' : undefined,
+          targetPlayerId: operation.target === 'player' || operation.target === 'pair' || opId === 'TRU_01' ? interventionTarget?.id : undefined,
+          secondPlayerId: operation.target === 'pair' ? secondTargetPlayerId as GameId<'players'> | undefined : undefined,
+          targetAreaId: operation.target === 'area' ? targetAreaId : undefined,
         },
       });
     } finally {
@@ -197,7 +201,7 @@ export default function BattleRoyalePanel({
                 className={`overview-area-marker ${openAreas.includes(area.id) ? '' : 'is-closed'}`}
                 style={mapPositionForArea(area.id)}
               >
-                <div className="overview-area-label">{displayAreaName(area.id)}</div>
+                <button className={`overview-area-label ${targetAreaId === area.id ? 'is-targeted' : ''}`} onClick={() => setTargetAreaId(area.id)}>{displayAreaName(area.id)}</button>
                 <div className="overview-area-agents">
                   {occupants.map((player) => {
                     const stats = player.battle!;
@@ -207,7 +211,7 @@ export default function BattleRoyalePanel({
                         key={player.id}
                         className={`overview-agent-dot ${selected?.id === player.id ? 'is-selected' : ''} ${stats.eliminated ? 'is-out' : ''}`}
                         title={`${name} · ${displayWeapon(stats.weapon)} · ${Math.ceil(stats.hp)} 生命`}
-                        onClick={() => setSelectedElement({ kind: 'player', id: player.id })}
+                        onClick={() => { setTargetPlayerId(player.id); setSelectedElement({ kind: 'player', id: player.id }); }}
                       >
                         <span>{area.owner === stats.characterId ? '◆' : '●'}</span>
                         <small>{name}</small>
@@ -274,13 +278,27 @@ export default function BattleRoyalePanel({
 
         <div className="arena-panel p-3">
           <div className="arena-panel-title">主办方干预</div>
+          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+            <label className="text-slate-300">角色目标
+              <select className="mt-1 w-full border border-slate-500 bg-[#0b2032] p-1 text-xs text-slate-100" value={interventionTarget?.id ?? ''} onChange={(event) => setTargetPlayerId(event.target.value || undefined)}>
+                {players.filter((player) => !player.battle?.eliminated).map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name}</option>)}
+              </select>
+            </label>
+            <label className="text-slate-300">第二角色
+              <select className="mt-1 w-full border border-slate-500 bg-[#0b2032] p-1 text-xs text-slate-100" value={secondTargetPlayerId ?? ''} onChange={(event) => setSecondTargetPlayerId(event.target.value || undefined)}>
+                <option value="">选择结盟对象</option>
+                {players.filter((player) => !player.battle?.eliminated && player.id !== interventionTarget?.id).map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="mt-2 text-xs text-cyan-200">地图目标：{displayAreaName(targetAreaId)}（点击地图区域名称切换）</div>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            {['SUP_01', 'RUL_01', 'INF_01', 'ENV_04'].map((opId) => {
-              const operation = INTERVENTION_OPERATIONS.find((item) => item.id === opId)!;
-              return <button key={opId} className="arena-action h-10 text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < operation.cost} onClick={() => intervene(opId)}>{operation.name} · {operation.cost}点</button>;
+            {INTERVENTION_OPERATIONS.filter((operation) => operation.id !== 'TRU_01').map((operation) => {
+              const needsPair = operation.target === 'pair';
+              return <button key={operation.id} className="arena-action h-10 text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < operation.cost || (needsPair && !secondTargetPlayerId)} onClick={() => intervene(operation.id)}>{operation.name} · {operation.cost}点</button>;
             })}
           </div>
-          {selected?.battle?.characterId === 'C12' && <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < 5} onClick={() => intervene('TRU_01')}>开启真相之间 · 5点</button>}
+          {interventionTarget?.battle?.characterId === 'C12' && <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs disabled:opacity-40" disabled={pending || (battle?.interventionPoints ?? 0) < 5} onClick={() => intervene('TRU_01')}>开启真相之间 · 5点</button>}
         </div>
 
         <div className="arena-panel p-3">
@@ -295,7 +313,7 @@ export default function BattleRoyalePanel({
                 key={player.id}
                 className="arena-agent-row w-full p-2 text-left transition"
                 data-selected={selectedRow}
-                onClick={() => setSelectedElement({ kind: 'player', id: player.id })}
+                onClick={() => { setTargetPlayerId(player.id); setSelectedElement({ kind: 'player', id: player.id }); }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-base text-[#f0dfc7]">{name}</span>

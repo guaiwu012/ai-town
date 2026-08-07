@@ -446,6 +446,12 @@ p[contenteditable='true']:empty::before {
   white-space: nowrap;
 }
 
+.overview-area-label.is-targeted {
+  border-color: #63dfc1;
+  color: #d5fff1;
+  box-shadow: 0 0 14px rgba(83, 221, 190, 0.68);
+}
+
 .overview-area-agents {
   display: flex;
   justify-content: center;

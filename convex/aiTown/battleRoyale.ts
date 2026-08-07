@@ -41,6 +41,8 @@ export const battleStats = v.object({
   heat: v.optional(v.number()),
   clues: v.optional(v.number()),
   inventory: v.optional(v.array(v.string())),
+  interventionKind: v.optional(v.string()),
+  interventionUntil: v.optional(v.number()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -193,6 +195,7 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.heat ??= profile.heat;
     player.battle.clues ??= 0;
     player.battle.inventory ??= [];
+    player.battle.interventionUntil ??= 0;
     if (player.battle.coins > 1000) {
       player.battle.coins = 200;
     }
@@ -433,12 +436,54 @@ export function applyIntervention(
     playerId: target?.id,
     until: now + 7000,
   };
+  const responders = operation.target === 'global'
+    ? alivePlayers(game)
+    : operation.target === 'area'
+      ? affected
+      : [target, second].filter((player): player is Player => !!player && !player.battle?.eliminated);
+  responders.forEach((player) => markInterventionReaction(game, now, player, operation.id));
   return { remainingPoints: battle.interventionPoints, operation: operation.name };
+}
+
+function markInterventionReaction(game: Game, now: number, player: Player, operationId: string) {
+  const stats = player.battle!;
+  stats.interventionKind = operationId;
+  stats.interventionUntil = now + 10000;
+  const reaction = interventionReaction(operationId);
+  player.activity = {
+    description: `${playerName(game, player)} ${reaction.description}`,
+    emoji: reaction.emoji,
+    until: now + 5000,
+  };
+  pushEvent(game, now, 'reaction', `【反应】${playerName(game, player)} ${reaction.description}。`, player);
+}
+
+function interventionReaction(operationId: string) {
+  if (operationId.startsWith('ENV')) return { description: '察觉环境异常，准备撤离', emoji: 'ALERT' };
+  if (operationId === 'SUP_01' || operationId === 'SUP_02') return { description: '发现主办方补给，正在搜集物资', emoji: 'LOOT' };
+  if (operationId === 'SUP_03') return { description: '被可疑补给惊动，拉开距离', emoji: 'ALERT' };
+  if (operationId.startsWith('INF') || operationId.startsWith('REC')) return { description: '收到干预情报，正在重新判断局势', emoji: 'THINK' };
+  if (operationId === 'RUL_01') return { description: '被规则锁定为盟友，开始交谈', emoji: 'TALK' };
+  if (operationId === 'RUL_02') return { description: '武器被禁用，切换近战策略', emoji: 'HIT' };
+  return { description: '察觉主办方干预，调整行动', emoji: 'ALERT' };
 }
 
 function runAgentBattleAction(game: Game, now: number, player: Player) {
   const stats = player.battle!;
   stats.lastBattleAction = now;
+
+  if ((stats.interventionUntil ?? 0) > now) {
+    if (stats.interventionKind?.startsWith('ENV') || stats.interventionKind === 'SUP_03') {
+      if (tacticalLootMove(game, now, player)) {
+        pushEvent(game, now, 'reaction', `【反应】${playerName(game, player)} 正在避开主办方干预区域。`, player);
+        return;
+      }
+    }
+    if (stats.interventionKind === 'SUP_01' || stats.interventionKind === 'SUP_02') {
+      loot(game, now, player);
+      return;
+    }
+  }
 
   const enemy = nearestEnemy(game, player);
   if (stats.hp <= 36 && stats.medkits > 0) {
