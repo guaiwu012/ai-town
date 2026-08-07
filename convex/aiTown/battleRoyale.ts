@@ -521,8 +521,32 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   const randomPlayer = affected[Math.floor(Math.random() * affected.length)];
   if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15));
   if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 15; });
+  if (event.effect === 'blizzard') affected.forEach((player) => {
+    player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - 12);
+    player.battle!.stress = (player.battle!.stress ?? 0) + 8;
+  });
+  if (event.effect === 'broadcast') awardPopularity(game, now, 10, affected);
   if (event.effect === 'surgery') randomPlayer.battle!.hp = Math.max(randomPlayer.battle!.hp, Math.floor(randomPlayer.battle!.maxHp * 0.8));
-  if (event.effect === 'autoTrade' && affected.length >= 2) allyPlayers(game, now, affected[0], affected[1]);
+  if (event.effect === 'expiredMedicine') {
+    randomPlayer.battle!.medkits = Math.max(0, randomPlayer.battle!.medkits - 1);
+    randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 10;
+  }
+  if (event.effect === 'autoTrade' && affected.length >= 2) {
+    const [first, second] = affected;
+    const firstItem = first.battle!.inventory?.shift();
+    const secondItem = second.battle!.inventory?.shift();
+    if (firstItem) second.battle!.inventory!.push(firstItem);
+    if (secondItem) first.battle!.inventory!.push(secondItem);
+    allyPlayers(game, now, first, second);
+  }
+  if (event.effect === 'trial' && affected.length >= 2) allyPlayers(game, now, affected[0], affected[1]);
+  if (event.effect === 'falseGunshot' || event.effect === 'lost') {
+    const destinations = adjacentAreaIds(event.areaId).filter((areaId) => battle.openAreas?.includes(areaId));
+    const destination = destinations[Math.floor(Math.random() * destinations.length)];
+    if (destination && moveToBattleArea(game, now, randomPlayer, destination)) {
+      pushEvent(game, now, 'move', `【剧情转移】${playerName(game, randomPlayer)} 被${event.effect === 'lost' ? '密林迷雾' : '假枪声'}引向${areaName(destination)}。`, randomPlayer);
+    }
+  }
   if (event.effect === 'revealRelation') {
     const hidden = battle.relationshipEdges?.find((edge) => edge.hidden);
     if (hidden) hidden.hidden = false;

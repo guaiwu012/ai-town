@@ -186,7 +186,7 @@ export const HIDDEN_MISSIONS = [
   { id: 'HID_06', title: '无名真相', description: '帮助 N-00 开启真相之间。', targetA: 'C12' },
 ] as const;
 
-// 22 rows from the regional-story table. Runtime dispatches these by effect,
+// 24 regional rows from the reference story table. Runtime dispatches these by effect,
 // so narrative rows stay data-driven instead of being hard-coded in the loop.
 export const AREA_SPECIAL_EVENTS = [
   { id: 'A01_01', areaId: 'A01', title: '炮台激活', effect: 'turret', maxTriggers: 3 },
