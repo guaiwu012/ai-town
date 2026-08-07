@@ -94,6 +94,7 @@ export default function BattleRoyalePanel({
     players[0],
   );
   const openAreas = battle?.openAreas ?? BATTLE_CONFIG.areas.map((area) => area.id);
+  const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
   const eventFeed = (battle?.feed ?? []).slice(0, 6);
 
@@ -209,6 +210,7 @@ export default function BattleRoyalePanel({
           {BATTLE_CONFIG.areas.filter((area) => area.id !== 'S01').map((area) => {
             const occupants = players.filter((player) => player.battle?.areaId === area.id);
             const resource = battle?.areaResources?.find((entry) => entry.areaId === area.id);
+            const areaLock = activeAreaLocks.find((lock) => lock.areaId === area.id);
             return (
               <div
                 key={area.id}
@@ -217,6 +219,7 @@ export default function BattleRoyalePanel({
               >
                 <button className={`overview-area-label ${targetAreaId === area.id ? 'is-targeted' : ''}`} onClick={() => setTargetAreaId(area.id)}>{displayAreaName(area.id)}</button>
                 <div className="overview-area-resource">资源 {resource?.remaining ?? '--'}/{resource?.max ?? '--'}</div>
+                {areaLock && <div className="overview-area-lock">笼门封锁 {Math.ceil((areaLock.until - Date.now()) / 1000)} 秒</div>}
                 <div className="overview-area-agents">
                   {occupants.map((player) => {
                     const stats = player.battle!;

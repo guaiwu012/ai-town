@@ -79,6 +79,18 @@ describe('battle royale host intervention rules', () => {
     expect(patient.battle.interventionKind).toBe('STO_02');
   });
 
+  it('enforces the fighting-pit story lock until the host removes it', () => {
+    const fighter = createPlayer('p:4', 'C04', 'A04');
+    const game = createGame([fighter]);
+    game.world.battle.areaLocks = [{ areaId: 'A04', until: 10_000 }];
+
+    expect(replayRecordedAction(game, 2_000, { playerId: fighter.id, action: 'move', targetAreaId: 'A07' }))
+      .toMatchObject({ accepted: false, reason: '当前区域被剧情封锁' });
+
+    applyIntervention(game, 2_000, { opId: 'STO_01', targetAreaId: 'A04' });
+    expect(game.world.battle.areaLocks).toEqual([]);
+  });
+
   it('replays a recorded structured action through the production executor', () => {
     const player = createPlayer('p:12', 'C12', 'A12');
     player.battle.hp = 40;

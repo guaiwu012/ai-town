@@ -19,6 +19,16 @@ export function PixiArenaZones({ game }: { game: ServerGame }) {
       const points = zone.polygon.map((point) => ({ x: point.x * map.width * map.tileDim, y: point.y * map.height * map.tileDim }));
       graphics.drawPolygon(points.flatMap((point) => [point.x, point.y]));
       graphics.endFill();
+      for (const obstacle of zone.obstacles) {
+        graphics.beginFill(0x05090d, isOpen ? 0.42 : 0.6);
+        graphics.drawRect(
+          obstacle.x * map.width * map.tileDim,
+          obstacle.y * map.height * map.tileDim,
+          obstacle.width * map.width * map.tileDim,
+          obstacle.height * map.height * map.tileDim,
+        );
+        graphics.endFill();
+      }
     }
   };
   return <Container>

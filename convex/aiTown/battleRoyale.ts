@@ -19,7 +19,7 @@ import {
   profileForIndex,
   profileForCharacterId,
 } from '../../data/battleRoyaleConfig';
-import { battleAreaSpawnPoints, isPointInBattleArea } from '../../data/battleArena';
+import { battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -116,6 +116,7 @@ export const battleState = v.object({
   bountyPlayerId: v.optional(playerId),
   temporaryAllianceUntil: v.optional(v.number()),
   areaEventCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+  areaLocks: v.optional(v.array(v.object({ areaId: v.string(), until: v.number() }))),
   interventionEffect: v.optional(v.object({ kind: v.string(), areaId: v.optional(v.string()), playerId: v.optional(playerId), until: v.number() })),
   decisionDriverId: v.optional(v.string()),
   decisionDriverUntil: v.optional(v.number()),
@@ -220,6 +221,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     storyTriggers: [],
   operationCooldowns: [],
     areaEventCooldowns: [],
+    areaLocks: [],
     decisionCount: 0,
     decisionMax: BATTLE_CONFIG.match.llmDecisionMaxPerMatch,
     decisionDriverStatus: '规则 AI 接管',
@@ -297,6 +299,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.storyTriggers ??= [];
   battle.operationCooldowns ??= [];
   battle.areaEventCooldowns ??= [];
+  battle.areaLocks ??= [];
   battle.decisionCount ??= 0;
   battle.decisionMax ??= BATTLE_CONFIG.match.llmDecisionMaxPerMatch;
   battle.decisionDriverStatus ??= '规则 AI 接管';
@@ -593,6 +596,7 @@ function refreshAreaResources(game: Game, now: number) {
 
 function triggerAreaSpecialEvent(game: Game, now: number) {
   const battle = game.world.battle!;
+  battle.areaLocks = (battle.areaLocks ?? []).filter((lock) => lock.until > now);
   if (now < (battle.lastAreaEventCheck ?? 0) + 5000) return;
   battle.lastAreaEventCheck = now;
   const candidates = AREA_SPECIAL_EVENTS.filter((event) => {
@@ -618,6 +622,10 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     randomPlayer.battle!.medkits = Math.max(0, randomPlayer.battle!.medkits - 1);
     randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 10;
   }
+  if (event.effect === 'lockdown') {
+    setAreaLock(battle, event.areaId, now + 45000);
+    affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 8; });
+  }
   if (event.effect === 'autoTrade' && affected.length >= 2) {
     const [first, second] = affected;
     const firstItem = first.battle!.inventory?.shift();
@@ -638,7 +646,19 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     const hidden = battle.relationshipEdges?.find((edge) => edge.hidden);
     if (hidden) hidden.hidden = false;
   }
-  if (['broker', 'c12Anomaly', 'replay', 'zoneWarning'].includes(event.effect)) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+  if (event.effect === 'broker') {
+    if (randomPlayer.battle!.coins >= 12) {
+      randomPlayer.battle!.coins -= 12;
+      collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+    } else {
+      randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 8;
+    }
+  }
+  if (['c12Anomaly', 'replay'].includes(event.effect)) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+  if (event.effect === 'zoneWarning') {
+    randomPlayer.battle!.zoneTime = Math.min(randomPlayer.battle!.maxZoneTime ?? 40, (randomPlayer.battle!.zoneTime ?? 0) + 8);
+    collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+  }
   if (event.effect === 'truth' && randomPlayer.battle?.characterId === 'C12') unlockTruth(game, now, randomPlayer);
   battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
   battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
@@ -647,6 +667,16 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   if ((battle.areaEventCounts!.find((entry) => entry.id === event.id)?.count ?? 0) >= event.maxTriggers) battle.consumedAreaStories!.push(event.id);
   battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
   pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」：${areaEffectSummary(event.effect)}。`, randomPlayer);
+}
+
+function setAreaLock(battle: BattleState, areaId: string, until: number) {
+  const locks = (battle.areaLocks ?? []).filter((lock) => lock.areaId !== areaId && lock.until > until - 60000);
+  locks.push({ areaId, until });
+  battle.areaLocks = locks;
+}
+
+function isAreaLocked(battle: BattleState | undefined, now: number, areaId: string) {
+  return (battle?.areaLocks ?? []).some((lock) => lock.areaId === areaId && lock.until > now);
 }
 
 function areaEffectSummary(effect: string) {
@@ -781,6 +811,7 @@ export function applyIntervention(
     case 'STO_01':
       if (areaId !== 'A04') throw new Error('拆除笼门只能作用于格斗笼。');
       battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== 'A04_02');
+      battle.areaLocks = (battle.areaLocks ?? []).filter((lock) => lock.areaId !== 'A04');
       announce('格斗笼门锁被主办方拆除，参赛者获得撤离窗口。'); break;
     case 'STO_02':
       if (areaId !== 'A06') throw new Error('替换药品只能作用于战地医院。');
@@ -906,6 +937,7 @@ function executeBattleAction(
   if (action === 'move') {
     if (!targetAreaId || !adjacentAreaIds(stats.areaId ?? 'A01').map(String).includes(targetAreaId)) return { accepted: false, reason: '目标区域不相邻' };
     if (!game.world.battle?.openAreas?.includes(targetAreaId)) return { accepted: false, reason: '目标区域已关闭' };
+    if (isAreaLocked(game.world.battle, now, stats.areaId ?? 'A01')) return { accepted: false, reason: '当前区域被剧情封锁' };
     if (!moveToBattleArea(game, now, player, targetAreaId)) return { accepted: false, reason: '无法抵达目标区域' };
     return { accepted: true };
   }
@@ -1308,6 +1340,7 @@ function relationshipBetween(game: Game, first: Player, second: Player) {
 }
 
 function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
+  if (isAreaLocked(game.world.battle, now, player.battle?.areaId ?? 'A01')) return false;
   const candidates = battleAreaSpawnPoints(areaId, game.worldMap.width, game.worldMap.height);
   const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));
   if (!destination) return false;
@@ -1540,7 +1573,7 @@ function openTilesNear(game: Game, player: Player, origin: { x: number; y: numbe
 }
 
 function isInPlayerBattleArea(game: Game, player: Player, point: { x: number; y: number }) {
-  return isPointInBattleArea(player.battle?.areaId ?? 'A01', point, game.worldMap.width, game.worldMap.height);
+  return isBattleArenaWalkable(player.battle?.areaId ?? 'A01', point, game.worldMap.width, game.worldMap.height);
 }
 
 export function battleRandom(game: Game) {

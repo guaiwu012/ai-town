@@ -481,6 +481,7 @@ p[contenteditable='true']:empty::before {
   box-shadow: 0 0 14px rgba(83, 221, 190, 0.68);
 }
 .overview-area-resource { margin-top: 0.12rem; color: #a9d7ca; font-size: 0.48rem; text-shadow: 0 1px 4px #000; }
+.overview-area-lock { margin-top: 0.12rem; color: #ffb090; font-size: 0.46rem; text-shadow: 0 1px 4px #000; white-space: nowrap; }
 
 .overview-area-agents {
   display: flex;
