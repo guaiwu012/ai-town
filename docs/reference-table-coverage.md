@@ -12,7 +12,7 @@
 
 | 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
 | --- | --- | --- | --- |
-| `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力；`DecisionDriver` 发送角色属性与状态给战术模型 | 部分抽象 | 人设的完整背景、说话风格、个人目标和剧情钩子尚未逐字段进入战术提示词。 |
+| `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力；`DecisionDriver` 发送角色属性、人格倾向与生存状态给战术模型 | 部分抽象 | 代号、强度、心智、心理、社交、攻击/协作/风险偏好已进入战术提示词；完整背景、说话风格、个人目标和剧情钩子仍待逐字段接入。 |
 | `人物/配表_角色运行时属性` | `BattleStats`：HP、体力、饱食、区域停留、压力、热度、背包；`defaultBattleStats()`；`applyBattleVitals()` | 部分抽象 | 饱食会消耗体力并增压，医院可恢复压力/区域停留，高压 AI 优先撤离；完整的饥饿死亡、所有状态衰减曲线和 UI 数值解释仍待补齐。 |
 | `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨的强度变化已运行；4-6 条随机戏剧关系、重逢条件和所有关系类型的独立效果未实现。 |
 | `人物.xmind` | 角色名、代号、属性和关系的辅助校对来源 | 未接入 | 节点层级、叙事分支和人物关系说明没有单独导入。 |

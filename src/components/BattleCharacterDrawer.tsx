@@ -29,7 +29,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
         <Stat label="武器" value={displayWeapon(stats.weapon)} />
         <Stat label="物资" value={stats.coins} />
       </div>
-      <DrawerSection title="当前状态"><p>{player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{stats.stress ?? 0}</p></DrawerSection>
+      <DrawerSection title="当前状态"><p>{player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{Math.ceil(stats.stress ?? 0)}/{stats.stressThreshold ?? '--'}</p><p>饱食：{Math.ceil(stats.satiety ?? 0)} · 区域停留：{Math.ceil(stats.zoneTime ?? 0)}/{stats.maxZoneTime ?? '--'}</p></DrawerSection>
       <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
       <DrawerSection title="背包"><p>{stats.inventory?.length ? stats.inventory.join('、') : '暂无额外物资'} · 医疗包 {stats.medkits}</p></DrawerSection>
       <DrawerSection title="决策审计">
