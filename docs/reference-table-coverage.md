@@ -24,9 +24,9 @@
 | `地图/配表_区域定义` | `BATTLE_CONFIG.areas`：A01-A12、S01、危险等级、归属角色、区域文字机制 | 部分抽象 | 区域危险等级、进入门槛、区域 buff 和大部分专属机制仅作为配置展示，尚未全面改变寻路、命中、掉落或决策效用。 |
 | `地图/配表_角色区域对应` | `BattleCharacterProfile.areaId`；`defaultBattleStats().areaId` | 运行中 | 角色当前位置会随通用移动变更，但没有严格限制为参考表的出生点和邻接区域网络。 |
 | `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency`；`adjacentAreaIds()`；`moveToBattleArea()` | 运行中 | 区域移动已强制相邻与开放校验；Pixi tile map 仍只承担局部寻路和视觉表现。 |
-| `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜和关闭播报；警告倒计时、红区持续伤害、按配表的关闭顺序/保护逻辑尚未完整执行。 |
-| `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`loot()` | 部分抽象 | 已按区域抽取物品名；资源数量、刷新、枯竭、稀有权重及区域信息面板余量未实现。 |
-| `地图/配表_物品定义` | 物品 ID 作为背包字符串；武器另由 `BATTLE_CONFIG.weapons` 定义 | 部分抽象 | 非武器物品的稀有度、价格、使用效果、合成/交易属性和条件未被执行。 |
+| `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
+| `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |
+| `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 高影响物品已有稀有度、交易价值和效果；全部物品的价格、合成、使用条件仍待补齐。 |
 | `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点和邻接 | 开发中 | 已有共享区域布局数据与原创战场底图；碰撞层、寻路网格与完整地标交互仍在接入。 |
 | `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
 

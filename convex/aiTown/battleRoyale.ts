@@ -535,8 +535,46 @@ function tickMatchRules(game: Game, now: number) {
   }
   triggerAreaSpecialEvent(game, now);
   triggerGlobalSpecialEvent(game, now);
+  triggerRelationshipDrama(game, now);
   refreshAreaResources(game, now);
   updateMissionProgress(game, now);
+}
+
+function triggerRelationshipDrama(game: Game, now: number) {
+  const battle = game.world.battle!;
+  for (const edge of battle.relationshipEdges ?? []) {
+    const first = alivePlayers(game).find((player) => player.battle?.characterId === edge.a);
+    const second = alivePlayers(game).find((player) => player.battle?.characterId === edge.b);
+    if (!first || !second || first.battle?.areaId !== second.battle?.areaId) continue;
+    const reunionId = `关系:重逢:${edge.id}`;
+    if (!battle.storyTriggers?.includes(reunionId) && edge.strength >= 45 && edge.type !== 'rival') {
+      if (allyPlayers(game, now, first, second)) {
+        battle.storyTriggers!.push(reunionId);
+        pushEvent(game, now, 'story', `【关系剧情】${playerName(game, first)}与${playerName(game, second)}在${areaName(first.battle!.areaId ?? 'A01')}重逢，决定共同生存。`, first, second);
+        awardPopularity(game, now, 20, [first, second]);
+      }
+    }
+    const sacrificeId = `关系:守护:${edge.id}`;
+    const low = first.battle!.hp <= Math.floor(first.battle!.maxHp * 0.3) ? first : second.battle!.hp <= Math.floor(second.battle!.maxHp * 0.3) ? second : undefined;
+    const guardian = low?.id === first.id ? second : low ? first : undefined;
+    if (!battle.storyTriggers?.includes(sacrificeId) && low && guardian && ['family', 'mentor', 'friend'].includes(edge.type) && guardian.battle!.medkits > 0) {
+      guardian.battle!.medkits -= 1;
+      low.battle!.hp = Math.min(low.battle!.maxHp, low.battle!.hp + 28);
+      updateRelationship(game, guardian, low, 18, '危局守护');
+      battle.storyTriggers!.push(sacrificeId);
+      pushEvent(game, now, 'story', `【关系剧情】${playerName(game, guardian)}消耗医疗包守护濒危的${playerName(game, low)}。`, guardian, low);
+      awardPopularity(game, now, 30, [guardian, low]);
+    }
+    const reversalId = `关系:逆转:${edge.id}`;
+    if (!battle.storyTriggers?.includes(reversalId) && edge.type === 'rival' && edge.strength <= -30 && first.battle!.hp < first.battle!.maxHp * 0.5 && second.battle!.hp < second.battle!.maxHp * 0.5) {
+      first.battle!.alliance = second.id;
+      second.battle!.alliance = first.id;
+      updateRelationship(game, first, second, 24, '绝境逆转');
+      battle.storyTriggers!.push(reversalId);
+      pushEvent(game, now, 'story', `【关系剧情】${playerName(game, first)}与宿敌${playerName(game, second)}在绝境中暂时联手。`, first, second);
+      awardPopularity(game, now, 35, [first, second]);
+    }
+  }
 }
 
 function refreshAreaResources(game: Game, now: number) {
