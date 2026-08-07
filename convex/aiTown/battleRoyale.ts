@@ -120,6 +120,7 @@ export const battleState = v.object({
   }))),
   areaResources: v.optional(v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() }))),
   lastResourceRefresh: v.optional(v.number()),
+  consumedAreaStories: v.optional(v.array(v.string())),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -199,6 +200,7 @@ export function defaultBattleState(now: number): BattleState {
     relationshipEdges: defaultRelationshipEdges(),
     areaResources: defaultAreaResources(),
     lastResourceRefresh: now,
+    consumedAreaStories: [],
   };
 }
 
@@ -264,6 +266,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.relationshipEdges ??= defaultRelationshipEdges();
   battle.areaResources ??= defaultAreaResources();
   battle.lastResourceRefresh ??= now;
+  battle.consumedAreaStories ??= [];
 }
 
 function defaultRelationshipEdges() {
@@ -485,6 +488,7 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   const battle = game.world.battle!;
   if (Math.random() > 0.035) return;
   const candidates = AREA_SPECIAL_EVENTS.filter((event) => {
+    if (battle.consumedAreaStories?.includes(event.id)) return false;
     const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
     return !cooldown || cooldown.until <= now;
   });
@@ -508,6 +512,7 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   }
   battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
   battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
+  battle.consumedAreaStories!.push(event.id);
   battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
   pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」。`);
 }
@@ -906,8 +911,8 @@ function tryBuyUpgrade(game: Game, now: number, player: Player) {
 }
 
 function tryAlliance(game: Game, now: number, player: Player) {
-  const relatedPartners = BATTLE_CONFIG.relationships
-    .filter((relation) => relation.type !== 'rival')
+  const relatedPartners = (game.world.battle?.relationshipEdges ?? [])
+    .filter((relation) => relation.type !== 'rival' && relation.strength >= 20)
     .map((relation) => {
       const ownId = player.battle?.characterId;
       if (relation.a !== ownId && relation.b !== ownId) {

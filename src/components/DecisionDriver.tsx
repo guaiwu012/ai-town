@@ -95,10 +95,13 @@ async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerI
   const candidates = [...game.world.players.values()]
     .filter((candidate) => candidate.id !== playerId && candidate.battle && !candidate.battle.eliminated)
     .map((candidate) => ({ id: candidate.id, name: game.playerDescriptions.get(candidate.id)?.name ?? candidate.id, areaId: candidate.battle?.areaId, hp: Math.ceil(candidate.battle?.hp ?? 0), alliance: stats.alliance === candidate.id }));
+  const relationships = (game.world.battle?.relationshipEdges ?? [])
+    .filter((edge) => edge.a === stats.characterId || edge.b === stats.characterId)
+    .map((edge) => ({ with: edge.a === stats.characterId ? edge.b : edge.a, type: edge.type, strength: edge.strength, hidden: edge.hidden }));
   const prompt = {
     role: `${name} (${stats.characterId})`,
     self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
-    openAreas: game.world.battle?.openAreas,
+    openAreas: game.world.battle?.openAreas, relationships,
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
     instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","reason":"不超过70字中文理由"}。攻击、结盟、交易只可选同区域目标。优先求生、利用人设和当前物资。',
