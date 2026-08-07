@@ -17,16 +17,16 @@ type Decision = {
   reason?: string;
 };
 
-type Props = { worldId: Id<'worlds'>; game: ServerGame; config?: DeepSeekConfig };
+type Props = { worldId: Id<'worlds'>; game: ServerGame; config?: DeepSeekConfig; enabled?: boolean };
 
-export default function DecisionDriver({ worldId, game, config }: Props) {
+export default function DecisionDriver({ worldId, game, config, enabled = true }: Props) {
   const sendInput = useMutation(api.aiTown.main.sendInput);
   const driverId = useMemo(getDriverId, []);
-  const inFlight = useRef(new Set<string>());
+  const inFlight = useRef(new Map<string, AbortController>());
   const battle = game.world.battle;
 
   useEffect(() => {
-    if (!config) return;
+    if (!config || !enabled) return;
     const tick = async () => {
       const now = Date.now();
       const leaseActive = battle?.decisionDriverId === driverId && (battle.decisionDriverUntil ?? 0) > now;
@@ -42,15 +42,20 @@ export default function DecisionDriver({ worldId, game, config }: Props) {
         .filter((player) => !inFlight.current.has(player.id))
         .slice(0, Math.max(0, MAX_CONCURRENT_REQUESTS - inFlight.current.size));
       duePlayers.forEach((player) => {
-        inFlight.current.add(player.id);
-        requestAndSubmitDecision(config, game, worldId, driverId, player.id, sendInput)
+        const controller = new AbortController();
+        inFlight.current.set(player.id, controller);
+        requestAndSubmitDecision(config, game, worldId, driverId, player.id, sendInput, controller.signal)
           .finally(() => inFlight.current.delete(player.id));
       });
     };
     void tick();
     const timer = window.setInterval(() => void tick(), 1600);
-    return () => window.clearInterval(timer);
-  }, [battle?.decisionDriverId, battle?.decisionDriverUntil, battle?.decisionCount, battle?.decisionMax, config, driverId, game, sendInput, worldId]);
+    return () => {
+      window.clearInterval(timer);
+      inFlight.current.forEach((controller) => controller.abort());
+      inFlight.current.clear();
+    };
+  }, [battle?.decisionDriverId, battle?.decisionDriverUntil, battle?.decisionCount, battle?.decisionMax, config, driverId, enabled, game, sendInput, worldId]);
 
   return null;
 }
@@ -62,11 +67,12 @@ async function requestAndSubmitDecision(
   driverId: string,
   playerId: GameId<'players'>,
   sendInput: ReturnType<typeof useMutation>,
+  signal: AbortSignal,
 ) {
   const player = game.world.players.get(playerId);
   if (!player?.battle) return;
   try {
-    const decision = await requestDecision(config, game, playerId);
+    const decision = await requestDecision(config, game, playerId, signal);
     await sendInput({
       worldId,
       name: 'submitAIDecision',
@@ -80,6 +86,7 @@ async function requestAndSubmitDecision(
       },
     });
   } catch (error) {
+    if (signal.aborted) return;
     await sendInput({
       worldId,
       name: 'reportAIDecisionFailure',
@@ -88,7 +95,7 @@ async function requestAndSubmitDecision(
   }
 }
 
-async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerId: GameId<'players'>): Promise<Decision> {
+async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerId: GameId<'players'>, signal: AbortSignal): Promise<Decision> {
   const player = game.world.players.get(playerId)!;
   const stats = player.battle!;
   const name = game.playerDescriptions.get(playerId)?.name ?? playerId;
@@ -106,12 +113,14 @@ async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerI
     candidates,
     instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","reason":"不超过70字中文理由"}。攻击、结盟、交易只可选同区域目标。优先求生、利用人设和当前物资。',
   };
-  const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);
+  const timeoutController = new AbortController();
+  const timeout = window.setTimeout(() => timeoutController.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);
+  const abort = () => timeoutController.abort();
+  signal.addEventListener('abort', abort, { once: true });
   try {
     const response = await fetch(`${config.baseUrl}/v1/chat/completions`, {
       method: 'POST',
-      signal: controller.signal,
+      signal: timeoutController.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
       body: JSON.stringify({ model: config.model, temperature: 0.65, max_tokens: 180, messages: [{ role: 'system', content: '你是严格输出 JSON 的游戏战术代理。' }, { role: 'user', content: JSON.stringify(prompt) }] }),
     });
@@ -124,6 +133,7 @@ async function requestDecision(config: DeepSeekConfig, game: ServerGame, playerI
     return decision;
   } finally {
     window.clearTimeout(timeout);
+    signal.removeEventListener('abort', abort);
   }
 }
 

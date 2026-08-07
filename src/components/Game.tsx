@@ -127,7 +127,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         <BattleBroadcastToasts feed={game.world.battle?.feed} />
-        <DecisionDriver worldId={worldId} game={game} config={deepSeekConfig} />
+        <DecisionDriver worldId={worldId} game={game} config={deepSeekConfig} enabled={!replayActive} />
         {viewMode === 'live' ? <>
           <LiveBattleHud
             game={game}
