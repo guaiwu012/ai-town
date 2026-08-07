@@ -13,7 +13,11 @@ This plan maps the reference repository's configuration tables to the local Conv
 | Global game config | `BATTLE_CONFIG.match`, `runtime`, `zone`, `weapons` | Implemented: no battle constants in UI or engine loops |
 | Dynamic restricted zone | `tickMatchRules` and `world.battle.openAreas` | Implemented: phase, day/night, scheduled area closure, public broadcast |
 | Log event routing | `world.battle.feed` and `BattleBroadcastToasts` | Implemented: public top-of-screen feed; event kinds remain extensible |
-| Audience intervention | existing minesweeper + `tipAgent` | Existing flow preserved; score converts to agent coins |
+| Audience intervention | `earnIntervention` + `applyAudienceScore` | Implemented: minesweeper score converts to capped host intervention points |
+| Heat, combo and missions | `battleState` + `awardPopularity` | Implemented: heat score, combo multiplier, hidden missions and intervention rewards |
+| Regional special stories | `AREA_SPECIAL_EVENTS` + battle tick | Implemented: 22 data rows dispatch generic runtime effects; exact per-row prerequisites remain P1 work |
+| C12 truth line | `CHARACTER_STORIES` + `unlockTruth` | Implemented: identity card, three clues and a five-point unlock |
+| LLM tactical decisions | `agentOperations.ts` | Not implemented: battle uses a rules/random action loop; browser DS configuration is not wired to Convex |
 
 ## Development tasks
 
@@ -25,6 +29,12 @@ This plan maps the reference repository's configuration tables to the local Conv
 - Add Convex migration coverage for old worlds that only have the original battle fields.
 - Verify reset is idempotent and always produces the configured contestant count.
 
+### P0: LLM decision integrity
+
+- Replace browser-only DS configuration with a server-side, scoped credential strategy.
+- Add a structured LLM battle-decision action and validate every proposed action in Convex.
+- Record decision inputs, model output, validation result and fallback reason for observability.
+
 ### P1: agent simulation
 
 - Split battle decisions into perception, utility scoring and action execution.
@@ -35,15 +45,14 @@ This plan maps the reference repository's configuration tables to the local Conv
 
 ### P1: viewer systems
 
-- Add heat score deltas and the `1 + heat / 500` score multiplier to the event scorer.
-- Add intervention points, cooldowns and an audit log for viewer actions.
-- Add map-level event markers and per-agent history beside the current public feed.
+- Add per-action heat score breakdowns to the viewer audit log.
+- Add durable per-agent decision history beside the public feed.
 
 ### P2: content and production
 
 - Replace placeholder character sprites with a complete 12-character sprite set.
 - Replace the generic tile map with the 13-area battle map while preserving the current camera and hit effects.
-- Add rare item spawning, special area stories, the Truth Chamber unlock and elite encounters.
+- Add exact prerequisites, branching consequences and one-time guards for every regional story row.
 - Add replay fixtures for a fixed seed so combat, alliances and zone closure are reproducible in CI.
 
 ## Acceptance criteria

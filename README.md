@@ -1,3 +1,26 @@
+# AI 大逃杀
+
+> 基于 AI Town 与 Convex 的 12 人观赛型大逃杀原型。前端部署在 CloudBase，比赛状态运行在 Convex。
+
+**当前 AI 状态（请先阅读）**：角色的聊天文案可以调用后端已配置的 LLM；但战斗层的搜索、购买、结盟、移动、攻击和撤退，目前由 `convex/aiTown/battleRoyale.ts` 中的规则和随机权重驱动，**尚未接入 DeepSeek 做战术决策**。网页的“DS API 配置”当前只保存在本机浏览器，未上传至 Convex，也不会驱动比赛。详见 [开发进度](./docs/development-progress.md)。
+
+## 当前功能
+
+- 12 名参考配表角色、13 个区域、初始关系、物品池、区域邻接与角色专属剧情。
+- Convex 实时比赛状态：生命、武器、物资、区域、禁区、热度、连击、任务、线索和真相之间。
+- 主办方干预点：扫雷小游戏结算干预点；可投放补给、陷阱、情报、规则和结盟干预。
+- 22 条区域特殊剧情配置已进入事件循环，地图会显示干预和剧情落点。
+- CloudBase 线上地址：https://playable-ads-d3g6ipimne9fe9ae6-1320513533.tcloudbaseapp.com/ai-town/
+
+## 架构与运行
+
+- 前端：Vite + React + PixiJS；`npm run dev`。
+- 游戏状态和比赛循环：Convex；部署函数使用 `npx convex dev` 或 `npx convex deploy`。
+- 前端静态部署：`npx tcb hosting deploy dist ai-town -e playable-ads-d3g6ipimne9fe9ae6`。
+- 生产环境的 LLM 密钥必须配置在 Convex 环境变量中，不能使用浏览器本地存储作为服务端密钥来源。
+
+---
+
 # AI Town 🏠💻💌
 
 [Live Demo](https://www.convex.dev/ai-town)
