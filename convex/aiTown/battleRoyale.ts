@@ -641,9 +641,20 @@ export function applyIntervention(
     case 'RUL_04': battle.bountyPlayerId = target!.id; announce(`${playerName(game, target!)}成为悬赏目标。`); break;
     case 'INF_01': collectTruthClue(game, now, `情报-${target!.battle!.characterId}`, target!); announce(`${playerName(game, target!)}收到了一条真实情报。`); break;
     case 'INF_02': target!.battle!.stress = (target!.battle!.stress ?? 0) + 20; announce(`${playerName(game, target!)}被虚假情报扰乱。`); break;
-    case 'INF_03': target!.battle!.alliance = undefined; second!.battle!.alliance = undefined; announce(`匿名消息挑拨了${playerName(game, target!)}与${playerName(game, second!)}。`); awardPopularity(game, now, 25, [target!, second!]); break;
+    case 'INF_03': target!.battle!.alliance = undefined; second!.battle!.alliance = undefined; updateRelationship(game, target!, second!, -25, '匿名挑拨'); announce(`匿名消息挑拨了${playerName(game, target!)}与${playerName(game, second!)}。`); awardPopularity(game, now, 25, [target!, second!]); break;
     case 'INF_04': announce(`${playerName(game, target!)}的位置已被标记：${areaName(target!.battle!.areaId ?? 'A01')}。`); break;
-    case 'REC_01': announce(`${playerName(game, target!)}的关系档案已被公开侦察。`); break;
+    case 'REC_01': {
+      const characterId = target!.battle!.characterId;
+      const edge = battle.relationshipEdges?.find((candidate) => candidate.hidden && (candidate.a === characterId || candidate.b === characterId));
+      if (edge) {
+        edge.hidden = false;
+        edge.lastReason = '主办方关系侦察';
+        announce(`${playerName(game, target!)}的隐藏${edge.type}关系已被公开侦察。`);
+      } else {
+        announce(`${playerName(game, target!)}的关系档案已被公开侦察，但没有新的隐藏关系。`);
+      }
+      break;
+    }
     case 'REC_02': battle.hiddenMissions![0] && (battle.hiddenMissions![0].status = `已揭示：${battle.hiddenMissions![0].status}`); announce('一条隐藏任务已被侦察揭示。'); break;
     case 'STO_01':
       if (areaId !== 'A04') throw new Error('拆除笼门只能作用于格斗笼。');

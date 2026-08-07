@@ -7,7 +7,7 @@ This plan maps the reference repository's configuration tables to the local Conv
 | Reference table | Local runtime owner | Current status |
 | --- | --- | --- |
 | Character runtime attributes | `data/battleRoyaleConfig.ts` + `battleStats` | Implemented: HP, stamina, satiety, zone time, stress, heat |
-| Relationship graph | `BATTLE_CONFIG.relationships` + alliance target selection | Implemented: four fixed seed links, hidden mentor link |
+| Relationship graph | `BATTLE_CONFIG.relationships` + `relationshipEdges` + alliance target selection | Implemented: seed links, hidden-link reveal, and durable strength changes for alliance, trade, attack and intervention |
 | Area definition and adjacency | `BATTLE_CONFIG.areas` and `adjacency` | Implemented as authoritative IDs; map geometry remains the existing Pixi map |
 | Area resource pools and item definitions | `BATTLE_CONFIG.areaItems` + loot runtime | Implemented: searches emit configured item IDs and fill inventory |
 | Global game config | `BATTLE_CONFIG.match`, `runtime`, `zone`, `weapons` | Implemented: no battle constants in UI or engine loops |
@@ -15,9 +15,9 @@ This plan maps the reference repository's configuration tables to the local Conv
 | Log event routing | `world.battle.feed` and `BattleBroadcastToasts` | Implemented: public top-of-screen feed; event kinds remain extensible |
 | Audience intervention | `earnIntervention` + `applyAudienceScore` | Implemented: minesweeper score converts to capped host intervention points |
 | Heat, combo and missions | `battleState` + `awardPopularity` | Implemented: heat score, combo multiplier, hidden missions and intervention rewards |
-| Regional special stories | `AREA_SPECIAL_EVENTS` + battle tick | Implemented: 22 data rows dispatch generic runtime effects; exact per-row prerequisites remain P1 work |
+| Regional special stories | `AREA_SPECIAL_EVENTS` + battle tick | Implemented: 24 regional rows and 3 global events dispatch primary prerequisites and runtime effects; exact branch content remains P1 work |
 | C12 truth line | `CHARACTER_STORIES` + `unlockTruth` | Implemented: identity card, three clues and a five-point unlock |
-| LLM tactical decisions | `agentOperations.ts` | Not implemented: battle uses a rules/random action loop; browser DS configuration is not wired to Convex |
+| LLM tactical decisions | `DecisionDriver.tsx` + `submitAIDecision()` | Implemented: browser-local BYOK calls produce constrained actions; Convex validates and records a rules-AI fallback |
 
 ## Development tasks
 
