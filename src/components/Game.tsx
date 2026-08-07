@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import PixiGame from './PixiGame.tsx';
 
 import { useElementSize } from 'usehooks-ts';
@@ -17,6 +17,9 @@ import DeepSeekConfigGate, {
   readDeepSeekConfig,
 } from './DeepSeekConfigGate.tsx';
 import DecisionDriver from './DecisionDriver.tsx';
+import LiveBattleHud from './LiveBattleHud.tsx';
+import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
+import BattleReplayControls from './BattleReplayControls.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -26,6 +29,14 @@ export default function Game() {
     kind: 'player';
     id: GameId<'players'>;
   }>();
+  const [viewMode, setViewMode] = useState<'live' | 'overview'>('live');
+  const [cameraMode, setCameraMode] = useState<'auto' | 'locked'>('auto');
+  const [focusPlayerId, setFocusPlayerId] = useState<GameId<'players'>>();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
+  const [replayActive, setReplayActive] = useState(false);
+  const [replaySpeed, setReplaySpeed] = useState(1);
+  const [replayTime, setReplayTime] = useState<number>();
   const [deepSeekConfig, setDeepSeekConfig] = useState<DeepSeekConfig | undefined>(() =>
     readDeepSeekConfig(),
   );
@@ -46,9 +57,48 @@ export default function Game() {
 
   const scrollViewRef = useRef<HTMLDivElement>(null);
 
+  const selectDirectorTarget = () => {
+    if (!game) return undefined;
+    const alive = [...game.world.players.values()].filter((player) => player.battle && !player.battle.eliminated);
+    const featuredEvent = (game.world.battle?.feed ?? []).find((event) =>
+      ['eliminate', 'attack', 'intervention', 'areaStory', 'globalStory', 'story', 'alliance', 'betrayal'].includes(event.kind) &&
+      event.actor && alive.some((player) => player.id === event.actor),
+    );
+    const actor = featuredEvent?.actor ? game.world.players.get(featuredEvent.actor as GameId<'players'>) : undefined;
+    return actor?.id ?? alive.sort((a, b) => (b.battle?.heat ?? 0) - (a.battle?.heat ?? 0))[0]?.id;
+  };
+
+  useEffect(() => {
+    if (cameraMode !== 'auto' || !game) return;
+    const target = selectDirectorTarget();
+    if (target) setFocusPlayerId(target);
+  }, [cameraMode, game]);
+
+  useEffect(() => {
+    if (!replayActive || !game) return;
+    const end = Date.now();
+    const timer = window.setInterval(() => {
+      setReplayTime((previous) => Math.min(end, (previous ?? game.world.battle?.started ?? end) + 500 * replaySpeed));
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [replayActive, replaySpeed, game]);
+
   if (!worldId || !engineId || !game) {
     return null;
   }
+
+  const followPlayer = (playerId: GameId<'players'>, openDrawer = true) => {
+    setFocusPlayerId(playerId);
+    setSelectedElement({ kind: 'player', id: playerId });
+    setCameraMode('locked');
+    setViewMode('live');
+    setDrawerOpen(openDrawer);
+  };
+
+  const handleSelection = (element: { kind: 'player'; id: GameId<'players'> } | undefined) => {
+    setSelectedElement(element);
+    if (element) followPlayer(element.id);
+  };
   return (
     <>
       {SHOW_DEBUG_UI && <DebugTimeManager timeManager={timeManager} width={200} height={100} />}
@@ -64,9 +114,9 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
                 engineId={engineId}
                 width={width}
                 height={height}
-                historicalTime={historicalTime}
-                selectedPlayerId={selectedElement?.id}
-                setSelectedElement={setSelectedElement}
+                historicalTime={replayActive ? replayTime : historicalTime}
+                selectedPlayerId={focusPlayerId}
+                setSelectedElement={handleSelection}
               />
             </ConvexProvider>
           </Stage>
@@ -74,18 +124,41 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         <BattleBroadcastToasts feed={game.world.battle?.feed} />
         <DecisionDriver worldId={worldId} game={game} config={deepSeekConfig} />
-        <div
-          className="pointer-events-none absolute inset-3 z-10 flex flex-col"
-          ref={scrollViewRef}
-        >
+        {viewMode === 'live' ? <>
+          <LiveBattleHud
+            game={game}
+            focusPlayerId={focusPlayerId}
+            cameraMode={cameraMode}
+            onOpenOverview={() => setViewMode('overview')}
+            onOpenDetails={() => setDrawerOpen(true)}
+            onOpenMine={() => { setLaunchModal('mine'); setViewMode('overview'); }}
+            onResumeDirector={() => { setCameraMode('auto'); setDrawerOpen(false); }}
+            onRestart={() => { setLaunchModal('reset'); setViewMode('overview'); }}
+            onToggleReplay={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
+            replayActive={replayActive}
+          />
+          <BattleReplayControls
+            battle={game.world.battle}
+            active={replayActive}
+            speed={replaySpeed}
+            onToggle={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
+            onSpeed={setReplaySpeed}
+            onJump={(time) => { setReplayTime(time); setReplayActive(true); }}
+          />
+          {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} onClose={() => setDrawerOpen(false)} />}
+        </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
             worldId={worldId}
             game={game}
             selectedPlayerId={selectedElement?.id}
-            setSelectedElement={setSelectedElement}
+            setSelectedElement={handleSelection}
             onEditDeepSeekConfig={() => setShowDeepSeekConfig(true)}
+            onBackToLive={() => setViewMode('live')}
+            onFollowPlayer={followPlayer}
+            launchModal={launchModal}
+            onLaunchModalHandled={() => setLaunchModal(undefined)}
           />
-        </div>
+        </div>}
         {showDeepSeekConfig && (
           <DeepSeekConfigGate
             initialConfig={deepSeekConfig}

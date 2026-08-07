@@ -1,4 +1,4 @@
-import { applyIntervention, defaultBattleState, defaultBattleStats } from './battleRoyale';
+import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -29,6 +29,17 @@ function createGame(players: TestPlayer[]) {
 }
 
 describe('battle royale host intervention rules', () => {
+  it('replays the same random sequence from the same match seed', () => {
+    const first = { world: { battle: defaultBattleState(1_000, 20260807) } } as any;
+    const second = { world: { battle: defaultBattleState(1_000, 20260807) } } as any;
+
+    const firstSequence = Array.from({ length: 6 }, () => battleRandom(first));
+    const secondSequence = Array.from({ length: 6 }, () => battleRandom(second));
+
+    expect(firstSequence).toEqual(secondSequence);
+    expect(first.world.battle.rngState).toBe(second.world.battle.rngState);
+  });
+
   it('reveals the selected character hidden relationship and leaves an audit event', () => {
     const game = createGame([createPlayer('p:4', 'C03', 'A05')]);
 

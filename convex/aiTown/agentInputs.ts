@@ -8,7 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
-import { applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, resetBattleMatch, submitAIDecision } from './battleRoyale';
+import { applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, submitAIDecision } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -190,12 +190,6 @@ export const agentInputs = {
   reportAIDecisionFailure: inputHandler({
     args: { driverId: v.string(), playerId, reason: v.string() },
     handler: (game, now, args) => reportAIDecisionFailure(game, now, args),
-  }),
-  resetBattle: inputHandler({
-    args: {},
-    handler: (game, now) => {
-      return resetBattleMatch(game, now);
-    },
   }),
 };
 

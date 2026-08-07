@@ -6,6 +6,7 @@ import * as gentlesparkle from '../../data/animations/gentlesparkle.json';
 import * as gentlewaterfall from '../../data/animations/gentlewaterfall.json';
 import * as gentlesplash from '../../data/animations/gentlesplash.json';
 import * as windmill from '../../data/animations/windmill.json';
+import { BATTLE_ARENA_ART } from '../../data/battleArena';
 
 const animations = {
   'campfire.json': { spritesheet: campfire, url: '/ai-town/assets/spritesheets/campfire.png' },
@@ -64,6 +65,14 @@ export const PixiStaticMap = PixiComponent('StaticMap', {
         container.addChild(ctile);
       }
     }
+
+    // A dedicated battle-arena layer gives the existing navigable tile map its
+    // own visual identity while collisions and pathfinding continue using map data.
+    const arenaBackdrop = PIXI.Sprite.from(BATTLE_ARENA_ART);
+    arenaBackdrop.width = screenxtiles * map.tileDim;
+    arenaBackdrop.height = screenytiles * map.tileDim;
+    arenaBackdrop.alpha = 0.72;
+    container.addChild(arenaBackdrop);
 
     // TODO: Add layers.
     const spritesBySheet = new Map<string, AnimatedSprite[]>();

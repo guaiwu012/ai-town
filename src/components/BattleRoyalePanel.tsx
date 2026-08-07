@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation } from 'convex/react';
 import { api } from '../../convex/_generated/api';
@@ -30,6 +30,10 @@ type BattleRoyalePanelProps = {
   selectedPlayerId?: GameId<'players'>;
   setSelectedElement: SelectElement;
   onEditDeepSeekConfig: () => void;
+  onBackToLive: () => void;
+  onFollowPlayer: (playerId: GameId<'players'>) => void;
+  launchModal?: 'mine' | 'reset';
+  onLaunchModalHandled: () => void;
 };
 
 export default function BattleRoyalePanel({
@@ -38,6 +42,10 @@ export default function BattleRoyalePanel({
   selectedPlayerId,
   setSelectedElement,
   onEditDeepSeekConfig,
+  onBackToLive,
+  onFollowPlayer,
+  launchModal,
+  onLaunchModalHandled,
 }: BattleRoyalePanelProps) {
   const sendInput = useMutation(api.aiTown.main.sendInput);
   const resetBattleMutation = useMutation(api.world.resetBattle);
@@ -46,9 +54,17 @@ export default function BattleRoyalePanel({
   const [mineStatus, setMineStatus] = useState<MineStatus>('ready');
   const [flagMode, setFlagMode] = useState(false);
   const [pending, setPending] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [targetAreaId, setTargetAreaId] = useState('A01');
   const [targetPlayerId, setTargetPlayerId] = useState<string | undefined>();
   const [secondTargetPlayerId, setSecondTargetPlayerId] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (!launchModal) return;
+    if (launchModal === 'mine') openMineGame();
+    if (launchModal === 'reset') setResetConfirmOpen(true);
+    onLaunchModalHandled();
+  }, [launchModal]);
 
   const players = useMemo(
     () =>
@@ -167,11 +183,6 @@ export default function BattleRoyalePanel({
       await resetBattleMutation({
         worldId,
       });
-      await sendInput({
-        worldId,
-        name: 'resetBattle',
-        args: {},
-      });
     } finally {
       setPending(false);
     }
@@ -182,7 +193,7 @@ export default function BattleRoyalePanel({
     <section className="overview-console pointer-events-auto grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_350px] grid-rows-[minmax(0,1fr)_148px] gap-2 p-2">
       <div className="overview-map arena-panel relative min-h-0 p-2">
         <div className="overview-map-heading absolute left-5 top-4 z-10">
-          <div className="arena-kicker">直播战场总览</div>
+          <div className="flex items-center gap-2"><div className="arena-kicker">战略总览</div><button className="live-hud-button" onClick={onBackToLive}>返回直播跟随</button><button className="live-hud-button live-hud-danger" onClick={() => setResetConfirmOpen(true)}>新开一局</button></div>
           <h2 className="arena-heading mt-1 font-display text-4xl leading-none">AI 大逃杀</h2>
           <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-widest text-slate-300">
             <span>第 {battle?.day ?? 1} 天</span>
@@ -211,7 +222,7 @@ export default function BattleRoyalePanel({
                         key={player.id}
                         className={`overview-agent-dot ${selected?.id === player.id ? 'is-selected' : ''} ${stats.eliminated ? 'is-out' : ''}`}
                         title={`${name} · ${displayWeapon(stats.weapon)} · ${Math.ceil(stats.hp)} 生命`}
-                        onClick={() => { setTargetPlayerId(player.id); setSelectedElement({ kind: 'player', id: player.id }); }}
+                        onClick={() => { setTargetPlayerId(player.id); onFollowPlayer(player.id); }}
                       >
                         <span>{area.owner === stats.characterId ? '◆' : '●'}</span>
                         <small>{name}</small>
@@ -314,7 +325,7 @@ export default function BattleRoyalePanel({
                 key={player.id}
                 className="arena-agent-row w-full p-2 text-left transition"
                 data-selected={selectedRow}
-                onClick={() => { setTargetPlayerId(player.id); setSelectedElement({ kind: 'player', id: player.id }); }}
+                onClick={() => { setTargetPlayerId(player.id); onFollowPlayer(player.id); }}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="truncate text-base text-[#f0dfc7]">{name}</span>
@@ -482,6 +493,18 @@ export default function BattleRoyalePanel({
         </div>,
           document.body,
         )}
+      {resetConfirmOpen && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#020914]/85 p-4 backdrop-blur-md">
+          <div className="reset-dialog arena-console w-full max-w-md p-5 text-white">
+            <div className="arena-kicker">主办方确认</div>
+            <h3 className="arena-heading mt-1 text-3xl">开始新一局？</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-200">这会重置 12 名 AI、区域资源、关系、剧情、热度、干预点、模型决策计数和当前回合进度。</p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button className="live-hud-button" onClick={() => setResetConfirmOpen(false)} disabled={pending}>取消</button>
+              <button className="live-hud-button live-hud-danger" onClick={async () => { await resetMatch(); setResetConfirmOpen(false); onBackToLive(); }} disabled={pending}>{pending ? '重置中…' : '确认新开局'}</button>
+            </div>
+          </div>
+        </div>, document.body)}
     </>
   );
 }

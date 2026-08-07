@@ -129,6 +129,16 @@ export const battleState = v.object({
   lastAreaEventCheck: v.optional(v.number()),
   lastGlobalEventCheck: v.optional(v.number()),
   globalEffects: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+  seed: v.optional(v.number()),
+  rngState: v.optional(v.number()),
+  ruleVersion: v.optional(v.string()),
+  actionLog: v.optional(v.array(v.object({
+    id: v.number(), ts: v.number(), playerId: v.optional(playerId), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
+  }))),
+  replayCheckpoints: v.optional(v.array(v.object({
+    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(),
+  }))),
+  lastReplayCheckpointAt: v.optional(v.number()),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -166,7 +176,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
   };
 }
 
-export function defaultBattleState(now: number): BattleState {
+export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
   return {
     started: now,
     lastTick: 0,
@@ -213,6 +223,12 @@ export function defaultBattleState(now: number): BattleState {
     consumedAreaStories: [],
     areaEventCounts: [], areaBattleRounds: [], lastAreaEventCheck: 0,
     lastGlobalEventCheck: 0, globalEffects: [],
+    seed,
+    rngState: seed || 1,
+    ruleVersion: 'p2.0',
+    actionLog: [],
+    replayCheckpoints: [],
+    lastReplayCheckpointAt: now,
   };
 }
 
@@ -286,6 +302,12 @@ export function ensureBattleState(game: Game, now: number) {
   battle.lastAreaEventCheck ??= 0;
   battle.lastGlobalEventCheck ??= 0;
   battle.globalEffects ??= [];
+  battle.seed ??= now >>> 0;
+  battle.rngState ??= battle.seed || 1;
+  battle.ruleVersion ??= 'p2.0';
+  battle.actionLog ??= [];
+  battle.replayCheckpoints ??= [];
+  battle.lastReplayCheckpointAt ??= now;
 }
 
 function defaultRelationshipEdges() {
@@ -333,6 +355,7 @@ export function tickBattleRoyale(game: Game, now: number) {
     return;
   }
   battle.lastTick = now;
+  recordReplayCheckpoint(game, now);
 
   const alive = alivePlayers(game);
   if (alive.length <= 1) {
@@ -395,6 +418,7 @@ export function submitAIDecision(game: Game, now: number, args: {
       player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
     }
     pushEvent(game, now, 'decision', `【决策】${player ? playerName(game, player) : 'AI'} 的模型动作被拒绝：${reason}。`, player);
+    recordReplayAction(game, now, player, args.action, 'model', false, reason);
     return { accepted: false, reason };
   };
   if (battle.decisionDriverId !== args.driverId || (battle.decisionDriverUntil ?? 0) <= now) return fail('驾驶权已失效');
@@ -415,6 +439,7 @@ export function submitAIDecision(game: Game, now: number, args: {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
     pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}：${safeReason || '基于当前局势'}。`, player, target);
   }
+  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason);
   return result;
 }
 
@@ -514,11 +539,11 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
     return (!cooldown || cooldown.until <= now) && areaEventEligible(game, now, event.id, event.areaId);
   });
-  const event = candidates[Math.floor(Math.random() * candidates.length)];
+  const event = candidates[Math.floor(battleRandom(game) * candidates.length)];
   if (!event) return;
   const affected = alivePlayers(game).filter((player) => player.battle?.areaId === event.areaId);
   if (affected.length === 0) return;
-  const randomPlayer = affected[Math.floor(Math.random() * affected.length)];
+  const randomPlayer = affected[Math.floor(battleRandom(game) * affected.length)];
   if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15));
   if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 15; });
   if (event.effect === 'blizzard') affected.forEach((player) => {
@@ -542,7 +567,7 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   if (event.effect === 'trial' && affected.length >= 2) allyPlayers(game, now, affected[0], affected[1]);
   if (event.effect === 'falseGunshot' || event.effect === 'lost') {
     const destinations = adjacentAreaIds(event.areaId).filter((areaId) => battle.openAreas?.includes(areaId));
-    const destination = destinations[Math.floor(Math.random() * destinations.length)];
+    const destination = destinations[Math.floor(battleRandom(game) * destinations.length)];
     if (destination && moveToBattleArea(game, now, randomPlayer, destination)) {
       pushEvent(game, now, 'move', `【剧情转移】${playerName(game, randomPlayer)} 被${event.effect === 'lost' ? '密林迷雾' : '假枪声'}引向${areaName(destination)}。`, randomPlayer);
     }
@@ -584,7 +609,7 @@ function areaEventEligible(game: Game, now: number, eventId: string, areaId: str
     case 'A06_02': return searched;
     case 'A07_01': return occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
     case 'A08_01': return occupants.length >= 2 && stayedTwoMinutes;
-    case 'A08_02': return Math.random() < 0.25;
+    case 'A08_02': return battleRandom(game) < 0.25;
     case 'A09_01': return battleRounds >= 1;
     case 'A10_02': return occupants.some((player) => player.battle?.characterId !== 'C10');
     case 'A10_03': return battle.timeOfDay === 'night' && alivePlayers(game).some((player) => player.battle?.characterId === 'C10');
@@ -603,7 +628,7 @@ function triggerGlobalSpecialEvent(game: Game, now: number) {
   battle.lastGlobalEventCheck = now;
   const candidates = GLOBAL_SPECIAL_EVENTS.filter((event) => (battle.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0) < event.maxTriggers)
     .filter((event) => event.id !== 'GLB_02' || battle.timeOfDay === 'night');
-  const event = candidates.find((candidate) => Math.random() < (candidate.id === 'GLB_01' ? 0.1 : candidate.id === 'GLB_03' ? 0.05 : 0.12));
+  const event = candidates.find((candidate) => battleRandom(game) < (candidate.id === 'GLB_01' ? 0.1 : candidate.id === 'GLB_03' ? 0.05 : 0.12));
   if (!event) return;
   const alive = alivePlayers(game);
   if (event.effect === 'beastRage') alive.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 12; });
@@ -813,6 +838,7 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   stats.lastDecisionStatus = '规则回退';
   stats.lastDecisionFallback = fallbackReason ?? '未启用模型驾驶器';
   stats.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
+  recordReplayAction(game, now, player, 'fallback', 'rule', true, fallbackReason);
 
   if ((stats.interventionUntil ?? 0) > now) {
     if (stats.interventionKind?.startsWith('ENV') || stats.interventionKind === 'SUP_03') {
@@ -858,7 +884,7 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     return;
   }
 
-  if (enemy && !player.pathfinding && Math.random() < 0.48) {
+  if (enemy && !player.pathfinding && battleRandom(game) < 0.48) {
     if (tacticalMove(game, now, player, enemy, 'approach')) {
       player.activity = {
         description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
@@ -873,11 +899,11 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     return;
   }
 
-  if (Math.random() < 0.24 && tryAlliance(game, now, player)) {
+  if (battleRandom(game) < 0.24 && tryAlliance(game, now, player)) {
     return;
   }
 
-  if (Math.random() < 0.62) {
+  if (battleRandom(game) < 0.62) {
     loot(game, now, player);
     return;
   }
@@ -903,7 +929,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   const effectiveWeaponPower = weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower;
   const damage = Math.max(
     2,
-    Math.floor(effectiveWeaponPower * (0.55 + Math.random() * 0.35) - defend.armor),
+    Math.floor(effectiveWeaponPower * (0.55 + battleRandom(game) * 0.35) - defend.armor),
   );
   defend.hp = Math.max(0, defend.hp - damage);
   attacker.activity = {
@@ -958,7 +984,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       },
     );
     awardPopularity(game, now, 25 + (game.world.battle?.bountyPlayerId === target.id ? 15 : 0), [attacker]);
-  } else if (Math.random() < 0.72) {
+  } else if (battleRandom(game) < 0.72) {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
   updateRelationship(game, attacker, target, -12, '攻击');
@@ -974,12 +1000,12 @@ function loot(game: Game, now: number, player: Player) {
     return;
   }
   if (resource) resource.remaining -= 1;
-  const roll = Math.random();
+  const roll = battleRandom(game);
   if (roll < 0.16 && stats.medkits < 2) {
     stats.medkits += 1;
     pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到医疗包。`, player);
   } else if (roll < 0.34) {
-    const weapon = weapons[Math.min(weapons.length - 1, 1 + Math.floor(Math.random() * 4))];
+    const weapon = weapons[Math.min(weapons.length - 1, 1 + Math.floor(battleRandom(game) * 4))];
     const power = weaponPower(weapon);
     if (power > stats.weaponPower) {
       stats.weapon = weapon;
@@ -996,10 +1022,10 @@ function loot(game: Game, now: number, player: Player) {
       );
     }
   } else {
-    const coins = 2 + Math.floor(Math.random() * 6);
+    const coins = 2 + Math.floor(battleRandom(game) * 6);
     stats.coins += coins;
     const pool = BATTLE_CONFIG.areaItems[areaId] ?? [];
-    const foundItem = pool[Math.floor(Math.random() * pool.length)];
+    const foundItem = pool[Math.floor(battleRandom(game) * pool.length)];
     if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
       stats.inventory = [...(stats.inventory ?? []), foundItem];
       applyItemEffect(game, now, player, foundItem);
@@ -1340,8 +1366,8 @@ function tacticalDestination(
 function randomOpenTile(game: Game, player: Player) {
   for (let attempt = 0; attempt < 24; attempt++) {
     const candidate = {
-      x: 1 + Math.floor(Math.random() * (game.worldMap.width - 2)),
-      y: 1 + Math.floor(Math.random() * (game.worldMap.height - 2)),
+      x: 1 + Math.floor(battleRandom(game) * (game.worldMap.width - 2)),
+      y: 1 + Math.floor(battleRandom(game) * (game.worldMap.height - 2)),
     };
     if (!blocked(game, Date.now(), candidate, player.id)) {
       return candidate;
@@ -1367,6 +1393,46 @@ function openTilesNear(game: Game, player: Player, origin: { x: number; y: numbe
     }
   }
   return candidates;
+}
+
+export function battleRandom(game: Game) {
+  const battle = game.world.battle!;
+  // Numerical Recipes LCG: persisted state makes server-side rules replayable.
+  const state = battle.rngState ?? battle.seed ?? 1;
+  const next = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+  battle.rngState = next || 1;
+  return next / 0x1_0000_0000;
+}
+
+function recordReplayAction(
+  game: Game,
+  now: number,
+  player: Player | undefined,
+  action: string,
+  source: 'model' | 'rule',
+  accepted: boolean,
+  reason?: string,
+) {
+  const battle = game.world.battle!;
+  const log = battle.actionLog ?? (battle.actionLog = []);
+  log.push({ id: battle.nextEventId, ts: now, playerId: player?.id, action, source, accepted, reason: reason?.slice(0, 140) });
+  if (log.length > 480) log.splice(0, log.length - 480);
+}
+
+function recordReplayCheckpoint(game: Game, now: number) {
+  const battle = game.world.battle!;
+  if (now < (battle.lastReplayCheckpointAt ?? now) + 30000) return;
+  const checkpoints = battle.replayCheckpoints ?? (battle.replayCheckpoints = []);
+  checkpoints.push({
+    ts: now,
+    eventId: Math.max(0, battle.nextEventId - 1),
+    rngState: battle.rngState ?? battle.seed ?? 1,
+    alive: alivePlayers(game).length,
+    popularity: battle.popularity ?? 0,
+    phase: battle.phase ?? 'early',
+  });
+  if (checkpoints.length > 60) checkpoints.splice(0, checkpoints.length - 60);
+  battle.lastReplayCheckpointAt = now;
 }
 
 function pushEvent(

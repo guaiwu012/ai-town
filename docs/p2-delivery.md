@@ -1,0 +1,23 @@
+# P2 交付说明
+
+最后更新：2026-08-07
+
+## 运行时与回放
+
+- 每局状态包含 `seed`、`rngState`、`ruleVersion`、`actionLog` 和 `replayCheckpoints`。
+- 服务端规则随机数统一经持久化 LCG 产生；相同 seed 会得到相同随机序列。
+- `actionLog` 记录模型动作是否通过校验及规则 AI 回退原因；日志不包含提示词、响应原文或 API 密钥。
+- 前端回放控件仅移动本地历史时间，显示行动、检查点和关键事件；不会触发 DeepSeek 请求。
+
+## 视觉资产
+
+- `public/assets/battle/arena-live-map.png`：原创 13 区俯视战场视觉层。
+- `public/assets/battle/contestant-portraits.png`：12 名原创参赛者识别图集，用于直播焦点与角色档案。
+- 所有区域 ID、锚点和邻接仍由 `data/battleRoyaleConfig.ts` 与 `data/battleArena.ts` 统一定义。
+
+## P2 验收清单
+
+- 直播模式不被总览覆盖，用户可锁定 AI 或恢复自动导播。
+- 新开局仅经 `world.resetBattle` 执行一次，并重置状态为 12 名唯一角色。
+- 同 seed 的 RNG 测试稳定通过。
+- 最终版本需补齐：完整碰撞/寻路网格、逐条剧情分支、物品稀有度与固定回放夹具。

@@ -27,8 +27,8 @@
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜和关闭播报；警告倒计时、红区持续伤害、按配表的关闭顺序/保护逻辑尚未完整执行。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`loot()` | 部分抽象 | 已按区域抽取物品名；资源数量、刷新、枯竭、稀有权重及区域信息面板余量未实现。 |
 | `地图/配表_物品定义` | 物品 ID 作为背包字符串；武器另由 `BATTLE_CONFIG.weapons` 定义 | 部分抽象 | 非武器物品的稀有度、价格、使用效果、合成/交易属性和条件未被执行。 |
-| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | 地图图片和区域命名的视觉参考 | 未接入 | 当前实际战斗仍使用 AI Town 的 tile map；尚未把参考 13 区地图做成可碰撞、可寻路的真实关卡。 |
-| `地图/pic/*` | `public/ai-town/assets/reference/battle-arena-map.png` 的总览视觉方向 | 部分抽象 | 只用于 Overview 背景和标记层，不是游戏内的真实地图资产。 |
+| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点和邻接 | 开发中 | 已有共享区域布局数据与原创战场底图；碰撞层、寻路网格与完整地标交互仍在接入。 |
+| `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
 
 ## 系统表
 
