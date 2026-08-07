@@ -26,6 +26,7 @@
 | 扫雷结算干预点 | 完成 | `BattleRoyalePanel.tsx` |
 | 24 条区域剧情、3 条全局事件与运行时触发 | 完成基础版 | `AREA_SPECIAL_EVENTS` + `GLOBAL_SPECIAL_EVENTS` |
 | 剧情专属主办方干预 | 完成基础版 | `STO_01` 至 `STO_06` + `applyIntervention()` |
+| 剧情干预状态测试 | 完成 | `convex/aiTown/battleRoyale.test.ts` |
 | C12 身份卡、线索和真相之间 | 完成 | `battleRoyale.ts` |
 | 地图干预/剧情落点特效 | 完成 | `BattleRoyalePanel.tsx` + `index.css` |
 | CloudBase 前端、Convex 后端 | 已部署 | 见 README |
@@ -47,6 +48,7 @@
 ## 验证清单
 
 - `npm run build` 通过。
+- `npm test` 通过：配置、关系公开/挑拨和医院剧情干预均有自动测试。
 - Convex 新局创建 12 名唯一角色。
 - 扫雷分数写入 `interventionPoints`，上限为 30。
 - 主办方干预写入事件流并产生地图效果状态。

@@ -649,7 +649,7 @@ export function applyIntervention(
       if (edge) {
         edge.hidden = false;
         edge.lastReason = '主办方关系侦察';
-        announce(`${playerName(game, target!)}的隐藏${edge.type}关系已被公开侦察。`);
+        announce(`${playerName(game, target!)}的隐藏${relationshipTypeName(edge.type)}关系已被公开侦察。`);
       } else {
         announce(`${playerName(game, target!)}的关系档案已被公开侦察，但没有新的隐藏关系。`);
       }
@@ -1392,4 +1392,8 @@ function playerName(game: Game, player: Player) {
 
 function areaName(areaId: string) {
   return BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.name ?? areaId;
+}
+
+function relationshipTypeName(type: string) {
+  return ({ family: '亲属', ex: '旧识', rival: '宿敌', mentor: '师徒', friend: '同伴' } as Record<string, string>)[type] ?? type;
 }
