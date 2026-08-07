@@ -206,6 +206,7 @@ export default function BattleRoyalePanel({
           <img src="/ai-town/assets/reference/battle-arena-map.png" alt="AI 大逃杀战场总览地图" />
           {BATTLE_CONFIG.areas.filter((area) => area.id !== 'S01').map((area) => {
             const occupants = players.filter((player) => player.battle?.areaId === area.id);
+            const resource = battle?.areaResources?.find((entry) => entry.areaId === area.id);
             return (
               <div
                 key={area.id}
@@ -213,6 +214,7 @@ export default function BattleRoyalePanel({
                 style={mapPositionForArea(area.id)}
               >
                 <button className={`overview-area-label ${targetAreaId === area.id ? 'is-targeted' : ''}`} onClick={() => setTargetAreaId(area.id)}>{displayAreaName(area.id)}</button>
+                <div className="overview-area-resource">资源 {resource?.remaining ?? '--'}/{resource?.max ?? '--'}</div>
                 <div className="overview-area-agents">
                   {occupants.map((player) => {
                     const stats = player.battle!;

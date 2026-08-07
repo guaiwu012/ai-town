@@ -134,6 +134,18 @@ export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' |
   '手枪': { kind: 'weapon', value: 20 }, '突击步枪': { kind: 'weapon', value: 35 }, '木矛': { kind: 'weapon', value: 14 },
 };
 
+export type BattleItemDefinition = { rarity: 'common' | 'uncommon' | 'rare' | 'legendary'; tradeValue: number };
+export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
+  '军用口粮': { rarity: 'common', tradeValue: 8 }, '保暖服': { rarity: 'uncommon', tradeValue: 22 }, '防弹插板': { rarity: 'rare', tradeValue: 40 }, '战术匕首': { rarity: 'uncommon', tradeValue: 28 }, '军籍牌': { rarity: 'rare', tradeValue: 55 },
+  '演播档案带': { rarity: 'rare', tradeValue: 55 }, '加密档案': { rarity: 'rare', tradeValue: 48 }, '策略手稿': { rarity: 'uncommon', tradeValue: 24 }, '急救包': { rarity: 'uncommon', tradeValue: 28 }, '医疗记录终端': { rarity: 'rare', tradeValue: 48 },
+  '烟雾弹': { rarity: 'uncommon', tradeValue: 24 }, '突击步枪': { rarity: 'rare', tradeValue: 70 }, '手枪': { rarity: 'uncommon', tradeValue: 35 }, '破片手雷': { rarity: 'rare', tradeValue: 58 }, '伪装斗篷': { rarity: 'rare', tradeValue: 52 },
+  '鸟羽护符': { rarity: 'rare', tradeValue: 50 }, '案件卷宗': { rarity: 'rare', tradeValue: 46 }, '监控终端权限卡': { rarity: 'legendary', tradeValue: 85 }, '空白身份卡': { rarity: 'legendary', tradeValue: 90 }, '真相数据核心': { rarity: 'legendary', tradeValue: 120 }, '制造者日志': { rarity: 'legendary', tradeValue: 120 },
+};
+
+export function itemDefinition(item: string): BattleItemDefinition {
+  return ITEM_DEFINITIONS[item] ?? { rarity: 'common', tradeValue: 12 };
+}
+
 export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
 
 export const INTERVENTION_OPERATIONS = [

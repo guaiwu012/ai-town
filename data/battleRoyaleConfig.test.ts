@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, adjacentAreaIds, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
 
 describe('battle royale P0/P1 configuration', () => {
   test('has a valid 13-area graph and an anchor for every area', () => {
@@ -32,5 +32,11 @@ describe('battle royale P0/P1 configuration', () => {
     expect(GLOBAL_SPECIAL_EVENTS).toHaveLength(3);
     expect(AREA_SPECIAL_EVENTS.map((event) => event.id)).toEqual(expect.arrayContaining(['A02_02', 'A05_02', 'A10_03', 'S01_01']));
     expect(INTERVENTION_OPERATIONS.map((operation) => operation.id)).toEqual(expect.arrayContaining(['STO_01', 'STO_02', 'STO_03', 'STO_04', 'STO_05', 'STO_06']));
+  });
+
+  test('gives high-impact items explicit rarity and trade value', () => {
+    expect(ITEM_DEFINITIONS['真相数据核心']).toMatchObject({ rarity: 'legendary', tradeValue: 120 });
+    expect(itemDefinition('突击步枪').rarity).toBe('rare');
+    expect(itemDefinition('不存在的普通物品')).toMatchObject({ rarity: 'common', tradeValue: 12 });
   });
 });

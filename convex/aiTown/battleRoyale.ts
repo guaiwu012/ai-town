@@ -11,6 +11,7 @@ import {
   adjacentAreaIds,
   AREA_ANCHORS,
   ITEM_EFFECTS,
+  itemDefinition,
   GLOBAL_SPECIAL_EVENTS,
   AREA_SPECIAL_EVENTS,
   CHARACTER_STORIES,
@@ -56,6 +57,7 @@ export const battleStats = v.object({
   lastDecisionReason: v.optional(v.string()),
   lastDecisionStatus: v.optional(v.string()),
   lastDecisionFallback: v.optional(v.string()),
+  lastZoneDamageAt: v.optional(v.number()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -173,6 +175,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     decisionDueAt: 0,
     areaEnteredAt: 0,
     areaSearches: 0,
+    lastZoneDamageAt: 0,
   };
 }
 
@@ -256,6 +259,7 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.decisionDueAt ??= now + index * 1000;
     player.battle.areaEnteredAt ??= now;
     player.battle.areaSearches ??= 0;
+    if (!player.battle.lastZoneDamageAt) player.battle.lastZoneDamageAt = now;
     if (player.battle.coins > 1000) {
       player.battle.coins = 200;
     }
@@ -505,6 +509,22 @@ function tickMatchRules(game: Game, now: number) {
           pushEvent(game, now, 'zone', `【禁区伤害】${playerName(game, player)} 未能撤离，受到红区伤害。`, player);
         }
       }
+    }
+  }
+
+  for (const player of alivePlayers(game).filter((candidate) => !battle.openAreas?.includes(candidate.battle?.areaId ?? 'A01'))) {
+    const stats = player.battle!;
+    const last = stats.lastZoneDamageAt ?? now;
+    const elapsedSeconds = Math.floor((now - last) / 1000);
+    if (elapsedSeconds < 1) continue;
+    const damage = elapsedSeconds * BATTLE_CONFIG.zone.redZoneDamagePerSecond;
+    stats.hp = Math.max(0, stats.hp - damage);
+    stats.lastZoneDamageAt = now;
+    stats.stress = (stats.stress ?? 0) + elapsedSeconds;
+    pushEvent(game, now, 'zone', `【红区伤害】${playerName(game, player)}在封锁区持续受伤 ${damage} 点。`, player);
+    if (stats.hp === 0) {
+      stats.eliminated = true;
+      pushEvent(game, now, 'eliminate', `【淘汰】${playerName(game, player)}倒在红区中。`, player);
     }
   }
 
@@ -817,10 +837,23 @@ function executeBattleAction(
   }
   if (action === 'trade') {
     if (!target?.battle || target.battle.eliminated || target.battle.areaId !== stats.areaId) return { accepted: false, reason: '交易对象必须在同一区域' };
+    const offered = stats.inventory?.shift();
+    const received = target.battle.inventory?.shift();
+    const multiplier = stats.areaId === 'A08' ? 1.3 : 1;
+    if (offered) {
+      target.battle.inventory!.push(offered);
+      if (received) stats.inventory!.push(received);
+      const balance = Math.max(0, Math.floor((itemDefinition(offered).tradeValue - (received ? itemDefinition(received).tradeValue : 0)) * multiplier));
+      target.battle.coins = Math.max(0, target.battle.coins - balance);
+      stats.coins += balance;
+      updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
+      pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 以${offered}${received ? `换得${received}` : '完成出售'}。`, player, target);
+      return { accepted: true };
+    }
     const transfer = Math.min(10, Math.floor(stats.coins / 3));
     if (transfer < 1) return { accepted: false, reason: '物资不足以交易' };
     stats.coins -= transfer; target.battle.coins += transfer;
-    updateRelationship(game, player, target, 6, '交易');
+    updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
     pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 与 ${playerName(game, target)} 交换物资。`, player, target);
     return { accepted: true };
   }
@@ -926,7 +959,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     if (entry) entry.count += 1; else game.world.battle?.areaBattleRounds?.push({ areaId, count: 1 });
   }
   const weaponsDisabled = (game.world.battle?.disabledWeaponsUntil ?? 0) > now;
-  const effectiveWeaponPower = weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower;
+  const effectiveWeaponPower = (weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower) * (areaId === 'A04' ? 1.15 : 1);
   const damage = Math.max(
     2,
     Math.floor(effectiveWeaponPower * (0.55 + battleRandom(game) * 0.35) - defend.armor),
@@ -1002,7 +1035,7 @@ function loot(game: Game, now: number, player: Player) {
   if (resource) resource.remaining -= 1;
   const roll = battleRandom(game);
   if (roll < 0.16 && stats.medkits < 2) {
-    stats.medkits += 1;
+    stats.medkits += areaId === 'A06' ? 2 : 1;
     pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到医疗包。`, player);
   } else if (roll < 0.34) {
     const weapon = weapons[Math.min(weapons.length - 1, 1 + Math.floor(battleRandom(game) * 4))];
@@ -1025,7 +1058,7 @@ function loot(game: Game, now: number, player: Player) {
     const coins = 2 + Math.floor(battleRandom(game) * 6);
     stats.coins += coins;
     const pool = BATTLE_CONFIG.areaItems[areaId] ?? [];
-    const foundItem = pool[Math.floor(battleRandom(game) * pool.length)];
+    const foundItem = weightedAreaItem(game, pool);
     if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
       stats.inventory = [...(stats.inventory ?? []), foundItem];
       applyItemEffect(game, now, player, foundItem);
@@ -1060,6 +1093,21 @@ function applyItemEffect(game: Game, now: number, player: Player, item: string) 
     stats.weaponPower = effect.value;
   }
   pushEvent(game, now, 'item', `【物品】${playerName(game, player)} 使用${item}获得即时效果。`, player);
+}
+
+function weightedAreaItem(game: Game, pool: readonly string[]) {
+  if (pool.length === 0) return undefined;
+  const total = pool.reduce((sum, item) => sum + itemWeight(item), 0);
+  let cursor = battleRandom(game) * total;
+  for (const item of pool) {
+    cursor -= itemWeight(item);
+    if (cursor <= 0) return item;
+  }
+  return pool[pool.length - 1];
+}
+
+function itemWeight(item: string) {
+  return ({ common: 10, uncommon: 5, rare: 2, legendary: 0.5 } as Record<string, number>)[itemDefinition(item).rarity] ?? 10;
 }
 
 function tryBuyUpgrade(game: Game, now: number, player: Player) {
