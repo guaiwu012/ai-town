@@ -35,7 +35,7 @@
 | 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
 | --- | --- | --- | --- |
 | `系统/配表_游戏全局配置` | `BATTLE_CONFIG.match`、`runtime`、`zone`、`weapons` | 部分抽象 | 角色行为频率、完整资源/淘汰/结算参数和所有数值公式未逐列同步；部分当前数值为 Demo 节奏调优值。 |
-| `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`；`triggerAreaSpecialEvent()`；`CHARACTER_STORIES` | 部分抽象 | 22 条已映射为通用 damage/heal/stamina/stress/clue/alliance/supply/truth 效果；每条的角色限制、一次性标记、概率、连续剧情、具体选择和分支后果尚未逐条实现。 |
+| `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`（25 条）；`GLOBAL_SPECIAL_EVENTS`；`triggerAreaSpecialEvent()`；`CHARACTER_STORIES` | 部分抽象 | 已记录停留、搜索、战斗、夜晚、人数、权限卡与 C12 等主要前置，并执行次数上限；全局事件实际调度、剧情文本分支和全部干预交互仍待补齐。 |
 | `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx` | 部分抽象 | 17 个操作可选择目标并执行基础效果；次数上限、双胜规则、资源移除/隐藏和操作专属视觉没有完全按表覆盖。 |
 | `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
 | `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |

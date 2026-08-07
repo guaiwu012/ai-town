@@ -48,6 +48,8 @@ export const battleStats = v.object({
   interventionKind: v.optional(v.string()),
   interventionUntil: v.optional(v.number()),
   decisionDueAt: v.optional(v.number()),
+  areaEnteredAt: v.optional(v.number()),
+  areaSearches: v.optional(v.number()),
   lastDecisionAt: v.optional(v.number()),
   lastDecisionAction: v.optional(v.string()),
   lastDecisionReason: v.optional(v.string()),
@@ -121,6 +123,9 @@ export const battleState = v.object({
   areaResources: v.optional(v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() }))),
   lastResourceRefresh: v.optional(v.number()),
   consumedAreaStories: v.optional(v.array(v.string())),
+  areaEventCounts: v.optional(v.array(v.object({ id: v.string(), count: v.number() }))),
+  areaBattleRounds: v.optional(v.array(v.object({ areaId: v.string(), count: v.number() }))),
+  lastAreaEventCheck: v.optional(v.number()),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -153,6 +158,8 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     clues: 0,
     inventory: [],
     decisionDueAt: 0,
+    areaEnteredAt: 0,
+    areaSearches: 0,
   };
 }
 
@@ -201,6 +208,7 @@ export function defaultBattleState(now: number): BattleState {
     areaResources: defaultAreaResources(),
     lastResourceRefresh: now,
     consumedAreaStories: [],
+    areaEventCounts: [], areaBattleRounds: [], lastAreaEventCheck: 0,
   };
 }
 
@@ -226,6 +234,8 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.inventory ??= [];
     player.battle.interventionUntil ??= 0;
     player.battle.decisionDueAt ??= now + index * 1000;
+    player.battle.areaEnteredAt ??= now;
+    player.battle.areaSearches ??= 0;
     if (player.battle.coins > 1000) {
       player.battle.coins = 200;
     }
@@ -267,6 +277,9 @@ export function ensureBattleState(game: Game, now: number) {
   battle.areaResources ??= defaultAreaResources();
   battle.lastResourceRefresh ??= now;
   battle.consumedAreaStories ??= [];
+  battle.areaEventCounts ??= [];
+  battle.areaBattleRounds ??= [];
+  battle.lastAreaEventCheck ??= 0;
 }
 
 function defaultRelationshipEdges() {
@@ -486,11 +499,13 @@ function refreshAreaResources(game: Game, now: number) {
 
 function triggerAreaSpecialEvent(game: Game, now: number) {
   const battle = game.world.battle!;
-  if (Math.random() > 0.035) return;
+  if (now < (battle.lastAreaEventCheck ?? 0) + 5000) return;
+  battle.lastAreaEventCheck = now;
   const candidates = AREA_SPECIAL_EVENTS.filter((event) => {
-    if (battle.consumedAreaStories?.includes(event.id)) return false;
+    const count = battle.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0;
+    if (count >= event.maxTriggers) return false;
     const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
-    return !cooldown || cooldown.until <= now;
+    return (!cooldown || cooldown.until <= now) && areaEventEligible(game, now, event.id, event.areaId);
   });
   const event = candidates[Math.floor(Math.random() * candidates.length)];
   if (!event) return;
@@ -509,9 +524,46 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   if (event.effect === 'truth' && randomPlayer.battle?.characterId === 'C12') unlockTruth(game, now, randomPlayer);
   battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
   battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
-  battle.consumedAreaStories!.push(event.id);
+  const count = battle.areaEventCounts!.find((entry) => entry.id === event.id);
+  if (count) count.count += 1; else battle.areaEventCounts!.push({ id: event.id, count: 1 });
+  if ((battle.areaEventCounts!.find((entry) => entry.id === event.id)?.count ?? 0) >= event.maxTriggers) battle.consumedAreaStories!.push(event.id);
   battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
   pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」。`);
+}
+
+function areaEventEligible(game: Game, now: number, eventId: string, areaId: string) {
+  const battle = game.world.battle!;
+  const occupants = alivePlayers(game).filter((player) => player.battle?.areaId === areaId);
+  if (occupants.length === 0) return false;
+  const stayedTwoMinutes = occupants.some((player) => now - (player.battle?.areaEnteredAt ?? now) >= 120000);
+  const searched = occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 3);
+  const battleRounds = battle.areaBattleRounds?.find((entry) => entry.areaId === areaId)?.count ?? 0;
+  switch (eventId) {
+    case 'A01_01': case 'A10_01': return stayedTwoMinutes;
+    case 'A01_02': return battle.timeOfDay === 'night' && battle.openAreas?.includes(areaId);
+    case 'A02_01': return battle.consumedAreaStories?.includes('A05_01') ?? false;
+    case 'A02_02': return occupants.some((player) => player.battle?.inventory?.includes('监控终端权限卡'));
+    case 'A03_01': return searched;
+    case 'A03_02': return battle.timeOfDay === 'night' && occupants.length >= 2;
+    case 'A04_01': return battleRounds >= 3;
+    case 'A04_02': return battleRounds >= 1 && occupants.length >= 2;
+    case 'A05_01': return occupants.some((player) => player.battle?.inventory?.includes('演播档案带'));
+    case 'A05_02': return occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
+    case 'A06_01': return occupants.some((player) => player.battle!.hp / player.battle!.maxHp < 0.3);
+    case 'A06_02': return searched;
+    case 'A07_01': return occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
+    case 'A08_01': return occupants.length >= 2 && stayedTwoMinutes;
+    case 'A08_02': return Math.random() < 0.25;
+    case 'A09_01': return battleRounds >= 1;
+    case 'A10_02': return occupants.some((player) => player.battle?.characterId !== 'C10');
+    case 'A10_03': return battle.timeOfDay === 'night' && alivePlayers(game).some((player) => player.battle?.characterId === 'C10');
+    case 'A11_01': return occupants.length >= 3;
+    case 'A11_02': return searched;
+    case 'A12_01': return !occupants.some((player) => player.battle?.characterId === 'C12') && searched;
+    case 'A12_02': return occupants.some((player) => player.battle?.inventory?.includes('监控终端权限卡'));
+    case 'S01_01': return occupants.some((player) => player.battle?.characterId === 'C12');
+    default: return false;
+  }
 }
 
 export function applyAudienceScore(game: Game, now: number, score: number) {
@@ -756,6 +808,11 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
 function attack(game: Game, now: number, attacker: Player, target: Player) {
   const attack = attacker.battle!;
   const defend = target.battle!;
+  const areaId = attacker.battle?.areaId;
+  if (areaId && areaId === target.battle?.areaId) {
+    const entry = game.world.battle?.areaBattleRounds?.find((candidate) => candidate.areaId === areaId);
+    if (entry) entry.count += 1; else game.world.battle?.areaBattleRounds?.push({ areaId, count: 1 });
+  }
   const weaponsDisabled = (game.world.battle?.disabledWeaponsUntil ?? 0) > now;
   const effectiveWeaponPower = weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower;
   const damage = Math.max(
@@ -816,6 +873,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
 
 function loot(game: Game, now: number, player: Player) {
   const stats = player.battle!;
+  stats.areaSearches = (stats.areaSearches ?? 0) + 1;
   const areaId = stats.areaId ?? 'A01';
   const resource = game.world.battle?.areaResources?.find((entry) => entry.areaId === areaId);
   if (resource && resource.remaining <= 0) {
@@ -985,6 +1043,8 @@ function moveToBattleArea(game: Game, now: number, player: Player, areaId: strin
   const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));
   if (!destination) return false;
   player.battle!.areaId = areaId;
+  player.battle!.areaEnteredAt = now;
+  player.battle!.areaSearches = 0;
   player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - BATTLE_CONFIG.runtime.moveStaminaCost);
   movePlayer(game, now, player, destination);
   player.activity = { description: `${playerName(game, player)} 正在前往${areaName(areaId)}`, emoji: 'MOVE', until: now + 2000 };
