@@ -58,11 +58,11 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
         className="arena-console w-full max-w-[440px] p-5 text-[#e8dfd5] shadow-2xl"
         onSubmit={submit}
       >
-        <div className="arena-kicker">DeepSeek setup</div>
-        <h2 className="arena-heading font-display text-4xl leading-none">DS API</h2>
+        <div className="arena-kicker">模型连接设置</div>
+        <h2 className="arena-heading font-display text-4xl leading-none">DS API 配置</h2>
 
         <label className="mt-4 block text-sm text-[#9eb0bb]">
-          Base URL
+          接口地址
           <input
             className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={baseUrl}
@@ -72,7 +72,7 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
         </label>
 
         <label className="mt-3 block text-sm text-[#9eb0bb]">
-          Model
+          模型名称
           <input
             className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={model}
@@ -82,7 +82,7 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
         </label>
 
         <label className="mt-3 block text-sm text-[#9eb0bb]">
-          API Key
+          API 密钥
           <input
             className="mt-1 w-full border-[#466275] bg-[#0b2032] text-[#f0dfc7] focus:border-[#e2b85e] focus:ring-[#e2b85e]"
             value={apiKey}
@@ -98,7 +98,7 @@ export default function DeepSeekConfigGate({ initialConfig, onSave }: DeepSeekCo
           disabled={!apiKey.trim() || !baseUrl.trim() || !model.trim()}
           type="submit"
         >
-          Enter Arena
+          进入战场
         </button>
       </form>
     </div>
