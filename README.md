@@ -2,7 +2,7 @@
 
 > 基于 AI Town 与 Convex 的 12 人观赛型大逃杀原型。前端部署在 CloudBase，比赛状态运行在 Convex。
 
-**当前 AI 状态（请先阅读）**：角色的聊天文案可以调用后端已配置的 LLM；但战斗层的搜索、购买、结盟、移动、攻击和撤退，目前由 `convex/aiTown/battleRoyale.ts` 中的规则和随机权重驱动，**尚未接入 DeepSeek 做战术决策**。网页的“DS API 配置”当前只保存在本机浏览器，未上传至 Convex，也不会驱动比赛。详见 [开发进度](./docs/development-progress.md)。
+**当前 AI 状态（请先阅读）**：角色的聊天文案可以调用后端已配置的 LLM；但战斗层的搜索、购买、结盟、移动、攻击和撤退，目前由 `convex/aiTown/battleRoyale.ts` 中的规则和随机权重驱动，**尚未接入 DeepSeek 做战术决策**。网页的“DS API 配置”当前只保存在本机浏览器，未上传至 Convex，也不会驱动比赛。详见 [开发进度](./docs/development-progress.md) 和 [参考配表覆盖矩阵](./docs/reference-table-coverage.md)。
 
 ## 当前功能
 

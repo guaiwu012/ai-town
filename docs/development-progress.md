@@ -8,6 +8,8 @@
 
 浏览器中的 DeepSeek 配置仅保存在 `localStorage`。它没有被传到 Convex，也没有被 `battleRoyale.ts` 读取。因此，填写 DS API 后不会让角色的战斗行为变成 DeepSeek 决策。
 
+参考仓库每张配表的抽象位置、运行状态与未消费字段见 [参考配表覆盖矩阵](./reference-table-coverage.md)。
+
 ## 已完成
 
 | 模块 | 状态 | 实现位置 |
