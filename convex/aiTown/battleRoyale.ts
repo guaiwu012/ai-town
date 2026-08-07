@@ -11,6 +11,7 @@ import {
   adjacentAreaIds,
   AREA_ANCHORS,
   ITEM_EFFECTS,
+  GLOBAL_SPECIAL_EVENTS,
   AREA_SPECIAL_EVENTS,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
@@ -126,6 +127,8 @@ export const battleState = v.object({
   areaEventCounts: v.optional(v.array(v.object({ id: v.string(), count: v.number() }))),
   areaBattleRounds: v.optional(v.array(v.object({ areaId: v.string(), count: v.number() }))),
   lastAreaEventCheck: v.optional(v.number()),
+  lastGlobalEventCheck: v.optional(v.number()),
+  globalEffects: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -209,6 +212,7 @@ export function defaultBattleState(now: number): BattleState {
     lastResourceRefresh: now,
     consumedAreaStories: [],
     areaEventCounts: [], areaBattleRounds: [], lastAreaEventCheck: 0,
+    lastGlobalEventCheck: 0, globalEffects: [],
   };
 }
 
@@ -280,6 +284,8 @@ export function ensureBattleState(game: Game, now: number) {
   battle.areaEventCounts ??= [];
   battle.areaBattleRounds ??= [];
   battle.lastAreaEventCheck ??= 0;
+  battle.lastGlobalEventCheck ??= 0;
+  battle.globalEffects ??= [];
 }
 
 function defaultRelationshipEdges() {
@@ -483,6 +489,7 @@ function tickMatchRules(game: Game, now: number) {
     pushEvent(game, now, 'heat', '【热度】战场沉寂过久，直播热度下降 5 点。');
   }
   triggerAreaSpecialEvent(game, now);
+  triggerGlobalSpecialEvent(game, now);
   refreshAreaResources(game, now);
   updateMissionProgress(game, now);
 }
@@ -564,6 +571,25 @@ function areaEventEligible(game: Game, now: number, eventId: string, areaId: str
     case 'S01_01': return occupants.some((player) => player.battle?.characterId === 'C12');
     default: return false;
   }
+}
+
+function triggerGlobalSpecialEvent(game: Game, now: number) {
+  const battle = game.world.battle!;
+  if (now < (battle.lastGlobalEventCheck ?? 0) + 30000) return;
+  battle.lastGlobalEventCheck = now;
+  const candidates = GLOBAL_SPECIAL_EVENTS.filter((event) => (battle.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0) < event.maxTriggers)
+    .filter((event) => event.id !== 'GLB_02' || battle.timeOfDay === 'night');
+  const event = candidates.find((candidate) => Math.random() < (candidate.id === 'GLB_01' ? 0.1 : candidate.id === 'GLB_03' ? 0.05 : 0.12));
+  if (!event) return;
+  const alive = alivePlayers(game);
+  if (event.effect === 'beastRage') alive.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 12; });
+  if (event.effect === 'blackout') alive.forEach((player) => markInterventionReaction(game, now, player, 'ENV_02'));
+  if (event.effect === 'signalIntrusion') collectTruthClue(game, now, '全局-信号入侵', alive[0]);
+  battle.globalEffects!.push({ id: event.id, until: now + 120000 });
+  battle.areaEventCounts!.push({ id: event.id, count: 1 });
+  battle.interventionEffect = { kind: `global:${event.effect}`, until: now + 6500 };
+  pushEvent(game, now, 'globalStory', `【全局事件】${event.title}席卷战场。`);
+  awardPopularity(game, now, event.id === 'GLB_02' ? 15 : 10, []);
 }
 
 export function applyAudienceScore(game: Game, now: number, score: number) {
