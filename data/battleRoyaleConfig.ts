@@ -15,6 +15,10 @@ export const BATTLE_CONFIG = {
     nightMs: 600000,
     battleTickMs: 2500,
     actionCooldownMs: 6500,
+    llmDecisionIntervalMs: 12000,
+    llmDecisionTimeoutMs: 10000,
+    llmDecisionMaxPerMatch: 240,
+    decisionDriverLeaseMs: 20000,
     attackRange: 3.2,
     dangerRange: 4.8,
     maxFeed: 24,
@@ -104,6 +108,31 @@ export const BATTLE_CONFIG = {
     lateIntervalMs: 90000,
   },
 } as const;
+
+// Normalized anchors preserve the existing Pixi tile map while making the
+// reference area's graph authoritative for battle movement and encounters.
+export const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
+  A01: { x: 0.17, y: 0.19 }, A02: { x: 0.08, y: 0.49 }, A03: { x: 0.36, y: 0.86 },
+  A04: { x: 0.70, y: 0.45 }, A05: { x: 0.79, y: 0.79 }, A06: { x: 0.79, y: 0.16 },
+  A07: { x: 0.77, y: 0.39 }, A08: { x: 0.47, y: 0.45 }, A09: { x: 0.26, y: 0.58 },
+  A10: { x: 0.52, y: 0.18 }, A11: { x: 0.60, y: 0.77 }, A12: { x: 0.21, y: 0.08 },
+  S01: { x: 0.05, y: 0.58 },
+};
+
+export const BATTLE_ACTIONS = ['move', 'search', 'buy', 'trade', 'ally', 'attack', 'flee', 'heal', 'investigate'] as const;
+export type BattleAction = (typeof BATTLE_ACTIONS)[number];
+
+export function adjacentAreaIds(areaId: string) {
+  return BATTLE_CONFIG.adjacency
+    .flatMap(([a, b]) => a === areaId ? [b] : b === areaId ? [a] : []);
+}
+
+export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' | 'clue' | 'weapon'; value: number }> = {
+  '急救包': { kind: 'heal', value: 20 }, '止痛药': { kind: 'heal', value: 10 }, '防弹插板': { kind: 'armor', value: 5 },
+  '运动饮料': { kind: 'stamina', value: 20 }, '蛋白棒': { kind: 'stamina', value: 15 }, '营养补充剂': { kind: 'stamina', value: 18 },
+  '加密档案': { kind: 'clue', value: 1 }, '医疗记录终端': { kind: 'clue', value: 1 }, '监控日志碎片': { kind: 'clue', value: 1 },
+  '手枪': { kind: 'weapon', value: 20 }, '突击步枪': { kind: 'weapon', value: 35 }, '木矛': { kind: 'weapon', value: 14 },
+};
 
 export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
 

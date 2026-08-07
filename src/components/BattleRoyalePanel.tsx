@@ -266,6 +266,7 @@ export default function BattleRoyalePanel({
           <div className="overview-bolts mt-2">{[0, 1, 2, 3, 4].map((bolt) => <span key={bolt} className={bolt < Math.min(5, battle?.interventionPoints ?? 0) ? 'is-on' : ''}>ϟ</span>)}</div>
           <div className="mt-1 text-right text-2xl text-amber-200">{battle?.interventionPoints ?? 0} / {battle?.interventionPointsMax ?? 30}</div>
           <button className="arena-action arena-action-primary mt-2 h-10 w-full text-xs" onClick={openMineGame} disabled={pending}>扫雷补充干预点</button>
+          <div className="mt-2 text-xs text-cyan-100">{battle?.decisionDriverStatus ?? '规则 AI 接管'} · 模型决策 {battle?.decisionCount ?? 0}/{battle?.decisionMax ?? 240}</div>
         </div>
 
         <div className="arena-panel p-3">
@@ -342,6 +343,11 @@ export default function BattleRoyalePanel({
                 {player.activity && player.activity.until > Date.now() && (
                     <div className="mt-1 truncate text-xs text-[#e2b85e]">
                     {player.activity.description}
+                  </div>
+                )}
+                {stats.lastDecisionStatus && (
+                  <div className="mt-1 border-t border-slate-700/70 pt-1 text-[10px] text-cyan-200">
+                    决策：{stats.lastDecisionStatus}{stats.lastDecisionAction ? ` · ${displayDecisionAction(stats.lastDecisionAction)}` : ''}{stats.lastDecisionReason ? ` · ${stats.lastDecisionReason}` : ''}{stats.lastDecisionFallback ? ` · ${stats.lastDecisionFallback}` : ''}
                   </div>
                 )}
               </button>
@@ -525,7 +531,11 @@ function displayPhase(phase?: string) {
 }
 
 function displayEventKind(kind: string) {
-  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', audience: '观众', winner: '胜利', intervention: '主办方', story: '剧情', areaStory: '区域剧情', clue: '线索', mission: '任务', truth: '真相', heat: '热度' } as Record<string, string>)[kind] ?? kind;
+  return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', trade: '交易', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', audience: '观众', winner: '胜利', intervention: '主办方', story: '剧情', areaStory: '区域剧情', clue: '线索', mission: '任务', truth: '真相', heat: '热度', decision: '决策', reaction: '反应', investigate: '调查', resource: '资源', item: '物品' } as Record<string, string>)[kind] ?? kind;
+}
+
+function displayDecisionAction(action: string) {
+  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查' } as Record<string, string>)[action] ?? action;
 }
 
 function interventionEffectIcon(kind: string) {

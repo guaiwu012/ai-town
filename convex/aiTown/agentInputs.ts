@@ -8,7 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
-import { applyAudienceScore, applyIntervention, resetBattleMatch } from './battleRoyale';
+import { applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, resetBattleMatch, submitAIDecision } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -172,6 +172,24 @@ export const agentInputs = {
       secondPlayerId: v.optional(playerId),
     },
     handler: (game, now, args) => applyIntervention(game, now, args),
+  }),
+  claimDecisionDriver: inputHandler({
+    args: { driverId: v.string() },
+    handler: (game, now, args) => claimDecisionDriver(game, now, args.driverId),
+  }),
+  heartbeatDecisionDriver: inputHandler({
+    args: { driverId: v.string() },
+    handler: (game, now, args) => heartbeatDecisionDriver(game, now, args.driverId),
+  }),
+  submitAIDecision: inputHandler({
+    args: {
+      driverId: v.string(), playerId, action: v.string(), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), reason: v.optional(v.string()),
+    },
+    handler: (game, now, args) => submitAIDecision(game, now, args),
+  }),
+  reportAIDecisionFailure: inputHandler({
+    args: { driverId: v.string(), playerId, reason: v.string() },
+    handler: (game, now, args) => reportAIDecisionFailure(game, now, args),
   }),
   resetBattle: inputHandler({
     args: {},

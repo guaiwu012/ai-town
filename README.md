@@ -2,7 +2,7 @@
 
 > 基于 AI Town 与 Convex 的 12 人观赛型大逃杀原型。前端部署在 CloudBase，比赛状态运行在 Convex。
 
-**当前 AI 状态（请先阅读）**：角色的聊天文案可以调用后端已配置的 LLM；但战斗层的搜索、购买、结盟、移动、攻击和撤退，目前由 `convex/aiTown/battleRoyale.ts` 中的规则和随机权重驱动，**尚未接入 DeepSeek 做战术决策**。网页的“DS API 配置”当前只保存在本机浏览器，未上传至 Convex，也不会驱动比赛。详见 [开发进度](./docs/development-progress.md) 和 [参考配表覆盖矩阵](./docs/reference-table-coverage.md)。
+**当前 AI 状态（请先阅读）**：浏览器填写 DeepSeek API 后，会由本机 `DecisionDriver` 每 12 秒为存活 AI 请求一次战术动作。密钥仅留在浏览器，不会进入 Convex、数据库或公屏；每局最多 240 次模型决策。网络、CORS、超时、非法 JSON、无效动作或额度耗尽时，服务器会记录原因并自动切换规则 AI。详见 [开发进度](./docs/development-progress.md) 和 [参考配表覆盖矩阵](./docs/reference-table-coverage.md)。
 
 ## 当前功能
 
@@ -10,6 +10,7 @@
 - Convex 实时比赛状态：生命、武器、物资、区域、禁区、热度、连击、任务、线索和真相之间。
 - 主办方干预点：扫雷小游戏结算干预点；可投放补给、陷阱、情报、规则和结盟干预。
 - 22 条区域特殊剧情配置已进入事件循环，地图会显示干预和剧情落点。
+- DeepSeek BYOK 战术驾驶：观众客户端用 20 秒租约避免重复扣费；模型动作经 Convex 校验区域邻接、禁区、射程、物资和冷却后才会执行。
 - CloudBase 线上地址：https://playable-ads-d3g6ipimne9fe9ae6-1320513533.tcloudbaseapp.com/ai-town/
 
 ## 架构与运行

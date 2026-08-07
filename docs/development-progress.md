@@ -4,9 +4,9 @@
 
 ## 当前结论
 
-比赛已经是一个实时 Convex 模拟，但不是 LLM 战术模拟。`Game.tick()` 会同时运行原始 AI Town 的 Agent 对话循环和大逃杀循环：前者可以生成 LLM 对话；后者由 `runAgentBattleAction()` 根据规则、距离、血量和随机数执行战斗动作。
+比赛是实时 Convex 模拟。浏览器填写 DeepSeek 配置后，`DecisionDriver` 通过租约成为唯一的决策驾驶器，按 12 秒节奏请求 OpenAI 兼容的 DeepSeek 接口并提交结构化行动。密钥仅在 `localStorage` 和浏览器请求头中出现；Convex 不接收密钥。
 
-浏览器中的 DeepSeek 配置仅保存在 `localStorage`。它没有被传到 Convex，也没有被 `battleRoyale.ts` 读取。因此，填写 DS API 后不会让角色的战斗行为变成 DeepSeek 决策。
+`battleRoyale.ts` 会校验模型动作的存活、冷却、区域邻接、开放禁区、同区目标、射程与物资。模型超时、CORS/网络失败、非法 JSON、无效动作和 240 次额度耗尽，都会产生审计事件并回退到规则 AI。
 
 参考仓库每张配表的抽象位置、运行状态与未消费字段见 [参考配表覆盖矩阵](./reference-table-coverage.md)。
 
@@ -16,7 +16,11 @@
 | --- | --- | --- |
 | 角色与初始属性 | 完成 | `data/battleRoyaleConfig.ts` |
 | 12 名角色、区域、关系、物品池 | 完成 | `data/battleRoyaleConfig.ts` |
-| 战斗、搜索、购买、结盟、治疗、禁区 | 完成，规则驱动 | `convex/aiTown/battleRoyale.ts` |
+| 战斗、搜索、购买、结盟、治疗、禁区 | 完成，模型/规则统一执行 | `convex/aiTown/battleRoyale.ts` |
+| DeepSeek BYOK 战术决策 | 完成 | `DecisionDriver.tsx` + `submitAIDecision()` |
+| 驾驶权、超时回退与审计 | 完成 | `battleState` / `BattleStats` 决策字段 |
+| 逻辑区域图、邻接迁移与红区伤害 | 完成 | `AREA_ANCHORS` + `moveToBattleArea()` |
+| 区域资源与物品即时效果 | 完成基础版 | `areaResources` + `ITEM_EFFECTS` |
 | 热度、连击、主线和隐藏任务 | 完成 | `battleRoyale.ts` |
 | 干预点与 17 个干预操作 | 完成 | `INTERVENTION_OPERATIONS` |
 | 扫雷结算干预点 | 完成 | `BattleRoyalePanel.tsx` |
@@ -29,20 +33,15 @@
 
 | 优先级 | 项目 | 说明 |
 | --- | --- | --- |
-| P0 | DeepSeek 战术决策 | 需要把感知、目标选择、行动提案和结构化校验接入 Convex action；不能把用户 API 密钥放进公开前端。 |
-| P0 | 每局独立 LLM 凭证策略 | 需要选择 BYOK 代理服务、一次性会话令牌或平台托管密钥；当前 localStorage 配置只是未接线 UI。 |
-| P1 | 决策可观测性 | 记录每次 AI 感知摘要、候选动作、模型输出、规则拒绝原因和最终动作。 |
 | P1 | 区域剧情精确条件 | 22 条效果已可触发；仍需逐条补齐参考配表的前置角色、关系和次数条件。 |
-| P1 | 关系网演化 | 当前只有初始种子关系和联盟状态，尚未持久化所有关系强度变化。 |
+| P1 | 关系网深度效果 | 关系强度已持久化；隐藏关系揭露、全部关系类型的独立效用仍待补齐。 |
 | P2 | 稳定回放 | 需要种子随机数和比赛回放测试夹具。 |
 
-## 下一开发里程碑：LLM 战术代理
+## 下一开发里程碑：P2 内容深度
 
-1. 在 Convex 中增加受控的 `battleDecision` action，服务端读取 LLM 凭证。
-2. 每 8-12 秒为一个角色构建结构化感知：自身、邻近敌人、区域、物资、关系、任务和可用动作。
-3. 让模型只返回受限 JSON 动作，例如 `attack`、`search`、`move`、`trade`、`ally`、`flee`、`heal`。
-4. 在服务器校验距离、冷却、物资、禁区和目标，拒绝无效动作并回退到规则 AI。
-5. 在公屏和角色详情中展示“决策理由摘要”，但不泄露系统提示词或 API 密钥。
+1. 为 22 条区域剧情逐条补齐前置角色、一次性条件、分支和后果。
+2. 将隐藏关系揭露、背叛、重逢、牺牲和逆转接入完整评分规则。
+3. 将当前逻辑区域锚点升级为完整可碰撞的参考关卡与回放系统。
 
 ## 验证清单
 
@@ -51,3 +50,4 @@
 - 扫雷分数写入 `interventionPoints`，上限为 30。
 - 主办方干预写入事件流并产生地图效果状态。
 - 角色剧情、区域剧情和 C12 真相线均写入 `world.battle.feed`。
+- 人工验证：同区/相邻移动会执行，非邻接 LLM 移动会被拒绝并记录中文原因。

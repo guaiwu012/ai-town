@@ -12,7 +12,7 @@
 
 | 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
 | --- | --- | --- | --- |
-| `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力 | 部分抽象 | 人设的完整背景、说话风格、个人目标和剧情钩子没有进入战术或对话提示词；当前 LLM 聊天仅使用简短 `identity`/`plan`。 |
+| `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力；`DecisionDriver` 发送角色属性与状态给战术模型 | 部分抽象 | 人设的完整背景、说话风格、个人目标和剧情钩子尚未逐字段进入战术提示词。 |
 | `人物/配表_角色运行时属性` | `BattleStats`：HP、体力、饱食、区域停留、压力、热度、背包；`defaultBattleStats()` | 部分抽象 | 饱食、区域停留、压力阈值当前被存储但没有完整的衰减、死亡、行为修正或 UI 解释。 |
 | `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`tryAlliance()` 的优先目标 | 部分抽象 | 仅四条种子关系参与初始选择；隐藏关系揭露、4-6 条随机戏剧关系、关系强度变化、背叛/重逢条件和所有关系类型的独立效果未实现。 |
 | `人物.xmind` | 角色名、代号、属性和关系的辅助校对来源 | 未接入 | 节点层级、叙事分支和人物关系说明没有单独导入。 |
@@ -23,7 +23,7 @@
 | --- | --- | --- | --- |
 | `地图/配表_区域定义` | `BATTLE_CONFIG.areas`：A01-A12、S01、危险等级、归属角色、区域文字机制 | 部分抽象 | 区域危险等级、进入门槛、区域 buff 和大部分专属机制仅作为配置展示，尚未全面改变寻路、命中、掉落或决策效用。 |
 | `地图/配表_角色区域对应` | `BattleCharacterProfile.areaId`；`defaultBattleStats().areaId` | 运行中 | 角色当前位置会随通用移动变更，但没有严格限制为参考表的出生点和邻接区域网络。 |
-| `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency` | 部分抽象 | 邻接表已校验，但 `movePlayer()` 仍在既有 Pixi tile map 上寻路，尚未将跨区域移动强制约束为该图。 |
+| `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency`；`adjacentAreaIds()`；`moveToBattleArea()` | 运行中 | 区域移动已强制相邻与开放校验；Pixi tile map 仍只承担局部寻路和视觉表现。 |
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜和关闭播报；警告倒计时、红区持续伤害、按配表的关闭顺序/保护逻辑尚未完整执行。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`loot()` | 部分抽象 | 已按区域抽取物品名；资源数量、刷新、枯竭、稀有权重及区域信息面板余量未实现。 |
 | `地图/配表_物品定义` | 物品 ID 作为背包字符串；武器另由 `BATTLE_CONFIG.weapons` 定义 | 部分抽象 | 非武器物品的稀有度、价格、使用效果、合成/交易属性和条件未被执行。 |
@@ -38,7 +38,7 @@
 | `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`；`triggerAreaSpecialEvent()`；`CHARACTER_STORIES` | 部分抽象 | 22 条已映射为通用 damage/heal/stamina/stress/clue/alliance/supply/truth 效果；每条的角色限制、一次性标记、概率、连续剧情、具体选择和分支后果尚未逐条实现。 |
 | `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx` | 部分抽象 | 17 个操作可选择目标并执行基础效果；次数上限、双胜规则、资源移除/隐藏和操作专属视觉没有完全按表覆盖。 |
 | `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
-| `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect` | 部分抽象 | 状态机没有完整区分潜伏、交易、谈判、追踪、濒死等参考状态；部分状态当前只用 `activity` 文本表达。 |
+| `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |
 | `系统/配表_评分规则` | `awardPopularity()`；`updateMissionProgress()` | 部分抽象 | 已实现攻击、淘汰、结盟、剧情、真相、连击和热度换干预点；背叛、重逢、牺牲、伏击、逆转、无事件惩罚的精确触发和完整评分审计未实现。 |
 | `系统/系统策划案`、`系统.xmind`、`游戏循环与数据流.xmind` | 当前开发任务和架构文档的设计参考 | 未接入 | 其中的完整状态流、策划验收、数据流图和运营循环尚未生成可执行规则。 |
 
@@ -56,7 +56,6 @@
 
 ## 接入优先级
 
-1. **P0：LLM 战术代理与决策审计**。没有这一层，角色不会依据人物表、关系表和任务表做真正的模型决策。
-2. **P1：关系网演化与精确剧情条件**。将关系强度、隐藏关系和 22 条区域剧情的前置/后果转成可验证状态机。
+1. **P1：关系网演化与精确剧情条件**。关系强度已入状态；下一步将隐藏关系和 22 条区域剧情的前置/后果转成完整可验证状态机。
 3. **P1：区域图运行时化**。使邻接、危险、区域资源和禁区规则驱动移动与战斗，而非仅驱动 Overview 标记。
 4. **P2：物品与结算深度**。接入物品定义的效果/稀有度、全量评分事件与可回放测试。

@@ -7,6 +7,10 @@ import { blocked, movePlayer } from './movement';
 import { point } from '../util/types';
 import {
   BATTLE_CONFIG,
+  BATTLE_ACTIONS,
+  adjacentAreaIds,
+  AREA_ANCHORS,
+  ITEM_EFFECTS,
   AREA_SPECIAL_EVENTS,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
@@ -43,6 +47,12 @@ export const battleStats = v.object({
   inventory: v.optional(v.array(v.string())),
   interventionKind: v.optional(v.string()),
   interventionUntil: v.optional(v.number()),
+  decisionDueAt: v.optional(v.number()),
+  lastDecisionAt: v.optional(v.number()),
+  lastDecisionAction: v.optional(v.string()),
+  lastDecisionReason: v.optional(v.string()),
+  lastDecisionStatus: v.optional(v.string()),
+  lastDecisionFallback: v.optional(v.string()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -100,6 +110,16 @@ export const battleState = v.object({
   temporaryAllianceUntil: v.optional(v.number()),
   areaEventCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   interventionEffect: v.optional(v.object({ kind: v.string(), areaId: v.optional(v.string()), playerId: v.optional(playerId), until: v.number() })),
+  decisionDriverId: v.optional(v.string()),
+  decisionDriverUntil: v.optional(v.number()),
+  decisionCount: v.optional(v.number()),
+  decisionMax: v.optional(v.number()),
+  decisionDriverStatus: v.optional(v.string()),
+  relationshipEdges: v.optional(v.array(v.object({
+    id: v.string(), a: v.string(), b: v.string(), type: v.string(), strength: v.number(), hidden: v.boolean(), lastReason: v.optional(v.string()),
+  }))),
+  areaResources: v.optional(v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() }))),
+  lastResourceRefresh: v.optional(v.number()),
 });
 export type BattleState = Infer<typeof battleState>;
 
@@ -131,6 +151,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     heat: profile.heat,
     clues: 0,
     inventory: [],
+    decisionDueAt: 0,
   };
 }
 
@@ -172,6 +193,12 @@ export function defaultBattleState(now: number): BattleState {
     storyTriggers: [],
   operationCooldowns: [],
     areaEventCooldowns: [],
+    decisionCount: 0,
+    decisionMax: BATTLE_CONFIG.match.llmDecisionMaxPerMatch,
+    decisionDriverStatus: '规则 AI 接管',
+    relationshipEdges: defaultRelationshipEdges(),
+    areaResources: defaultAreaResources(),
+    lastResourceRefresh: now,
   };
 }
 
@@ -196,6 +223,7 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.clues ??= 0;
     player.battle.inventory ??= [];
     player.battle.interventionUntil ??= 0;
+    player.battle.decisionDueAt ??= now + index * 1000;
     if (player.battle.coins > 1000) {
       player.battle.coins = 200;
     }
@@ -230,6 +258,20 @@ export function ensureBattleState(game: Game, now: number) {
   battle.storyTriggers ??= [];
   battle.operationCooldowns ??= [];
   battle.areaEventCooldowns ??= [];
+  battle.decisionCount ??= 0;
+  battle.decisionMax ??= BATTLE_CONFIG.match.llmDecisionMaxPerMatch;
+  battle.decisionDriverStatus ??= '规则 AI 接管';
+  battle.relationshipEdges ??= defaultRelationshipEdges();
+  battle.areaResources ??= defaultAreaResources();
+  battle.lastResourceRefresh ??= now;
+}
+
+function defaultRelationshipEdges() {
+  return BATTLE_CONFIG.relationships.map(({ id, a, b, type, strength, hidden }) => ({ id, a, b, type, strength, hidden }));
+}
+
+function defaultAreaResources() {
+  return BATTLE_CONFIG.areas.map((area) => ({ areaId: area.id, remaining: area.id === 'S01' ? 2 : 12, max: area.id === 'S01' ? 2 : 12 }));
 }
 
 export function resetBattleMatch(game: Game, now: number) {
@@ -280,11 +322,91 @@ export function tickBattleRoyale(game: Game, now: number) {
   }
 
   for (const player of alive) {
-    if ((player.battle?.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) {
+    const stats = player.battle!;
+    const llmActive = (battle.decisionDriverUntil ?? 0) > now && (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0);
+    if (llmActive && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
       continue;
     }
-    runAgentBattleAction(game, now, player);
+    if (llmActive && now >= (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
+      runAgentBattleAction(game, now, player, '模型决策超时，规则 AI 接管');
+      continue;
+    }
+    if ((stats.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) {
+      continue;
+    }
+    runAgentBattleAction(game, now, player, battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined);
   }
+}
+
+export function claimDecisionDriver(game: Game, now: number, driverId: string) {
+  ensureBattleState(game, now);
+  const battle = game.world.battle!;
+  if (driverId.length < 8 || driverId.length > 96) return { granted: false, status: '无效驾驶器标识' };
+  const occupied = battle.decisionDriverId && battle.decisionDriverId !== driverId && (battle.decisionDriverUntil ?? 0) > now;
+  if (occupied) return { granted: false, status: '已有观众正在驱动 AI' };
+  battle.decisionDriverId = driverId;
+  battle.decisionDriverUntil = now + BATTLE_CONFIG.match.decisionDriverLeaseMs;
+  battle.decisionDriverStatus = `DeepSeek 驾驶中（剩余 ${(battle.decisionMax ?? 0) - (battle.decisionCount ?? 0)} 次）`;
+  return { granted: true, expiresAt: battle.decisionDriverUntil, remaining: (battle.decisionMax ?? 0) - (battle.decisionCount ?? 0) };
+}
+
+export function heartbeatDecisionDriver(game: Game, now: number, driverId: string) {
+  const battle = game.world.battle!;
+  if (battle.decisionDriverId !== driverId || (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) {
+    return { active: false };
+  }
+  battle.decisionDriverUntil = now + BATTLE_CONFIG.match.decisionDriverLeaseMs;
+  return { active: true, expiresAt: battle.decisionDriverUntil };
+}
+
+export function submitAIDecision(game: Game, now: number, args: {
+  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; reason?: string;
+}) {
+  ensureBattleState(game, now);
+  const battle = game.world.battle!;
+  const player = game.world.players.get(args.playerId as any);
+  const fail = (reason: string) => {
+    if (player?.battle) {
+      player.battle.lastDecisionAt = now;
+      player.battle.lastDecisionStatus = '已拒绝';
+      player.battle.lastDecisionFallback = reason;
+      player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
+    }
+    pushEvent(game, now, 'decision', `【决策】${player ? playerName(game, player) : 'AI'} 的模型动作被拒绝：${reason}。`, player);
+    return { accepted: false, reason };
+  };
+  if (battle.decisionDriverId !== args.driverId || (battle.decisionDriverUntil ?? 0) <= now) return fail('驾驶权已失效');
+  if ((battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) return fail('本局模型决策额度已用尽');
+  if (!player?.battle || player.battle.eliminated) return fail('角色已淘汰');
+  if (!BATTLE_ACTIONS.includes(args.action as any)) return fail('动作不在允许列表');
+  if ((player.battle.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) return fail('动作冷却中');
+  const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
+  const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
+  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason);
+  player.battle.lastDecisionAt = now;
+  player.battle.lastDecisionAction = args.action;
+  player.battle.lastDecisionReason = safeReason || '未提供理由';
+  player.battle.lastDecisionStatus = result.accepted ? '已执行' : '已拒绝';
+  player.battle.lastDecisionFallback = result.reason;
+  player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
+  if (result.accepted) {
+    battle.decisionCount = (battle.decisionCount ?? 0) + 1;
+    pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}：${safeReason || '基于当前局势'}。`, player, target);
+  }
+  return result;
+}
+
+export function reportAIDecisionFailure(game: Game, now: number, args: { driverId: string; playerId: string; reason: string }) {
+  ensureBattleState(game, now);
+  const player = game.world.players.get(args.playerId as any);
+  const battle = game.world.battle!;
+  if (!player?.battle || battle.decisionDriverId !== args.driverId) return { recorded: false };
+  player.battle.lastDecisionAt = now;
+  player.battle.lastDecisionStatus = '模型失败';
+  player.battle.lastDecisionFallback = args.reason.slice(0, 100);
+  player.battle.decisionDueAt = now - BATTLE_CONFIG.match.llmDecisionTimeoutMs;
+  pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 的模型请求失败，规则 AI 即将接管。`, player);
+  return { recorded: true };
 }
 
 function tickMatchRules(game: Game, now: number) {
@@ -326,6 +448,16 @@ function tickMatchRules(game: Game, now: number) {
       battle.openAreas = battle.openAreas.filter((areaId) => areaId !== closingArea);
       battle.lastZoneUpdate = now;
       pushEvent(game, now, 'zone', `【禁区关闭】${areaName(closingArea)} 已永久关闭，AI 必须转移。`, undefined, undefined);
+      for (const player of alivePlayers(game).filter((candidate) => candidate.battle?.areaId === closingArea)) {
+        const destination = adjacentAreaIds(closingArea).find((areaId) => battle.openAreas?.includes(areaId));
+        if (destination && moveToBattleArea(game, now, player, destination)) {
+          pushEvent(game, now, 'zone', `【禁区撤离】${playerName(game, player)} 被迫转移至${areaName(destination)}。`, player);
+        } else {
+          player.battle!.hp = Math.max(1, player.battle!.hp - 12);
+          player.battle!.stress = (player.battle!.stress ?? 0) + 20;
+          pushEvent(game, now, 'zone', `【禁区伤害】${playerName(game, player)} 未能撤离，受到红区伤害。`, player);
+        }
+      }
     }
   }
 
@@ -335,7 +467,18 @@ function tickMatchRules(game: Game, now: number) {
     pushEvent(game, now, 'heat', '【热度】战场沉寂过久，直播热度下降 5 点。');
   }
   triggerAreaSpecialEvent(game, now);
+  refreshAreaResources(game, now);
   updateMissionProgress(game, now);
+}
+
+function refreshAreaResources(game: Game, now: number) {
+  const battle = game.world.battle!;
+  if (now < (battle.lastResourceRefresh ?? now) + 120000) return;
+  for (const resource of battle.areaResources ?? []) {
+    resource.remaining = Math.min(resource.max, resource.remaining + 3);
+  }
+  battle.lastResourceRefresh = now;
+  pushEvent(game, now, 'resource', '【资源】部分区域资源已刷新。');
 }
 
 function triggerAreaSpecialEvent(game: Game, now: number) {
@@ -468,9 +611,70 @@ function interventionReaction(operationId: string) {
   return { description: '察觉主办方干预，调整行动', emoji: 'ALERT' };
 }
 
-function runAgentBattleAction(game: Game, now: number, player: Player) {
+function executeBattleAction(
+  game: Game,
+  now: number,
+  player: Player,
+  action: string,
+  target?: Player,
+  targetAreaId?: string,
+  _reason?: string,
+) {
+  const stats = player.battle!;
+  if (action === 'move') {
+    if (!targetAreaId || !adjacentAreaIds(stats.areaId ?? 'A01').map(String).includes(targetAreaId)) return { accepted: false, reason: '目标区域不相邻' };
+    if (!game.world.battle?.openAreas?.includes(targetAreaId)) return { accepted: false, reason: '目标区域已关闭' };
+    if (!moveToBattleArea(game, now, player, targetAreaId)) return { accepted: false, reason: '无法抵达目标区域' };
+    return { accepted: true };
+  }
+  if (action === 'search') { loot(game, now, player); return { accepted: true }; }
+  if (action === 'buy') return tryBuyUpgrade(game, now, player) ? { accepted: true } : { accepted: false, reason: '物资不足或无可升级装备' };
+  if (action === 'heal') {
+    if (stats.medkits <= 0 || stats.hp >= stats.maxHp) return { accepted: false, reason: '不需要治疗或没有医疗包' };
+    stats.medkits -= 1; stats.hp = Math.min(stats.maxHp, stats.hp + 22);
+    pushEvent(game, now, 'heal', `【治疗】${playerName(game, player)} 按模型决策使用医疗包。`, player);
+    return { accepted: true };
+  }
+  if (action === 'attack') {
+    if (!target || target.battle?.eliminated) return { accepted: false, reason: '没有有效攻击目标' };
+    if (target.battle?.areaId !== stats.areaId) return { accepted: false, reason: '目标不在同一区域' };
+    const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+    if (distance(player.position, target.position) > weapon.range) return { accepted: false, reason: '目标超出武器射程' };
+    attack(game, now, player, target); return { accepted: true };
+  }
+  if (action === 'flee') {
+    const enemy = target ?? nearestEnemy(game, player);
+    if (!enemy || !tacticalMove(game, now, player, enemy, 'retreat')) return { accepted: false, reason: '没有可撤离路线' };
+    pushEvent(game, now, 'move', `【撤离】${playerName(game, player)} 按模型决策脱离战斗。`, player, enemy);
+    return { accepted: true };
+  }
+  if (action === 'ally') {
+    if (!target || target.battle?.eliminated || target.battle?.areaId !== stats.areaId) return { accepted: false, reason: '盟友必须在同一区域' };
+    return allyPlayers(game, now, player, target) ? { accepted: true } : { accepted: false, reason: '无法结盟' };
+  }
+  if (action === 'trade') {
+    if (!target?.battle || target.battle.eliminated || target.battle.areaId !== stats.areaId) return { accepted: false, reason: '交易对象必须在同一区域' };
+    const transfer = Math.min(10, Math.floor(stats.coins / 3));
+    if (transfer < 1) return { accepted: false, reason: '物资不足以交易' };
+    stats.coins -= transfer; target.battle.coins += transfer;
+    updateRelationship(game, player, target, 6, '交易');
+    pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 与 ${playerName(game, target)} 交换物资。`, player, target);
+    return { accepted: true };
+  }
+  if (action === 'investigate') {
+    collectTruthClue(game, now, `调查-${stats.areaId}`, player);
+    pushEvent(game, now, 'investigate', `【调查】${playerName(game, player)} 正在调查${areaName(stats.areaId ?? 'A01')}。`, player);
+    return { accepted: true };
+  }
+  return { accepted: false, reason: '未实现的动作' };
+}
+
+function runAgentBattleAction(game: Game, now: number, player: Player, fallbackReason?: string) {
   const stats = player.battle!;
   stats.lastBattleAction = now;
+  stats.lastDecisionStatus = '规则回退';
+  stats.lastDecisionFallback = fallbackReason ?? '未启用模型驾驶器';
+  stats.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
 
   if ((stats.interventionUntil ?? 0) > now) {
     if (stats.interventionKind?.startsWith('ENV') || stats.interventionKind === 'SUP_03') {
@@ -605,10 +809,18 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   } else if (Math.random() < 0.72) {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
+  updateRelationship(game, attacker, target, -12, '攻击');
 }
 
 function loot(game: Game, now: number, player: Player) {
   const stats = player.battle!;
+  const areaId = stats.areaId ?? 'A01';
+  const resource = game.world.battle?.areaResources?.find((entry) => entry.areaId === areaId);
+  if (resource && resource.remaining <= 0) {
+    pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 发现${areaName(areaId)}资源已经枯竭。`, player);
+    return;
+  }
+  if (resource) resource.remaining -= 1;
   const roll = Math.random();
   if (roll < 0.16 && stats.medkits < 2) {
     stats.medkits += 1;
@@ -633,11 +845,11 @@ function loot(game: Game, now: number, player: Player) {
   } else {
     const coins = 2 + Math.floor(Math.random() * 6);
     stats.coins += coins;
-    const areaId = stats.areaId ?? 'A01';
     const pool = BATTLE_CONFIG.areaItems[areaId] ?? [];
     const foundItem = pool[Math.floor(Math.random() * pool.length)];
     if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
       stats.inventory = [...(stats.inventory ?? []), foundItem];
+      applyItemEffect(game, now, player, foundItem);
     }
     pushEvent(
       game,
@@ -654,6 +866,21 @@ function loot(game: Game, now: number, player: Player) {
   if (!tacticalLootMove(game, now, player)) {
     wander(game, now, player);
   }
+}
+
+function applyItemEffect(game: Game, now: number, player: Player, item: string) {
+  const effect = ITEM_EFFECTS[item];
+  if (!effect) return;
+  const stats = player.battle!;
+  if (effect.kind === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + effect.value);
+  if (effect.kind === 'armor') stats.armor += effect.value;
+  if (effect.kind === 'stamina') stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + effect.value);
+  if (effect.kind === 'clue') collectTruthClue(game, now, `物品-${item}`, player);
+  if (effect.kind === 'weapon' && effect.value > stats.weaponPower) {
+    stats.weapon = item === '手枪' ? 'Pistol' : item === '突击步枪' ? 'Rifle' : 'Fists';
+    stats.weaponPower = effect.value;
+  }
+  pushEvent(game, now, 'item', `【物品】${playerName(game, player)} 使用${item}获得即时效果。`, player);
 }
 
 function tryBuyUpgrade(game: Game, now: number, player: Player) {
@@ -699,6 +926,11 @@ function tryAlliance(game: Game, now: number, player: Player) {
   if (!partner || !player.battle || !partner.battle) {
     return false;
   }
+  return allyPlayers(game, now, player, partner);
+}
+
+function allyPlayers(game: Game, now: number, player: Player, partner: Player) {
+  if (!player.battle || !partner.battle || player.id === partner.id) return false;
   player.battle.alliance = partner.id;
   partner.battle.alliance = player.id;
   player.activity = {
@@ -724,7 +956,37 @@ function tryAlliance(game: Game, now: number, player: Player) {
     player,
     partner,
   );
+  updateRelationship(game, player, partner, 14, '结盟');
   awardPopularity(game, now, 20, [player, partner]);
+  return true;
+}
+
+function updateRelationship(game: Game, first: Player, second: Player, delta: number, reason: string) {
+  const battle = game.world.battle!;
+  const a = first.battle?.characterId;
+  const b = second.battle?.characterId;
+  if (!a || !b) return;
+  let edge = battle.relationshipEdges?.find((candidate) => (candidate.a === a && candidate.b === b) || (candidate.a === b && candidate.b === a));
+  if (!edge) {
+    edge = { id: `REL_${a}_${b}`, a, b, type: 'friend', strength: 0, hidden: false };
+    battle.relationshipEdges!.push(edge);
+  }
+  edge.strength = Math.max(-100, Math.min(100, edge.strength + delta));
+  edge.lastReason = reason;
+}
+
+function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
+  const anchor = AREA_ANCHORS[areaId];
+  if (!anchor) return false;
+  const base = { x: Math.round(anchor.x * (game.worldMap.width - 2)) + 1, y: Math.round(anchor.y * (game.worldMap.height - 2)) + 1 };
+  const candidates = [base, { x: base.x + 2, y: base.y }, { x: base.x - 2, y: base.y }, { x: base.x, y: base.y + 2 }];
+  const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));
+  if (!destination) return false;
+  player.battle!.areaId = areaId;
+  player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - BATTLE_CONFIG.runtime.moveStaminaCost);
+  movePlayer(game, now, player, destination);
+  player.activity = { description: `${playerName(game, player)} 正在前往${areaName(areaId)}`, emoji: 'MOVE', until: now + 2000 };
+  pushEvent(game, now, 'move', `【移动】${playerName(game, player)} 进入${areaName(areaId)}。`, player);
   return true;
 }
 
@@ -976,6 +1238,10 @@ function weaponPower(weapon: string) {
 
 function weaponName(weapon: string) {
   return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon;
+}
+
+function actionName(action: string) {
+  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查' } as Record<string, string>)[action] ?? action;
 }
 
 function nextWeapon(weapon: string) {
