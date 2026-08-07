@@ -1,4 +1,4 @@
-import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction } from './battleRoyale';
+import { applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -91,5 +91,37 @@ describe('battle royale host intervention rules', () => {
     expect(player.battle.hp).toBe(62);
     expect(player.battle.medkits).toBe(0);
     expect(game.world.battle.decisionCount).toBe(0);
+  });
+
+  it('replays accepted model actions deterministically in timestamp and action-id order', () => {
+    const buildFixture = () => {
+      const player = createPlayer('p:12', 'C12', 'A12');
+      player.battle.hp = 40;
+      player.battle.medkits = 1;
+      const game = createGame([player]);
+      game.world.battle = defaultBattleState(1_000, 20260807);
+      return { game, player };
+    };
+    const log = [
+      // Intentionally out of order: the replay executor is the authority for ordering.
+      { id: 2, ts: 2_100, playerId: 'p:12', action: 'investigate', source: 'model', accepted: true },
+      { id: 1, ts: 2_000, playerId: 'p:12', action: 'heal', source: 'model', accepted: true },
+      { id: 3, ts: 2_200, playerId: 'p:12', action: 'fallback', source: 'rule', accepted: true },
+      { id: 4, ts: 2_300, playerId: 'p:12', action: 'attack', source: 'model', accepted: false },
+    ];
+    const first = buildFixture();
+    const second = buildFixture();
+
+    const firstReplay = replayRecordedActions(first.game, log);
+    const secondReplay = replayRecordedActions(second.game, log);
+
+    expect(firstReplay).toMatchObject({ applied: 2, rejected: 0 });
+    expect(firstReplay.results.map((entry) => entry.id)).toEqual([1, 2]);
+    expect(first.player.battle.hp).toBe(62);
+    expect(first.player.battle.medkits).toBe(0);
+    expect(first.game.world.battle.truthClues).toEqual(['调查-A12']);
+    expect(second.player.battle).toEqual(first.player.battle);
+    expect(second.game.world.battle.rngState).toBe(first.game.world.battle.rngState);
+    expect(second.game.world.battle.feed).toEqual(first.game.world.battle.feed);
   });
 });

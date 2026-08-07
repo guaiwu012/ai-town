@@ -858,6 +858,41 @@ export function replayRecordedAction(
   return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动');
 }
 
+/**
+ * Replays the accepted model decisions in their recorded order. This deliberately
+ * does not consult the driver lease, decision budget, or DeepSeek: a replay is a
+ * pure execution of the already-audited structured actions against a fresh match.
+ */
+export function replayRecordedActions(
+  game: Game,
+  entries: Array<{
+    id?: number;
+    ts: number;
+    playerId?: string;
+    targetPlayerId?: string;
+    targetAreaId?: string;
+    action: string;
+    source?: string;
+    accepted?: boolean;
+  }>,
+) {
+  const ordered = entries
+    .filter((entry) => entry.accepted !== false && (entry.source === undefined || entry.source === 'model'))
+    .sort((first, second) => first.ts - second.ts || (first.id ?? 0) - (second.id ?? 0));
+  const results = ordered.map((entry) => ({
+    id: entry.id,
+    ts: entry.ts,
+    action: entry.action,
+    playerId: entry.playerId,
+    result: replayRecordedAction(game, entry.ts, entry),
+  }));
+  return {
+    applied: results.filter(({ result }) => result.accepted).length,
+    rejected: results.filter(({ result }) => !result.accepted).length,
+    results,
+  };
+}
+
 function executeBattleAction(
   game: Game,
   now: number,
