@@ -15,6 +15,7 @@ import { PositionIndicator } from './PositionIndicator.tsx';
 import { SHOW_DEBUG_UI } from './Game.tsx';
 import { ServerGame } from '../hooks/serverGame.ts';
 import { PixiBattleEffects } from './PixiBattleEffects.tsx';
+import { PixiArenaZones } from './PixiArenaZones.tsx';
 import { GameId } from '../../convex/aiTown/ids.ts';
 
 export const PixiGame = (props: {
@@ -122,6 +123,7 @@ export const PixiGame = (props: {
         onpointerup={onMapPointerUp}
         onpointerdown={onMapPointerDown}
       />
+      <PixiArenaZones game={props.game} />
       {players.map(
         (p) =>
           // Only show the path for the human player in non-debug mode.
