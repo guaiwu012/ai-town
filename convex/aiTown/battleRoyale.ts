@@ -9,7 +9,6 @@ import {
   BATTLE_CONFIG,
   BATTLE_ACTIONS,
   adjacentAreaIds,
-  AREA_ANCHORS,
   ITEM_EFFECTS,
   itemDefinition,
   GLOBAL_SPECIAL_EVENTS,
@@ -20,6 +19,7 @@ import {
   profileForIndex,
   profileForCharacterId,
 } from '../../data/battleRoyaleConfig';
+import { battleAreaSpawnPoints } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -1251,10 +1251,7 @@ function relationshipBetween(game: Game, first: Player, second: Player) {
 }
 
 function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
-  const anchor = AREA_ANCHORS[areaId];
-  if (!anchor) return false;
-  const base = { x: Math.round(anchor.x * (game.worldMap.width - 2)) + 1, y: Math.round(anchor.y * (game.worldMap.height - 2)) + 1 };
-  const candidates = [base, { x: base.x + 2, y: base.y }, { x: base.x - 2, y: base.y }, { x: base.x, y: base.y + 2 }];
+  const candidates = battleAreaSpawnPoints(areaId, game.worldMap.width, game.worldMap.height);
   const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));
   if (!destination) return false;
   player.battle!.areaId = areaId;

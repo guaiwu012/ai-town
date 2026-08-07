@@ -14,10 +14,10 @@ export function PixiArenaZones({ game }: { game: ServerGame }) {
       const isOpen = open.includes(zone.id);
       const x = zone.anchor.x * map.width * map.tileDim;
       const y = zone.anchor.y * map.height * map.tileDim;
-      const radius = zone.radius * Math.min(map.width, map.height) * map.tileDim;
       graphics.lineStyle(2, isOpen ? zone.color : 0xdb5555, isOpen ? 0.38 : 0.56);
       graphics.beginFill(isOpen ? zone.color : 0x7d1f2d, isOpen ? 0.06 : 0.18);
-      graphics.drawCircle(x, y, radius);
+      const points = zone.polygon.map((point) => ({ x: point.x * map.width * map.tileDim, y: point.y * map.height * map.tileDim }));
+      graphics.drawPolygon(points.flatMap((point) => [point.x, point.y]));
       graphics.endFill();
     }
   };
