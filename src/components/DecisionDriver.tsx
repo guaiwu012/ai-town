@@ -23,20 +23,23 @@ export default function DecisionDriver({ worldId, game, config, enabled = true }
   const sendInput = useMutation(api.aiTown.main.sendInput);
   const driverId = useMemo(getDriverId, []);
   const inFlight = useRef(new Map<string, AbortController>());
-  const battle = game.world.battle;
+  const gameRef = useRef(game);
+  gameRef.current = game;
 
   useEffect(() => {
     if (!config || !enabled) return;
     const tick = async () => {
+      const currentGame = gameRef.current;
+      const currentBattle = currentGame.world.battle;
       const now = Date.now();
-      const leaseActive = battle?.decisionDriverId === driverId && (battle.decisionDriverUntil ?? 0) > now;
+      const leaseActive = currentBattle?.decisionDriverId === driverId && (currentBattle.decisionDriverUntil ?? 0) > now;
       if (!leaseActive) {
         await sendInput({ worldId, name: 'claimDecisionDriver', args: { driverId } });
         return;
       }
       await sendInput({ worldId, name: 'heartbeatDecisionDriver', args: { driverId } });
-      if ((battle?.decisionCount ?? 0) >= (battle?.decisionMax ?? BATTLE_CONFIG.match.llmDecisionMaxPerMatch)) return;
-      const duePlayers = [...game.world.players.values()]
+      if ((currentBattle?.decisionCount ?? 0) >= (currentBattle?.decisionMax ?? BATTLE_CONFIG.match.llmDecisionMaxPerMatch)) return;
+      const duePlayers = [...currentGame.world.players.values()]
         .filter((player) => player.battle && !player.battle.eliminated)
         .filter((player) => (player.battle?.decisionDueAt ?? 0) <= now)
         .filter((player) => !inFlight.current.has(player.id))
@@ -44,7 +47,7 @@ export default function DecisionDriver({ worldId, game, config, enabled = true }
       duePlayers.forEach((player) => {
         const controller = new AbortController();
         inFlight.current.set(player.id, controller);
-        requestAndSubmitDecision(config, game, worldId, driverId, player.id, sendInput, controller.signal)
+        requestAndSubmitDecision(config, currentGame, worldId, driverId, player.id, sendInput, controller.signal)
           .finally(() => inFlight.current.delete(player.id));
       });
     };
@@ -55,7 +58,7 @@ export default function DecisionDriver({ worldId, game, config, enabled = true }
       inFlight.current.forEach((controller) => controller.abort());
       inFlight.current.clear();
     };
-  }, [battle?.decisionDriverId, battle?.decisionDriverUntil, battle?.decisionCount, battle?.decisionMax, config, driverId, enabled, game, sendInput, worldId]);
+  }, [config, driverId, enabled, sendInput, worldId]);
 
   return null;
 }
