@@ -8,6 +8,7 @@ export type BattleArenaZone = {
   color: number;
   polygon: { x: number; y: number }[];
   spawnPoints: { x: number; y: number }[];
+  navigationPoints: { x: number; y: number }[];
   obstacles: { x: number; y: number; width: number; height: number }[];
 };
 
@@ -19,6 +20,11 @@ function zoneShape(anchor: { x: number; y: number }, radius: number) {
   return {
     polygon: vertices,
     spawnPoints: [anchor, ...vertices.filter((_, index) => index % 2 === 0).map((point) => ({ x: (point.x + anchor.x) / 2, y: (point.y + anchor.y) / 2 }))],
+    navigationPoints: [
+      anchor,
+      ...vertices.map((point) => ({ x: anchor.x + (point.x - anchor.x) * 0.42, y: anchor.y + (point.y - anchor.y) * 0.42 })),
+      ...vertices.map((point) => ({ x: anchor.x + (point.x - anchor.x) * 0.7, y: anchor.y + (point.y - anchor.y) * 0.7 })),
+    ],
   };
 }
 
@@ -54,6 +60,17 @@ export function battleAreaSpawnPoints(areaId: string, mapWidth: number, mapHeigh
     x: Math.round(point.x * (mapWidth - 2)) + 1,
     y: Math.round(point.y * (mapHeight - 2)) + 1,
   }));
+}
+
+export function battleAreaNavigationPoints(areaId: string, mapWidth: number, mapHeight: number) {
+  const zone = BATTLE_ARENA_ZONES.find((candidate) => candidate.id === areaId);
+  if (!zone) return [];
+  return zone.navigationPoints
+    .map((point) => ({
+      x: Math.round(point.x * (mapWidth - 2)) + 1,
+      y: Math.round(point.y * (mapHeight - 2)) + 1,
+    }))
+    .filter((point) => isBattleArenaWalkable(areaId, point, mapWidth, mapHeight));
 }
 
 export function isPointInBattleArea(areaId: string, point: { x: number; y: number }, mapWidth: number, mapHeight: number) {

@@ -19,7 +19,7 @@ import {
   profileForIndex,
   profileForCharacterId,
 } from '../../data/battleRoyaleConfig';
-import { battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
+import { battleAreaNavigationPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -1403,7 +1403,7 @@ function relationshipBetween(game: Game, first: Player, second: Player) {
 
 function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
   if (isAreaLocked(game.world.battle, now, player.battle?.areaId ?? 'A01')) return false;
-  const candidates = battleAreaSpawnPoints(areaId, game.worldMap.width, game.worldMap.height);
+  const candidates = battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
   const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));
   if (!destination) return false;
   player.battle!.areaId = areaId;
@@ -1603,14 +1603,16 @@ function tacticalDestination(
 }
 
 function randomOpenTile(game: Game, player: Player) {
-  for (let attempt = 0; attempt < 24; attempt++) {
-    const candidate = {
-      x: 1 + Math.floor(battleRandom(game) * (game.worldMap.width - 2)),
-      y: 1 + Math.floor(battleRandom(game) * (game.worldMap.height - 2)),
-    };
-    if (isInPlayerBattleArea(game, player, candidate) && !blocked(game, Date.now(), candidate, player.id)) {
-      return candidate;
-    }
+  const points = battleAreaNavigationPoints(
+    player.battle?.areaId ?? 'A01',
+    game.worldMap.width,
+    game.worldMap.height,
+  );
+  if (points.length === 0) return undefined;
+  const start = Math.floor(battleRandom(game) * points.length);
+  for (let offset = 0; offset < points.length; offset++) {
+    const candidate = points[(start + offset) % points.length];
+    if (!blocked(game, Date.now(), candidate, player.id)) return candidate;
   }
   return undefined;
 }
