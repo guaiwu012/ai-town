@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -143,6 +143,8 @@ describe('battle royale host intervention rules', () => {
     expect(second.player.battle).toEqual(first.player.battle);
     expect(second.game.world.battle.rngState).toBe(first.game.world.battle.rngState);
     expect(second.game.world.battle.feed).toEqual(first.game.world.battle.feed);
+    expect(secondReplay.stateDigest).toBe(firstReplay.stateDigest);
+    expect(battleReplayStateDigest(second.game)).toBe(firstReplay.stateDigest);
   });
 
   it('reproduces seeded search loot and local movement from the same accepted log', () => {

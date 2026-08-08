@@ -143,7 +143,7 @@ export const battleState = v.object({
     id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
-    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(),
+    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(),
   }))),
   lastReplayCheckpointAt: v.optional(v.number()),
   lastVitalsUpdate: v.optional(v.number()),
@@ -966,6 +966,7 @@ export function replayRecordedActions(
   return {
     applied: results.filter(({ result }) => result.accepted).length,
     rejected: results.filter(({ result }) => !result.accepted).length,
+    stateDigest: battleReplayStateDigest(game),
     results,
   };
 }
@@ -1674,9 +1675,51 @@ function recordReplayCheckpoint(game: Game, now: number) {
     alive: alivePlayers(game).length,
     popularity: battle.popularity ?? 0,
     phase: battle.phase ?? 'early',
+    stateDigest: battleReplayStateDigest(game),
   });
   if (checkpoints.length > 60) checkpoints.splice(0, checkpoints.length - 60);
   battle.lastReplayCheckpointAt = now;
+}
+
+export function battleReplayStateDigest(game: Game) {
+  const battle = game.world.battle!;
+  const players = [...game.world.players.values()]
+    .map((player) => ({
+      id: player.id,
+      area: player.battle?.areaId,
+      hp: Math.round(player.battle?.hp ?? 0),
+      stamina: Math.round(player.battle?.stamina ?? 0),
+      satiety: Math.round(player.battle?.satiety ?? 0),
+      stress: Math.round(player.battle?.stress ?? 0),
+      weapon: player.battle?.weapon,
+      armor: player.battle?.armor,
+      coins: player.battle?.coins,
+      medkits: player.battle?.medkits,
+      inventory: player.battle?.inventory ?? [],
+      eliminated: !!player.battle?.eliminated,
+      alliance: player.battle?.alliance,
+    }))
+    .sort((first, second) => first.id.localeCompare(second.id));
+  const relationships = [...(battle.relationshipEdges ?? [])]
+    .map(({ id, strength, hidden, lastReason }) => ({ id, strength, hidden, lastReason }))
+    .sort((first, second) => first.id.localeCompare(second.id));
+  const resources = [...(battle.areaResources ?? [])]
+    .map(({ areaId, remaining }) => ({ areaId, remaining }))
+    .sort((first, second) => first.areaId.localeCompare(second.areaId));
+  return JSON.stringify({
+    seed: battle.seed,
+    rngState: battle.rngState,
+    phase: battle.phase,
+    day: battle.day,
+    timeOfDay: battle.timeOfDay,
+    openAreas: [...(battle.openAreas ?? [])].sort(),
+    popularity: battle.popularity,
+    players,
+    relationships,
+    resources,
+    truthClues: [...(battle.truthClues ?? [])].sort(),
+    storyTriggers: [...(battle.storyTriggers ?? [])].sort(),
+  });
 }
 
 function pushEvent(

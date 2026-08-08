@@ -4,7 +4,7 @@
 
 ## 运行时与回放
 
-- 每局状态包含 `seed`、`rngState`、`ruleVersion`、`actionLog`、独立递增的 `nextActionId` 和 `replayCheckpoints`。
+- 每局状态包含 `seed`、`rngState`、`ruleVersion`、`actionLog`、独立递增的 `nextActionId` 和 `replayCheckpoints`；检查点还携带稳定状态摘要，覆盖角色、区域、资源、关系、剧情、热度与随机状态。
 - 服务端规则随机数统一经持久化 LCG 产生；相同 seed 会得到相同随机序列。
 - `actionLog` 记录模型动作、结构化目标角色/区域、校验结果及规则 AI 回退原因；日志不包含提示词、响应原文或 API 密钥。
 - `replayRecordedAction()` 和 `replayRecordedActions()` 复用生产动作执行层，按 `ts`、`id` 重演已接受的模型结构化行动；它们不申请驾驶权、不计入模型额度，也不调用 DeepSeek。规则 AI 的自由回退目前只记录回退原因，不伪造为可重演的模型动作。
