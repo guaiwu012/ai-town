@@ -56,4 +56,9 @@ describe('battle royale P0/P1 configuration', () => {
     expect(itemDefinition('突击步枪').rarity).toBe('rare');
     expect(itemDefinition('不存在的普通物品')).toMatchObject({ rarity: 'common', tradeValue: 12 });
   });
+
+  test('gives every configured area item an explicit economy definition', () => {
+    const allAreaItems = new Set(Object.values(BATTLE_CONFIG.areaItems).flat());
+    expect(Object.keys(ITEM_DEFINITIONS)).toEqual(expect.arrayContaining([...allAreaItems]));
+  });
 });

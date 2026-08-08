@@ -137,11 +137,26 @@ export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' |
 };
 
 export type BattleItemDefinition = { rarity: 'common' | 'uncommon' | 'rare' | 'legendary'; tradeValue: number };
+const DEFAULT_ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = Object.fromEntries(
+  [...new Set(Object.values(BATTLE_CONFIG.areaItems).flat())].map((item) => [item, { rarity: 'common', tradeValue: 12 }]),
+);
 export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
+  ...DEFAULT_ITEM_DEFINITIONS,
   '军用口粮': { rarity: 'common', tradeValue: 8 }, '保暖服': { rarity: 'uncommon', tradeValue: 22 }, '防弹插板': { rarity: 'rare', tradeValue: 40 }, '战术匕首': { rarity: 'uncommon', tradeValue: 28 }, '军籍牌': { rarity: 'rare', tradeValue: 55 },
   '演播档案带': { rarity: 'rare', tradeValue: 55 }, '加密档案': { rarity: 'rare', tradeValue: 48 }, '策略手稿': { rarity: 'uncommon', tradeValue: 24 }, '急救包': { rarity: 'uncommon', tradeValue: 28 }, '医疗记录终端': { rarity: 'rare', tradeValue: 48 },
   '烟雾弹': { rarity: 'uncommon', tradeValue: 24 }, '突击步枪': { rarity: 'rare', tradeValue: 70 }, '手枪': { rarity: 'uncommon', tradeValue: 35 }, '破片手雷': { rarity: 'rare', tradeValue: 58 }, '伪装斗篷': { rarity: 'rare', tradeValue: 52 },
   '鸟羽护符': { rarity: 'rare', tradeValue: 50 }, '案件卷宗': { rarity: 'rare', tradeValue: 46 }, '监控终端权限卡': { rarity: 'legendary', tradeValue: 85 }, '空白身份卡': { rarity: 'legendary', tradeValue: 90 }, '真相数据核心': { rarity: 'legendary', tradeValue: 120 }, '制造者日志': { rarity: 'legendary', tradeValue: 120 },
+  '罐装咖啡': { rarity: 'common', tradeValue: 10 }, '隐蔽录音笔': { rarity: 'uncommon', tradeValue: 26 }, '信号干扰器': { rarity: 'rare', tradeValue: 42 }, '隐藏频道接收器': { rarity: 'rare', tradeValue: 50 },
+  '营养补充剂': { rarity: 'common', tradeValue: 14 }, '电子破解器': { rarity: 'uncommon', tradeValue: 30 }, '情报地图': { rarity: 'rare', tradeValue: 45 },
+  '肾上腺素': { rarity: 'rare', tradeValue: 42 }, '指虎': { rarity: 'common', tradeValue: 16 }, '铁链': { rarity: 'uncommon', tradeValue: 24 }, '格斗绷带': { rarity: 'uncommon', tradeValue: 22 }, '血染刺套': { rarity: 'rare', tradeValue: 58 },
+  '午餐盒': { rarity: 'common', tradeValue: 10 }, '对讲机': { rarity: 'uncommon', tradeValue: 25 }, '学生档案': { rarity: 'rare', tradeValue: 44 },
+  '止痛药': { rarity: 'common', tradeValue: 15 }, '手术刀': { rarity: 'uncommon', tradeValue: 32 }, '防护服': { rarity: 'uncommon', tradeValue: 30 }, '未署名病历': { rarity: 'rare', tradeValue: 52 },
+  '运动饮料': { rarity: 'common', tradeValue: 12 }, '蛋白棒': { rarity: 'common', tradeValue: 12 }, '铅球': { rarity: 'uncommon', tradeValue: 20 }, '跑鞋': { rarity: 'uncommon', tradeValue: 26 }, '奖牌': { rarity: 'rare', tradeValue: 40 },
+  '走私食品': { rarity: 'common', tradeValue: 14 }, '万能钥匙': { rarity: 'rare', tradeValue: 46 }, '伪造身份卡': { rarity: 'rare', tradeValue: 48 }, '账本残页': { rarity: 'uncommon', tradeValue: 32 }, '欠条': { rarity: 'rare', tradeValue: 55 },
+  '军用净水片': { rarity: 'common', tradeValue: 12 }, '武器清单': { rarity: 'rare', tradeValue: 54 },
+  '药草': { rarity: 'common', tradeValue: 14 }, '古老树皮刻痕': { rarity: 'rare', tradeValue: 46 },
+  '茶水间补给': { rarity: 'common', tradeValue: 12 }, '证物袋': { rarity: 'uncommon', tradeValue: 25 }, '法槌': { rarity: 'uncommon', tradeValue: 28 }, '判决书副本': { rarity: 'rare', tradeValue: 42 },
+  '备用电源包': { rarity: 'uncommon', tradeValue: 30 }, '便携雷达': { rarity: 'rare', tradeValue: 52 },
 };
 
 export function itemDefinition(item: string): BattleItemDefinition {
