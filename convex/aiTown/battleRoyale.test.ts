@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -217,5 +217,31 @@ describe('battle royale host intervention rules', () => {
     tickBattleRoyale(game, 31_000);
     expect(game.world.battle.openAreas).toHaveLength(12);
     expect(game.world.battle.zoneClosesAt).toBe(31_000 + 90_000);
+  });
+
+  it('scores relationship reunion, protection and reversal exactly once', () => {
+    const guardian = createPlayer('p:1', 'C01', 'A01');
+    const protectedPlayer = createPlayer('p:5', 'C05', 'A01');
+    protectedPlayer.battle.hp = 20;
+    const rivalA = createPlayer('p:4', 'C04', 'A04');
+    const rivalB = createPlayer('p:9', 'C09', 'A04');
+    rivalA.battle.hp = 40;
+    rivalB.battle.hp = 40;
+    const game = createGame([guardian, protectedPlayer, rivalA, rivalB]);
+    const rivals = game.world.battle.relationshipEdges.find((edge: any) => edge.id === 'REL_SEED_03');
+    rivals.strength = -35;
+
+    triggerRelationshipDrama(game, 2_000);
+    const afterFirst = game.world.battle.popularity;
+    triggerRelationshipDrama(game, 3_000);
+
+    expect(guardian.battle.alliance).toBe(protectedPlayer.id);
+    expect(guardian.battle.medkits).toBe(0);
+    expect(protectedPlayer.battle.hp).toBe(48);
+    expect(rivalA.battle.alliance).toBe(rivalB.id);
+    expect(game.world.battle.storyTriggers).toEqual(expect.arrayContaining([
+      '关系:重逢:REL_SEED_01', '关系:守护:REL_SEED_01', '关系:逆转:REL_SEED_03',
+    ]));
+    expect(game.world.battle.popularity).toBe(afterFirst);
   });
 });

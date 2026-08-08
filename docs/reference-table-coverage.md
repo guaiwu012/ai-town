@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力；`DecisionDriver` 发送角色属性、人格倾向与生存状态给战术模型 | 部分抽象 | 代号、强度、心智、心理、社交、攻击/协作/风险偏好已进入战术提示词；完整背景、说话风格、个人目标和剧情钩子仍待逐字段接入。 |
 | `人物/配表_角色运行时属性` | `BattleStats`：HP、体力、饱食、区域停留、压力、热度、背包；`defaultBattleStats()`；`applyBattleVitals()` | 部分抽象 | 饱食会消耗体力并增压，医院可恢复压力/区域停留，高压 AI 优先撤离；完整的饥饿死亡、所有状态衰减曲线和 UI 数值解释仍待补齐。 |
-| `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨的强度变化已运行；4-6 条随机戏剧关系、重逢条件和所有关系类型的独立效果未实现。 |
+| `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()`；`triggerRelationshipDrama()` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨、重逢、危局守护与绝境逆转的强度/热度变化均运行并有测试；4-6 条随机戏剧关系和所有关系类型的独立效果仍待补齐。 |
 | `人物.xmind` | 角色名、代号、属性和关系的辅助校对来源 | 未接入 | 节点层级、叙事分支和人物关系说明没有单独导入。 |
 
 ## 地图与物品表
@@ -39,7 +39,7 @@
 | `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx` | 部分抽象 | 17 个操作可选择目标并执行基础效果，剧情拆笼、换药、野兽、开庭和延长停电均已接入；次数上限、双胜规则、资源移除/隐藏和操作专属视觉没有完全按表覆盖。 |
 | `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
 | `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |
-| `系统/配表_评分规则` | `awardPopularity()`；`updateMissionProgress()` | 部分抽象 | 已实现攻击、淘汰、结盟、剧情、真相、连击和热度换干预点；背叛、重逢、牺牲、伏击、逆转、无事件惩罚的精确触发和完整评分审计未实现。 |
+| `系统/配表_评分规则` | `awardPopularity()`；`updateMissionProgress()`；关系剧情规则 | 部分抽象 | 已实现攻击、淘汰、结盟、背叛、重逢、守护、逆转、剧情、真相、连击和热度换干预点；伏击、无事件惩罚的精确触发和完整评分明细仍待补齐。 |
 | `系统/系统策划案`、`系统.xmind`、`游戏循环与数据流.xmind` | 当前开发任务和架构文档的设计参考 | 未接入 | 其中的完整状态流、策划验收、数据流图和运营循环尚未生成可执行规则。 |
 
 ## 非配表参考资产

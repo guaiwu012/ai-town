@@ -593,7 +593,7 @@ export function applyBattleVitals(game: Game, now: number) {
   }
 }
 
-function triggerRelationshipDrama(game: Game, now: number) {
+export function triggerRelationshipDrama(game: Game, now: number) {
   const battle = game.world.battle!;
   for (const edge of battle.relationshipEdges ?? []) {
     const first = alivePlayers(game).find((player) => player.battle?.characterId === edge.a);
