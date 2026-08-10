@@ -272,15 +272,15 @@ export const resetBattle = mutation({
       }
     }
     // The reset writes a complete world document. Invalidate a running engine's
-    // in-memory copy so its next step reloads this new match instead of saving
-    // stale players back over it.
+    // in-memory copy and align its clock with this match so it cannot replay a
+    // stale stopped interval over the newly-reset battle.
     const worldStatus = await ctx.db
       .query('worldStatus')
       .withIndex('worldId', (q) => q.eq('worldId', args.worldId))
       .unique();
     const engine = worldStatus && await ctx.db.get(worldStatus.engineId);
     if (engine?.running) {
-      await kickEngine(ctx, args.worldId);
+      await kickEngine(ctx, args.worldId, true);
     }
     return { players: activePlayers.length };
   },

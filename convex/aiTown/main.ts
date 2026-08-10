@@ -56,7 +56,7 @@ export async function startEngine(ctx: MutationCtx, worldId: Id<'worlds'>) {
   });
 }
 
-export async function kickEngine(ctx: MutationCtx, worldId: Id<'worlds'>) {
+export async function kickEngine(ctx: MutationCtx, worldId: Id<'worlds'>, resetClock = false) {
   const { engineId } = await loadWorldStatus(ctx.db, worldId);
   const engine = await ctx.db.get(engineId);
   if (!engine) {
@@ -66,7 +66,11 @@ export async function kickEngine(ctx: MutationCtx, worldId: Id<'worlds'>) {
     throw new Error(`Engine ${engineId} isn't currently running`);
   }
   const generationNumber = engine.generationNumber + 1;
-  await ctx.db.patch(engineId, { generationNumber });
+  const now = Date.now();
+  await ctx.db.patch(engineId, {
+    generationNumber,
+    ...(resetClock ? { currentTime: now, lastStepTs: now } : {}),
+  });
   await ctx.scheduler.runAfter(0, internal.aiTown.main.runStep, {
     worldId: worldId,
     generationNumber,
