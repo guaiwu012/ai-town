@@ -209,7 +209,7 @@ describe('battle royale host intervention rules', () => {
     game.world.battle.zoneClosesAt = 31_000;
     game.world.battle.lastTick = 1_000_000;
 
-    tickBattleRoyale(game, 2_000);
+    tickBattleRoyale(game, 7_000);
     expect(game.world.battle.lastZoneWarningAt).toBe(31_000);
     expect(game.world.battle.feed.some((event: any) => event.text.includes('禁区预警'))).toBe(true);
     const warningCount = game.world.battle.feed.filter((event: any) => event.text.includes('禁区预警')).length;
@@ -237,6 +237,19 @@ describe('battle royale host intervention rules', () => {
       id: player.id, x: 17, y: 5, hp: 73, areaId: 'A12', inventory: ['军用口粮'],
     }));
     expect(checkpoint?.frame?.openAreas).toEqual(game.world.battle.openAreas);
+  });
+
+  it('records a target-less rule fallback without null optional fields', () => {
+    const first = createPlayer('p:1', 'C01', 'A01');
+    const second = createPlayer('p:2', 'C02', 'A02');
+    const game = createGame([first, second]);
+
+    tickBattleRoyale(game, 7_000);
+
+    const fallback = game.world.battle.actionLog.find((entry: any) => entry.action === 'fallback');
+    expect(fallback).toBeDefined();
+    expect(Object.hasOwn(fallback, 'targetPlayerId')).toBe(false);
+    expect(Object.hasOwn(fallback, 'targetAreaId')).toBe(false);
   });
 
   it('scores relationship reunion, protection and reversal exactly once', () => {

@@ -1702,7 +1702,20 @@ function recordReplayAction(
 ) {
   const battle = game.world.battle!;
   const log = battle.actionLog ?? (battle.actionLog = []);
-  log.push({ id: battle.nextActionId!++, ts: now, playerId: player?.id, targetPlayerId: targetPlayerId as any, targetAreaId, action, source, accepted, reason: reason?.slice(0, 140) });
+  const entry: NonNullable<BattleState['actionLog']>[number] = {
+    id: battle.nextActionId!++,
+    ts: now,
+    action,
+    source,
+    accepted,
+  };
+  // Convex validates optional fields as absent, not null. Avoid serializing
+  // target-less rule actions as null, which would otherwise reject the whole tick.
+  if (player) entry.playerId = player.id;
+  if (targetPlayerId) entry.targetPlayerId = targetPlayerId as any;
+  if (targetAreaId) entry.targetAreaId = targetAreaId;
+  if (reason) entry.reason = reason.slice(0, 140);
+  log.push(entry);
   if (log.length > 480) log.splice(0, log.length - 480);
 }
 
