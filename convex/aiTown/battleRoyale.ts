@@ -1101,16 +1101,19 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   stats.lastDecisionStatus = '规则回退';
   stats.lastDecisionFallback = fallbackReason ?? '未启用模型驾驶器';
   stats.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
-  recordReplayAction(game, now, player, 'fallback', 'rule', true, fallbackReason);
+  const recordRuleAction = (action: string, target?: Player, targetAreaId?: string) =>
+    recordReplayAction(game, now, player, action, 'rule', true, fallbackReason, target?.id, targetAreaId);
 
   if ((stats.interventionUntil ?? 0) > now) {
     if (stats.interventionKind?.startsWith('ENV') || stats.interventionKind === 'SUP_03') {
       if (tacticalLootMove(game, now, player)) {
+        recordRuleAction('flee');
         pushEvent(game, now, 'reaction', `【反应】${playerName(game, player)} 正在避开主办方干预区域。`, player);
         return;
       }
     }
     if (stats.interventionKind === 'SUP_01' || stats.interventionKind === 'SUP_02') {
+      recordRuleAction('search');
       loot(game, now, player);
       return;
     }
@@ -1122,11 +1125,13 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
       .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
       .sort((first, second) => areaDanger(first) - areaDanger(second))[0];
     if (destination && moveToBattleArea(game, now, player, destination)) {
+      recordRuleAction('move', undefined, destination);
       pushEvent(game, now, 'reaction', `【压力】${playerName(game, player)} 压力过高，撤离至${areaName(destination)}。`, player);
       return;
     }
   }
   if (stats.hp <= 36 && stats.medkits > 0) {
+    recordRuleAction('heal');
     stats.medkits -= 1;
     stats.hp = Math.min(stats.maxHp, stats.hp + 18);
     player.activity = {
@@ -1140,6 +1145,7 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
 
   if (enemy && stats.hp <= 45 && distance(player.position, enemy.position) <= BATTLE_CONFIG.match.dangerRange) {
     if (tacticalMove(game, now, player, enemy, 'retreat')) {
+      recordRuleAction('flee', enemy);
       player.activity = {
         description: `${playerName(game, player)} 正在撤离`,
         emoji: 'MOVE',
@@ -1152,12 +1158,14 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
 
   const weaponConfig = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
   if (enemy && distance(player.position, enemy.position) <= weaponConfig.range) {
+    recordRuleAction('attack', enemy);
     attack(game, now, player, enemy);
     return;
   }
 
   if (enemy && !player.pathfinding && battleRandom(game) < 0.48) {
     if (tacticalMove(game, now, player, enemy, 'approach')) {
+      recordRuleAction('move', enemy);
       player.activity = {
         description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
         emoji: 'MOVE',
@@ -1168,22 +1176,27 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   }
 
   if (tryBuyUpgrade(game, now, player)) {
+    recordRuleAction('buy');
     return;
   }
 
   if (battleRandom(game) < 0.24 && tryAlliance(game, now, player)) {
+    recordRuleAction('ally');
     return;
   }
 
   if (battleRandom(game) < 0.62) {
+    recordRuleAction('search');
     loot(game, now, player);
     return;
   }
 
   if (enemy) {
+    recordRuleAction('move', enemy);
     moveToward(game, now, player, enemy);
     return;
   }
+  recordRuleAction('move');
   wander(game, now, player);
 }
 

@@ -239,17 +239,19 @@ describe('battle royale host intervention rules', () => {
     expect(checkpoint?.frame?.openAreas).toEqual(game.world.battle.openAreas);
   });
 
-  it('records a target-less rule fallback without null optional fields', () => {
+  it('records the concrete rule action without null optional fields', () => {
     const first = createPlayer('p:1', 'C01', 'A01');
     const second = createPlayer('p:2', 'C02', 'A02');
     const game = createGame([first, second]);
 
     tickBattleRoyale(game, 7_000);
 
-    const fallback = game.world.battle.actionLog.find((entry: any) => entry.action === 'fallback');
-    expect(fallback).toBeDefined();
-    expect(Object.hasOwn(fallback, 'targetPlayerId')).toBe(false);
-    expect(Object.hasOwn(fallback, 'targetAreaId')).toBe(false);
+    expect(game.world.battle.actionLog.length).toBeGreaterThan(0);
+    for (const entry of game.world.battle.actionLog) {
+      expect(entry.action).not.toBe('fallback');
+      expect(entry.targetPlayerId).not.toBeNull();
+      expect(entry.targetAreaId).not.toBeNull();
+    }
   });
 
   it('requires the terminal card before permission-gated replay stories can trigger', () => {
