@@ -33,6 +33,7 @@ type BattleRoyalePanelProps = {
   onBackToLive: () => void;
   onMatchReset: () => void;
   onFollowPlayer: (playerId: GameId<'players'>) => void;
+  onFocusArea: (areaId: string) => void;
   launchModal?: 'mine' | 'reset';
   onLaunchModalHandled: () => void;
 };
@@ -46,6 +47,7 @@ export default function BattleRoyalePanel({
   onBackToLive,
   onMatchReset,
   onFollowPlayer,
+  onFocusArea,
   launchModal,
   onLaunchModalHandled,
 }: BattleRoyalePanelProps) {
@@ -219,7 +221,10 @@ export default function BattleRoyalePanel({
                 className={`overview-area-marker ${openAreas.includes(area.id) ? '' : 'is-closed'}`}
                 style={mapPositionForArea(area.id)}
               >
-                <button className={`overview-area-label ${targetAreaId === area.id ? 'is-targeted' : ''}`} onClick={() => setTargetAreaId(area.id)}>{displayAreaName(area.id)}</button>
+                <div className="overview-area-actions">
+                  <button className={`overview-area-label ${targetAreaId === area.id ? 'is-targeted' : ''}`} onClick={() => setTargetAreaId(area.id)}>{displayAreaName(area.id)}</button>
+                  <button className="overview-area-watch" aria-label={`切入${displayAreaName(area.id)}直播镜头`} title={`切入${displayAreaName(area.id)}直播镜头`} onClick={() => onFocusArea(area.id)}>◎</button>
+                </div>
                 <div className="overview-area-resource">资源 {resource?.remaining ?? '--'}/{resource?.max ?? '--'}</div>
                 {areaLock && <div className="overview-area-lock">笼门封锁 {Math.ceil((areaLock.until - Date.now()) / 1000)} 秒</div>}
                 <div className="overview-area-agents">

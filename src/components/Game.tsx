@@ -34,6 +34,7 @@ export default function Game() {
   const [viewMode, setViewMode] = useState<'live' | 'overview'>('live');
   const [cameraMode, setCameraMode] = useState<'auto' | 'locked'>('auto');
   const [focusPlayerId, setFocusPlayerId] = useState<GameId<'players'>>();
+  const [focusAreaId, setFocusAreaId] = useState<string>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
   const [replayActive, setReplayActive] = useState(false);
@@ -68,6 +69,7 @@ export default function Game() {
       game.world.battle?.feed ?? [],
     );
     if (target) setFocusPlayerId(target as GameId<'players'>);
+    setFocusAreaId(undefined);
   }, [cameraMode, game]);
 
   useEffect(() => {
@@ -85,6 +87,7 @@ export default function Game() {
 
   const followPlayer = (playerId: GameId<'players'>, openDrawer = true) => {
     setFocusPlayerId(playerId);
+    setFocusAreaId(undefined);
     setSelectedElement({ kind: 'player', id: playerId });
     setCameraMode('locked');
     setViewMode('live');
@@ -99,6 +102,7 @@ export default function Game() {
     setViewMode('live');
     setCameraMode('auto');
     setFocusPlayerId(undefined);
+    setFocusAreaId(undefined);
     setSelectedElement(undefined);
     setDrawerOpen(false);
     setReplayActive(false);
@@ -124,6 +128,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
                 replayMode={replayActive}
                 replayFrame={replayFrame}
                 selectedPlayerId={focusPlayerId}
+                focusAreaId={focusAreaId}
                 setSelectedElement={handleSelection}
               />
             </ConvexProvider>
@@ -165,6 +170,14 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onBackToLive={() => setViewMode('live')}
             onMatchReset={handleMatchReset}
             onFollowPlayer={followPlayer}
+            onFocusArea={(areaId) => {
+              setFocusAreaId(areaId);
+              setFocusPlayerId(undefined);
+              setSelectedElement(undefined);
+              setCameraMode('locked');
+              setDrawerOpen(false);
+              setViewMode('live');
+            }}
             launchModal={launchModal}
             onLaunchModalHandled={() => setLaunchModal(undefined)}
           />

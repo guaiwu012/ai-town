@@ -16,6 +16,7 @@ import { SHOW_DEBUG_UI } from './Game.tsx';
 import { ServerGame } from '../hooks/serverGame.ts';
 import { PixiBattleEffects } from './PixiBattleEffects.tsx';
 import { PixiArenaZones } from './PixiArenaZones.tsx';
+import { BATTLE_ARENA_ZONES } from '../../data/battleArena.ts';
 import { GameId } from '../../convex/aiTown/ids.ts';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale.ts';
 
@@ -29,6 +30,7 @@ export const PixiGame = (props: {
   width: number;
   height: number;
   selectedPlayerId?: GameId<'players'>;
+  focusAreaId?: string;
   setSelectedElement: SelectElement;
 }) => {
   // PIXI setup.
@@ -104,15 +106,26 @@ export const PixiGame = (props: {
     const viewport = viewportRef.current;
     const selected = props.selectedPlayerId && props.game.world.players.get(props.selectedPlayerId);
     const replayPlayer = props.replayFrame?.players.find((player) => player.id === props.selectedPlayerId);
-    if (!viewport || !selected) {
+    const focusedArea = props.focusAreaId
+      ? BATTLE_ARENA_ZONES.find((area) => area.id === props.focusAreaId)
+      : undefined;
+    if (!viewport || (!selected && !focusedArea)) {
       return;
     }
-    const position = replayPlayer ?? selected.position;
+    const selectedPosition = selected
+      ? { x: selected.position.x, y: selected.position.y }
+      : undefined;
+    const position = replayPlayer
+      ? { x: replayPlayer.x, y: replayPlayer.y }
+      : selectedPosition ?? {
+      x: focusedArea!.anchor.x * width,
+      y: focusedArea!.anchor.y * height,
+      };
     viewport.moveCenter(
       position.x * tileDim + tileDim / 2,
       position.y * tileDim + tileDim / 2,
     );
-  }, [props.selectedPlayerId, props.game, tileDim]);
+  }, [props.selectedPlayerId, props.focusAreaId, props.replayFrame, props.game, tileDim, width, height]);
 
   return (
     <PixiViewport
