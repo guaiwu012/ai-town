@@ -2,7 +2,7 @@
 
 > 基于 AI Town 与 Convex 的 12 人观赛型大逃杀原型。前端部署在 CloudBase，比赛状态运行在 Convex。
 
-**当前 AI 状态（请先阅读）**：浏览器填写 DeepSeek API 后，会由本机 `DecisionDriver` 每 12 秒为存活 AI 请求一次战术动作。密钥仅留在浏览器，不会进入 Convex、数据库或公屏；每局最多 240 次模型决策。网络、CORS、超时、非法 JSON、无效动作或额度耗尽时，服务器会记录原因并自动切换规则 AI。详见 [开发进度](./docs/development-progress.md) 和 [参考配表覆盖矩阵](./docs/reference-table-coverage.md)。
+**当前 AI 状态（请先阅读）**：观众浏览器仅争取一个短期调度租约；由 Convex Action 每 12 秒为存活 AI 请求一次 DeepSeek 战术动作。密钥只保存在 Convex 云变量 `DEEPSEEK_API_KEY`，不会进入浏览器、数据库、日志或公屏；每局最多 240 次模型决策。超时、模型错误、非法 JSON、无效动作或额度耗尽时，服务器会记录原因并自动切换规则 AI。详见 [开发进度](./docs/development-progress.md) 和 [参考配表覆盖矩阵](./docs/reference-table-coverage.md)。
 
 ## 当前功能
 
@@ -12,7 +12,7 @@
 - 24 条区域特殊剧情和 3 条全局事件已进入事件循环，地图会显示干预和剧情落点。
 - 直播观赛模式：默认自动导播跟随热点 AI；可切换战略总览、锁定角色镜头、查看中文决策审计，并从直播 HUD 直接发起扫雷或新开一局。
 - P2 回放：比赛保存种子、RNG 状态、结构化模型/规则行动和每 30 秒轻量状态帧。回放只使用已记录动作，不重复请求 DeepSeek；跳到检查点时会恢复当时角色位置、生命、装备、区域、关系和资源。
-- DeepSeek BYOK 战术驾驶：观众客户端用 20 秒租约避免重复扣费；模型动作经 Convex 校验区域邻接、禁区、射程、物资和冷却后才会执行。
+- 云端 DeepSeek 战术驾驶：观众客户端用 20 秒租约避免重复扣费；Convex Action 用云变量调用模型，动作经区域邻接、禁区、射程、物资和冷却校验后才会执行。
 - CloudBase 线上地址：https://playable-ads-d3g6ipimne9fe9ae6-1320513533.tcloudbaseapp.com/ai-town/
 
 ## 架构与运行
@@ -20,7 +20,7 @@
 - 前端：Vite + React + PixiJS；`npm run dev`。
 - 游戏状态和比赛循环：Convex；部署函数使用 `npx convex dev` 或 `npx convex deploy`。
 - 前端静态部署：`npx tcb hosting deploy dist ai-town -e playable-ads-d3g6ipimne9fe9ae6`。
-- 生产环境的 LLM 密钥必须配置在 Convex 环境变量中，不能使用浏览器本地存储作为服务端密钥来源。
+- 管理员在 Convex 开发环境设置密钥：`npx convex env set DEEPSEEK_API_KEY --deployment dev`，按提示粘贴密钥即可；生产环境改为 `--prod`。密钥绝不能写入 `VITE_*`、`.env.local`、前端代码或 Git。
 
 ---
 

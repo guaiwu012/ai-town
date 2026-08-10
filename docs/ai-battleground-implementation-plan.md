@@ -6,14 +6,15 @@
 
 - **直播跟随**是默认入口：Pixi 战场、角色活动、弹道与中文公屏不被总览遮挡。
 - **战略总览**提供 13 区状态、资源、任务、热度、干预点和参赛者入口；点击区域或角色可切回直播镜头。
-- DeepSeek 使用浏览器 BYOK。密钥仅在浏览器 `localStorage` 和对 DeepSeek 的请求头出现，永不发送给 Convex、日志或公屏。
+- DeepSeek 由 Convex Action 调用。密钥只存在云变量 `DEEPSEEK_API_KEY`，永不发送给浏览器、数据库、日志或公屏；浏览器只持有不含敏感信息的调度租约标识。
 - Convex 是比赛规则、行动校验、种子 RNG、状态迁移和事件播报的唯一权威；导播、抽屉打开状态和回放时间均是本地观众偏好。
 
 ## 运行时数据流
 
 ```mermaid
 flowchart LR
-  U["观众浏览器"] -->|"BYOK 结构化动作"| DS["DeepSeek API"]
+  U["观众浏览器"] -->|"调度请求（无密钥）"| A["Convex Cloud Action"]
+  A -->|"云变量 DEEPSEEK_API_KEY"| DS["DeepSeek API"]
   DS -->|"move/search/..."| V["Convex submitAIDecision"]
   V -->|"校验或规则回退"| S["Battle State"]
   S --> E["行动日志 / 检查点 / 中文事件流"]
@@ -26,7 +27,7 @@ flowchart LR
 | 层级 | 权威模块 | 当前行为 |
 | --- | --- | --- |
 | 比赛规则 | `convex/aiTown/battleRoyale.ts` | 统一执行模型动作和规则 AI 回退；校验角色、冷却、距离、物品、区域邻接、禁区和剧情前置。 |
-| AI 调度 | `src/components/DecisionDriver.tsx` | 租约持有者每 12 秒调度存活角色；全局最多 240 次，超时/错误/无效输出立即由规则 AI 接管。 |
+| AI 调度 | `src/components/DecisionDriver.tsx`、`convex/aiTown/cloudDecision.ts` | 租约持有者每 12 秒调度存活角色；云端 Action 使用环境变量调用模型，全局最多 240 次，超时/错误/无效输出立即由规则 AI 接管。 |
 | 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、邻接、资源、禁区和视觉标签共享同一数据源。 |
 | 内容规则 | `AREA_SPECIAL_EVENTS`、`GLOBAL_SPECIAL_EVENTS`、`relationshipEdges`、`ITEM_DEFINITIONS` | 24 条区域剧情、3 条全局事件、关系戏剧、物品稀有度/价值、资源刷新和区域 buff 进入循环。 |
 | 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |

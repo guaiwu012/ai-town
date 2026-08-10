@@ -22,7 +22,7 @@
 | 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
 | --- | --- | --- | --- |
 | `地图/配表_区域定义` | `BATTLE_CONFIG.areas`：A01-A12、S01、危险等级、归属角色、区域文字机制 | 部分抽象 | 区域危险等级、进入门槛、区域 buff 和大部分专属机制仅作为配置展示，尚未全面改变寻路、命中、掉落或决策效用。 |
-| `地图/配表_角色区域对应` | `BattleCharacterProfile.areaId`；`defaultBattleStats().areaId` | 运行中 | 角色当前位置会随通用移动变更，但没有严格限制为参考表的出生点和邻接区域网络。 |
+| `地图/配表_角色区域对应` | `BattleCharacterProfile.areaId`；`defaultBattleStats().areaId`；`battleAreaSpawnPoints()` | 运行中 | 新开局会将 12 名角色放入各自逻辑区域的可走出生点；跨区仍由邻接表校验，局部路径与视觉地图继续复用 Pixi tile map。 |
 | `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency`；`adjacentAreaIds()`；`moveToBattleArea()` | 运行中 | 区域移动已强制相邻与开放校验；Pixi tile map 仍只承担局部寻路和视觉表现。 |
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |

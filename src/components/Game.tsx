@@ -12,10 +12,6 @@ import { GameId } from '../../convex/aiTown/ids.ts';
 import { useServerGame } from '../hooks/serverGame.ts';
 import BattleRoyalePanel from './BattleRoyalePanel.tsx';
 import BattleBroadcastToasts from './BattleBroadcastToasts.tsx';
-import DeepSeekConfigGate, {
-  DeepSeekConfig,
-  readDeepSeekConfig,
-} from './DeepSeekConfigGate.tsx';
 import DecisionDriver from './DecisionDriver.tsx';
 import LiveBattleHud from './LiveBattleHud.tsx';
 import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
@@ -40,10 +36,6 @@ export default function Game() {
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [replayTime, setReplayTime] = useState<number>();
-  const [deepSeekConfig, setDeepSeekConfig] = useState<DeepSeekConfig | undefined>(() =>
-    readDeepSeekConfig(),
-  );
-  const [showDeepSeekConfig, setShowDeepSeekConfig] = useState(() => !readDeepSeekConfig());
   const [gameWrapperRef, { width, height }] = useElementSize();
 
   const worldStatus = useQuery(api.world.defaultWorldStatus);
@@ -136,7 +128,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         <BattleBroadcastToasts feed={game.world.battle?.feed} />
-        <DecisionDriver worldId={worldId} game={game} config={deepSeekConfig} enabled={!replayActive} />
+        <DecisionDriver worldId={worldId} game={game} enabled={!replayActive} />
         {viewMode === 'live' ? <>
           <LiveBattleHud
             game={game}
@@ -166,7 +158,6 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             game={game}
             selectedPlayerId={selectedElement?.id}
             setSelectedElement={handleSelection}
-            onEditDeepSeekConfig={() => setShowDeepSeekConfig(true)}
             onBackToLive={() => setViewMode('live')}
             onMatchReset={handleMatchReset}
             onFollowPlayer={followPlayer}
@@ -182,15 +173,6 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onLaunchModalHandled={() => setLaunchModal(undefined)}
           />
         </div>}
-        {showDeepSeekConfig && (
-          <DeepSeekConfigGate
-            initialConfig={deepSeekConfig}
-            onSave={(config) => {
-              setDeepSeekConfig(config);
-              setShowDeepSeekConfig(false);
-            }}
-          />
-        )}
       </div>
     </>
   );

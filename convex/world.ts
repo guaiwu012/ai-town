@@ -13,6 +13,7 @@ import { kickEngine, startEngine, stopEngine } from './aiTown/main';
 import { engineInsertInput } from './engine/abstractGame';
 import { defaultBattleState, defaultBattleStats } from './aiTown/battleRoyale';
 import { BATTLE_CONFIG, profileForIndex } from '../data/battleRoyaleConfig';
+import { battleAreaSpawnPoints } from '../data/battleArena';
 
 const TARGET_BATTLE_AGENT_COUNT = BATTLE_CONFIG.match.agentCount;
 
@@ -213,6 +214,10 @@ export const resetBattle = mutation({
       agentDescriptions.map((description) => [description.agentId, description]),
     );
     const assignedDescriptions = activePlayers.map((_, index) => uniqueDescriptionForIndex(index));
+    const map = await ctx.db
+      .query('maps')
+      .withIndex('worldId', (q) => q.eq('worldId', args.worldId))
+      .first();
     for (const [index, player] of activePlayers.entries()) {
       const description = assignedDescriptions[index];
       const playerDescription = playerDescriptionsByPlayerId.get(player.id);
@@ -249,10 +254,13 @@ export const resetBattle = mutation({
       conversations: [],
       players: activePlayers.map((player, index) => {
         const { activity: _activity, pathfinding: _pathfinding, battle: _battle, ...rest } = player;
+        const profile = profileForIndex(index);
+        const spawn = map && battleAreaSpawnPoints(profile.areaId, map.width, map.height)[0];
         return {
           ...rest,
+          ...(spawn ? { position: spawn, facing: { dx: 1, dy: 0 } } : {}),
           speed: 0,
-          battle: defaultBattleStats(profileForIndex(index)),
+          battle: defaultBattleStats(profile),
         };
       }),
     });

@@ -19,7 +19,7 @@ import {
   profileForIndex,
   profileForCharacterId,
 } from '../../data/battleRoyaleConfig';
-import { battleAreaNavigationPoints, isBattleArenaWalkable } from '../../data/battleArena';
+import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
 
@@ -397,8 +397,12 @@ export function resetBattleMatch(game: Game, now: number) {
   game.world.conversations.clear();
   game.world.battle = defaultBattleState(now);
   for (const player of game.world.players.values()) {
-    const profile = profileForIndex([...game.world.players.keys()].indexOf(player.id));
+    const index = [...game.world.players.keys()].indexOf(player.id);
+    const profile = profileForIndex(index);
     player.battle = defaultBattleStats(profile);
+    const spawn = battleAreaSpawnPoints(profile.areaId, game.worldMap.width, game.worldMap.height)[0];
+    if (spawn) player.position = spawn;
+    player.facing = { dx: 1, dy: 0 };
     delete player.activity;
     delete player.pathfinding;
     player.speed = 0;
@@ -451,7 +455,7 @@ export function claimDecisionDriver(game: Game, now: number, driverId: string) {
   if (occupied) return { granted: false, status: '已有观众正在驱动 AI' };
   battle.decisionDriverId = driverId;
   battle.decisionDriverUntil = now + BATTLE_CONFIG.match.decisionDriverLeaseMs;
-  battle.decisionDriverStatus = `DeepSeek 驾驶中（剩余 ${(battle.decisionMax ?? 0) - (battle.decisionCount ?? 0)} 次）`;
+  battle.decisionDriverStatus = `云端 DeepSeek 驾驶中（剩余 ${(battle.decisionMax ?? 0) - (battle.decisionCount ?? 0)} 次）`;
   return { granted: true, expiresAt: battle.decisionDriverUntil, remaining: (battle.decisionMax ?? 0) - (battle.decisionCount ?? 0) };
 }
 

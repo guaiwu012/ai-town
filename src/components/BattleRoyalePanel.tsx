@@ -29,7 +29,6 @@ type BattleRoyalePanelProps = {
   game: ServerGame;
   selectedPlayerId?: GameId<'players'>;
   setSelectedElement: SelectElement;
-  onEditDeepSeekConfig: () => void;
   onBackToLive: () => void;
   onMatchReset: () => void;
   onFollowPlayer: (playerId: GameId<'players'>) => void;
@@ -43,7 +42,6 @@ export default function BattleRoyalePanel({
   game,
   selectedPlayerId,
   setSelectedElement,
-  onEditDeepSeekConfig,
   onBackToLive,
   onMatchReset,
   onFollowPlayer,

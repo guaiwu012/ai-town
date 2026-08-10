@@ -1,5 +1,6 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
+import { isBattleArenaWalkable } from '../../data/battleArena';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
 
@@ -262,6 +263,18 @@ describe('battle royale host intervention rules', () => {
     expect(areaEventEligible(game, 2_000, event)).toBe(false);
     player.battle.inventory = ['监控终端权限卡'];
     expect(areaEventEligible(game, 2_000, event)).toBe(true);
+  });
+
+  it('returns each reset contestant to a walkable spawn inside their assigned battle area', () => {
+    const player = createPlayer('p:12', 'C12', 'A12');
+    const game = createGame([player]);
+    game.world.agents = new Map();
+    game.agentDescriptions = new Map();
+
+    resetBattleMatch(game, 2_000);
+
+    expect(player.battle?.areaId).toBe('A01');
+    expect(isBattleArenaWalkable('A01', player.position, 80, 60)).toBe(true);
   });
 
   it('scores relationship reunion, protection and reversal exactly once', () => {
