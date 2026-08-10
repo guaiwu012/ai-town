@@ -119,6 +119,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
                 width={width}
                 height={height}
                 historicalTime={replayActive ? replayTime : historicalTime}
+                replayMode={replayActive}
                 selectedPlayerId={focusPlayerId}
                 setSelectedElement={handleSelection}
               />
@@ -145,6 +146,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             battle={game.world.battle}
             active={replayActive}
             speed={replaySpeed}
+            currentTime={replayTime}
             onToggle={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
             onSpeed={setReplaySpeed}
             onJump={(time) => { setReplayTime(time); setReplayActive(true); }}

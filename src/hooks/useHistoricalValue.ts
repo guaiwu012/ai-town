@@ -6,6 +6,7 @@ export function useHistoricalValue<T extends Record<string, number>>(
   historicalTime: number | undefined,
   value: T | undefined,
   history: ArrayBuffer | undefined,
+  preserveHistory = false,
 ): T | undefined {
   const manager = useRef(new HistoryManager());
   const sampleRecord: Record<string, History> | undefined = useMemo(() => {
@@ -26,11 +27,11 @@ export function useHistoricalValue<T extends Record<string, number>>(
   if (!historicalTime) {
     return value;
   }
-  const historicalFields = manager.current.query(historicalTime);
+  const historicalFields = manager.current.query(historicalTime, preserveHistory);
   return { ...value, ...historicalFields };
 }
 
-class HistoryManager {
+export class HistoryManager {
   histories: Record<string, History[]> = {};
 
   receive(sampleRecord: Record<string, History>) {
@@ -47,7 +48,7 @@ class HistoryManager {
     }
   }
 
-  query(historicalTime: number): Record<string, number> {
+  query(historicalTime: number, preserveHistory = false): Record<string, number> {
     const result: Record<string, number> = {};
     for (const [fieldName, histories] of Object.entries(this.histories)) {
       if (histories.length == 0) {
@@ -68,7 +69,9 @@ class HistoryManager {
           break;
         }
       }
-      if (foundIndex !== null) {
+      // Live playback only moves forward, so trim its consumed samples to bound
+      // memory. A replay can jump backwards, therefore it keeps its buffer intact.
+      if (!preserveHistory && foundIndex !== null) {
         this.histories[fieldName] = histories.slice(foundIndex);
       }
       result[fieldName] = currentValue;

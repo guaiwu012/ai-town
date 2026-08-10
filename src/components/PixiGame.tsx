@@ -23,6 +23,7 @@ export const PixiGame = (props: {
   engineId: Id<'engines'>;
   game: ServerGame;
   historicalTime: number | undefined;
+  replayMode?: boolean;
   width: number;
   height: number;
   selectedPlayerId?: GameId<'players'>;
@@ -140,6 +141,7 @@ export const PixiGame = (props: {
           isViewer={p.id === humanPlayerId}
           onClick={props.setSelectedElement}
           historicalTime={props.historicalTime}
+          replayMode={props.replayMode}
         />
       ))}
       <PixiBattleEffects game={props.game} />

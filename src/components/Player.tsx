@@ -21,6 +21,7 @@ export const Player = ({
   player,
   onClick,
   historicalTime,
+  replayMode = false,
 }: {
   game: ServerGame;
   isViewer: boolean;
@@ -28,6 +29,7 @@ export const Player = ({
 
   onClick: SelectElement;
   historicalTime?: number;
+  replayMode?: boolean;
 }) => {
   const playerCharacter = game.playerDescriptions.get(player.id)?.character;
   if (!playerCharacter) {
@@ -41,6 +43,7 @@ export const Player = ({
     historicalTime,
     playerLocation(player),
     locationBuffer,
+    replayMode,
   );
   if (!character) {
     if (!logged.has(playerCharacter)) {
