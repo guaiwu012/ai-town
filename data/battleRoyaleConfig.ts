@@ -221,7 +221,7 @@ export const AREA_SPECIAL_EVENTS = [
   { id: 'A01_01', areaId: 'A01', title: '炮台激活', effect: 'turret', maxTriggers: 3 },
   { id: 'A01_02', areaId: 'A01', title: '暴风雪', effect: 'blizzard', maxTriggers: 1 },
   { id: 'A02_01', areaId: 'A02', title: '广播失控', effect: 'broadcast', maxTriggers: 1 },
-  { id: 'A02_02', areaId: 'A02', title: '监控回放', effect: 'replay', maxTriggers: 1 },
+  { id: 'A02_02', areaId: 'A02', title: '监控回放', effect: 'replay', maxTriggers: 1, requiredItem: '监控终端权限卡', consumeItem: true },
   { id: 'A03_01', areaId: 'A03', title: '数据泄露', effect: 'revealRelation', maxTriggers: 1 },
   { id: 'A03_02', areaId: 'A03', title: '电力中断', effect: 'blackout', maxTriggers: 1 },
   { id: 'A04_01', areaId: 'A04', title: '地板塌陷', effect: 'collapse', maxTriggers: 1 },
@@ -240,7 +240,7 @@ export const AREA_SPECIAL_EVENTS = [
   { id: 'A11_01', areaId: 'A11', title: '开庭', effect: 'trial', maxTriggers: 1 },
   { id: 'A11_02', areaId: 'A11', title: '证词记录', effect: 'revealRelation', maxTriggers: 2 },
   { id: 'A12_01', areaId: 'A12', title: '数据异常', effect: 'c12Anomaly', maxTriggers: 1 },
-  { id: 'A12_02', areaId: 'A12', title: '监控回响', effect: 'replay', maxTriggers: 2 },
+  { id: 'A12_02', areaId: 'A12', title: '监控回响', effect: 'replay', maxTriggers: 2, requiredItem: '监控终端权限卡', consumeItem: true },
   { id: 'S01_01', areaId: 'S01', title: '制造者日志', effect: 'truth', maxTriggers: 1 },
 ] as const;
 

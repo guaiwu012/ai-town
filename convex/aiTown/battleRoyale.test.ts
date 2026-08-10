@@ -1,5 +1,5 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
-import { profileForCharacterId } from '../../data/battleRoyaleConfig';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
 
@@ -250,6 +250,16 @@ describe('battle royale host intervention rules', () => {
     expect(fallback).toBeDefined();
     expect(Object.hasOwn(fallback, 'targetPlayerId')).toBe(false);
     expect(Object.hasOwn(fallback, 'targetAreaId')).toBe(false);
+  });
+
+  it('requires the terminal card before permission-gated replay stories can trigger', () => {
+    const player = createPlayer('p:12', 'C12', 'A12');
+    const game = createGame([player]);
+    const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === 'A12_02')!;
+
+    expect(areaEventEligible(game, 2_000, event)).toBe(false);
+    player.battle.inventory = ['监控终端权限卡'];
+    expect(areaEventEligible(game, 2_000, event)).toBe(true);
   });
 
   it('scores relationship reunion, protection and reversal exactly once', () => {

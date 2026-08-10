@@ -689,13 +689,23 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     const count = battle.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0;
     if (count >= event.maxTriggers) return false;
     const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
-    return (!cooldown || cooldown.until <= now) && areaEventEligible(game, now, event.id, event.areaId);
+    return (!cooldown || cooldown.until <= now) && areaEventEligible(game, now, event);
   });
   const event = candidates[Math.floor(battleRandom(game) * candidates.length)];
   if (!event) return;
   const affected = alivePlayers(game).filter((player) => player.battle?.areaId === event.areaId);
   if (affected.length === 0) return;
   const randomPlayer = affected[Math.floor(battleRandom(game) * affected.length)];
+  const requiredItem = 'requiredItem' in event ? event.requiredItem : undefined;
+  const itemOwner = requiredItem
+    ? affected.find((player) => player.battle?.inventory?.includes(requiredItem))
+    : undefined;
+  if (requiredItem && !itemOwner) return;
+  if (requiredItem && itemOwner && 'consumeItem' in event && event.consumeItem) {
+    const inventory = itemOwner.battle!.inventory ?? [];
+    itemOwner.battle!.inventory = inventory.filter((item, index) => item !== requiredItem || index !== inventory.indexOf(requiredItem));
+    pushEvent(game, now, 'story', `【剧情道具】${playerName(game, itemOwner)} 消耗${requiredItem}，开启「${event.title}」。`, itemOwner);
+  }
   if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15));
   if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 15; });
   if (event.effect === 'blizzard') affected.forEach((player) => {
@@ -776,10 +786,12 @@ function areaEffectSummary(effect: string) {
   return summaries[effect] ?? '战场状态发生变化';
 }
 
-function areaEventEligible(game: Game, now: number, eventId: string, areaId: string) {
+export function areaEventEligible(game: Game, now: number, event: (typeof AREA_SPECIAL_EVENTS)[number]) {
   const battle = game.world.battle!;
+  const { id: eventId, areaId } = event;
   const occupants = alivePlayers(game).filter((player) => player.battle?.areaId === areaId);
   if (occupants.length === 0) return false;
+  if ('requiredItem' in event && event.requiredItem && !occupants.some((player) => player.battle?.inventory?.includes(event.requiredItem))) return false;
   const stayedTwoMinutes = occupants.some((player) => now - (player.battle?.areaEnteredAt ?? now) >= 120000);
   const searched = occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 3);
   const battleRounds = battle.areaBattleRounds?.find((entry) => entry.areaId === areaId)?.count ?? 0;
