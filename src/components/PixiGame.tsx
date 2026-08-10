@@ -17,6 +17,7 @@ import { ServerGame } from '../hooks/serverGame.ts';
 import { PixiBattleEffects } from './PixiBattleEffects.tsx';
 import { PixiArenaZones } from './PixiArenaZones.tsx';
 import { GameId } from '../../convex/aiTown/ids.ts';
+import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale.ts';
 
 export const PixiGame = (props: {
   worldId: Id<'worlds'>;
@@ -24,6 +25,7 @@ export const PixiGame = (props: {
   game: ServerGame;
   historicalTime: number | undefined;
   replayMode?: boolean;
+  replayFrame?: BattleReplayFrame;
   width: number;
   height: number;
   selectedPlayerId?: GameId<'players'>;
@@ -101,12 +103,14 @@ export const PixiGame = (props: {
   useEffect(() => {
     const viewport = viewportRef.current;
     const selected = props.selectedPlayerId && props.game.world.players.get(props.selectedPlayerId);
+    const replayPlayer = props.replayFrame?.players.find((player) => player.id === props.selectedPlayerId);
     if (!viewport || !selected) {
       return;
     }
+    const position = replayPlayer ?? selected.position;
     viewport.moveCenter(
-      selected.position.x * tileDim + tileDim / 2,
-      selected.position.y * tileDim + tileDim / 2,
+      position.x * tileDim + tileDim / 2,
+      position.y * tileDim + tileDim / 2,
     );
   }, [props.selectedPlayerId, props.game, tileDim]);
 
@@ -142,6 +146,7 @@ export const PixiGame = (props: {
           onClick={props.setSelectedElement}
           historicalTime={props.historicalTime}
           replayMode={props.replayMode}
+          replayFrame={props.replayFrame?.players.find((frame) => frame.id === p.id)}
         />
       ))}
       <PixiBattleEffects game={props.game} />

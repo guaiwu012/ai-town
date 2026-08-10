@@ -21,6 +21,7 @@ import LiveBattleHud from './LiveBattleHud.tsx';
 import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
 import BattleReplayControls from './BattleReplayControls.tsx';
 import { selectDirectorTarget } from '../lib/battleDirector.ts';
+import { replayFrameAt } from '../lib/battleReplay.ts';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -103,6 +104,7 @@ export default function Game() {
     setReplayActive(false);
     setReplayTime(undefined);
   };
+  const replayFrame = replayActive ? replayFrameAt(game.world.battle, replayTime) : undefined;
   return (
     <>
       {SHOW_DEBUG_UI && <DebugTimeManager timeManager={timeManager} width={200} height={100} />}
@@ -120,6 +122,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
                 height={height}
                 historicalTime={replayActive ? replayTime : historicalTime}
                 replayMode={replayActive}
+                replayFrame={replayFrame}
                 selectedPlayerId={focusPlayerId}
                 setSelectedElement={handleSelection}
               />

@@ -221,6 +221,24 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.zoneClosesAt).toBe(31_000 + 90_000);
   });
 
+  it('persists a lightweight replay frame with player positions at each checkpoint', () => {
+    const player = createPlayer('p:12', 'C12', 'A12');
+    player.position = { x: 17, y: 5 };
+    player.facing = { dx: 0, dy: 1 };
+    player.battle.hp = 73;
+    player.battle.inventory = ['军用口粮'];
+    const game = createGame([player]);
+    game.world.battle.lastReplayCheckpointAt = 1_000;
+
+    tickBattleRoyale(game, 31_100);
+
+    const checkpoint = game.world.battle.replayCheckpoints.at(-1);
+    expect(checkpoint?.frame?.players).toContainEqual(expect.objectContaining({
+      id: player.id, x: 17, y: 5, hp: 73, areaId: 'A12', inventory: ['军用口粮'],
+    }));
+    expect(checkpoint?.frame?.openAreas).toEqual(game.world.battle.openAreas);
+  });
+
   it('scores relationship reunion, protection and reversal exactly once', () => {
     const guardian = createPlayer('p:1', 'C01', 'A01');
     const protectedPlayer = createPlayer('p:5', 'C05', 'A01');

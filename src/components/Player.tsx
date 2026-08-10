@@ -10,6 +10,7 @@ import { useHistoricalValue } from '../hooks/useHistoricalValue.ts';
 import { PlayerDescription } from '../../convex/aiTown/playerDescription.ts';
 import { WorldMap } from '../../convex/aiTown/worldMap.ts';
 import { ServerGame } from '../hooks/serverGame.ts';
+import type { BattleReplayPlayerFrame } from '../../convex/aiTown/battleRoyale.ts';
 
 export type SelectElement = (element?: { kind: 'player'; id: GameId<'players'> }) => void;
 
@@ -22,6 +23,7 @@ export const Player = ({
   onClick,
   historicalTime,
   replayMode = false,
+  replayFrame,
 }: {
   game: ServerGame;
   isViewer: boolean;
@@ -30,6 +32,7 @@ export const Player = ({
   onClick: SelectElement;
   historicalTime?: number;
   replayMode?: boolean;
+  replayFrame?: BattleReplayPlayerFrame;
 }) => {
   const playerCharacter = game.playerDescriptions.get(player.id)?.character;
   if (!playerCharacter) {
@@ -53,7 +56,8 @@ export const Player = ({
     return null;
   }
 
-  if (!historicalLocation) {
+  const displayedLocation = replayFrame ?? historicalLocation;
+  if (!displayedLocation) {
     return null;
   }
 
@@ -71,21 +75,24 @@ export const Player = ({
       (a) => a.playerId === player.id && !!a.inProgressOperation,
     );
   const tileDim = game.worldMap.tileDim;
-  const historicalFacing = { dx: historicalLocation.dx, dy: historicalLocation.dy };
+  const displayedBattle = replayFrame
+    ? { ...player.battle, ...replayFrame }
+    : player.battle;
+  const historicalFacing = { dx: displayedLocation.dx, dy: displayedLocation.dy };
   return (
     <>
       <Character
-        x={historicalLocation.x * tileDim + tileDim / 2}
-        y={historicalLocation.y * tileDim + tileDim / 2}
+        x={displayedLocation.x * tileDim + tileDim / 2}
+        y={displayedLocation.y * tileDim + tileDim / 2}
         orientation={orientationDegrees(historicalFacing)}
-        isMoving={historicalLocation.speed > 0}
+        isMoving={displayedLocation.speed > 0}
         isThinking={isThinking}
         isSpeaking={isSpeaking}
         emoji={activeActivity?.emoji}
         isViewer={isViewer}
-        hpRatio={player.battle ? player.battle.hp / player.battle.maxHp : undefined}
-        isEliminated={player.battle?.eliminated}
-        battleCharacterId={player.battle?.characterId}
+        hpRatio={displayedBattle ? displayedBattle.hp / displayedBattle.maxHp : undefined}
+        isEliminated={displayedBattle?.eliminated}
+        battleCharacterId={displayedBattle?.characterId}
         textureUrl={character.textureUrl}
         spritesheetData={character.spritesheetData}
         speed={character.speed}

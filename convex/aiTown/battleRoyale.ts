@@ -74,6 +74,46 @@ export const battleEvent = v.object({
 });
 export type BattleEvent = Infer<typeof battleEvent>;
 
+const battleReplayPlayerFrame = v.object({
+  id: playerId,
+  x: v.number(),
+  y: v.number(),
+  dx: v.number(),
+  dy: v.number(),
+  speed: v.number(),
+  hp: v.number(),
+  maxHp: v.number(),
+  weapon: v.string(),
+  armor: v.number(),
+  medkits: v.number(),
+  kills: v.number(),
+  stamina: v.number(),
+  maxStamina: v.number(),
+  satiety: v.number(),
+  zoneTime: v.number(),
+  stress: v.number(),
+  heat: v.number(),
+  areaId: v.string(),
+  eliminated: v.boolean(),
+  alliance: v.optional(playerId),
+  inventory: v.array(v.string()),
+});
+export type BattleReplayPlayerFrame = Infer<typeof battleReplayPlayerFrame>;
+
+export const battleReplayFrame = v.object({
+  openAreas: v.array(v.string()),
+  popularity: v.number(),
+  phase: v.string(),
+  day: v.number(),
+  timeOfDay: v.union(v.literal('day'), v.literal('night')),
+  players: v.array(battleReplayPlayerFrame),
+  relationships: v.array(v.object({ id: v.string(), strength: v.number(), hidden: v.boolean(), lastReason: v.optional(v.string()) })),
+  resources: v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() })),
+  truthClues: v.array(v.string()),
+  storyTriggers: v.array(v.string()),
+});
+export type BattleReplayFrame = Infer<typeof battleReplayFrame>;
+
 export const battleState = v.object({
   started: v.number(),
   lastTick: v.number(),
@@ -143,7 +183,7 @@ export const battleState = v.object({
     id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
-    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(),
+    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(), frame: v.optional(battleReplayFrame),
   }))),
   lastReplayCheckpointAt: v.optional(v.number()),
   lastVitalsUpdate: v.optional(v.number()),
@@ -1678,9 +1718,57 @@ function recordReplayCheckpoint(game: Game, now: number) {
     popularity: battle.popularity ?? 0,
     phase: battle.phase ?? 'early',
     stateDigest: battleReplayStateDigest(game),
+    frame: battleReplayFrameFor(game),
   });
   if (checkpoints.length > 60) checkpoints.splice(0, checkpoints.length - 60);
   battle.lastReplayCheckpointAt = now;
+}
+
+/**
+ * A checkpoint intentionally captures only the deterministic, viewer-facing state.
+ * Keeping it narrow makes a whole match scrubbable without serializing conversations,
+ * agent prompts, or a second full world document every thirty seconds.
+ */
+export function battleReplayFrameFor(game: Game): BattleReplayFrame {
+  const battle = game.world.battle!;
+  return {
+    openAreas: [...(battle.openAreas ?? [])],
+    popularity: battle.popularity ?? 0,
+    phase: battle.phase ?? 'early',
+    day: battle.day ?? 1,
+    timeOfDay: battle.timeOfDay ?? 'day',
+    players: [...game.world.players.values()].map((player) => {
+      const stats = player.battle!;
+      return {
+        id: player.id,
+        x: player.position.x,
+        y: player.position.y,
+        dx: player.facing.dx,
+        dy: player.facing.dy,
+        speed: player.speed,
+        hp: stats.hp,
+        maxHp: stats.maxHp,
+        weapon: stats.weapon,
+        armor: stats.armor,
+        medkits: stats.medkits,
+        kills: stats.kills,
+        stamina: stats.stamina ?? stats.maxStamina ?? 0,
+        maxStamina: stats.maxStamina ?? 0,
+        satiety: stats.satiety ?? 0,
+        zoneTime: stats.zoneTime ?? 0,
+        stress: stats.stress ?? 0,
+        heat: stats.heat ?? 0,
+        areaId: stats.areaId ?? 'A01',
+        eliminated: !!stats.eliminated,
+        alliance: stats.alliance,
+        inventory: [...(stats.inventory ?? [])],
+      };
+    }),
+    relationships: (battle.relationshipEdges ?? []).map(({ id, strength, hidden, lastReason }) => ({ id, strength, hidden, lastReason })),
+    resources: (battle.areaResources ?? []).map(({ areaId, remaining, max }) => ({ areaId, remaining, max })),
+    truthClues: [...(battle.truthClues ?? [])],
+    storyTriggers: [...(battle.storyTriggers ?? [])],
+  };
 }
 
 export function battleReplayStateDigest(game: Game) {

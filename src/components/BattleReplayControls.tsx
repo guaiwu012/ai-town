@@ -26,7 +26,7 @@ export default function BattleReplayControls({
       <button className="live-hud-button" onClick={onToggle}>{active ? '暂停回放' : '开始回放'}</button>
       {[1, 2, 4].map((value) => <button key={value} className={`live-hud-button ${speed === value ? 'is-active' : ''}`} onClick={() => onSpeed(value)}>{value}×</button>)}
     </div>
-    <div className="replay-checkpoints">{active ? `正在播放 ${formatReplayTime(currentTime, battle.started)}` : '已暂停'} · 检查点 {(battle.replayCheckpoints ?? []).length} · 行动 {(battle.actionLog ?? []).length}</div>
+    <div className="replay-checkpoints">{active ? `正在播放 ${formatReplayTime(currentTime, battle.started)}` : '已暂停'} · 检查点 {(battle.replayCheckpoints ?? []).filter((checkpoint) => checkpoint.frame).length}/{(battle.replayCheckpoints ?? []).length} · 行动 {(battle.actionLog ?? []).length}</div>
     <div className="replay-events">
       {events.length ? events.map((event) => <button key={event.id} onClick={() => onJump(event.ts)}>{event.text}</button>) : <span>等待关键事件</span>}
     </div>
