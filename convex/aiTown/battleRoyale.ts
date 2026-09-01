@@ -60,6 +60,10 @@ export const battleStats = v.object({
   lastDecisionFallback: v.optional(v.string()),
   lastZoneDamageAt: v.optional(v.number()),
   nextLocomotionAt: v.optional(v.number()),
+  locomotionProgressAt: v.optional(v.number()),
+  locomotionX: v.optional(v.number()),
+  locomotionY: v.optional(v.number()),
+  locomotionRecoveries: v.optional(v.number()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -240,6 +244,8 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     areaSearches: 0,
     lastZoneDamageAt: 0,
     nextLocomotionAt: 0,
+    locomotionProgressAt: 0,
+    locomotionRecoveries: 0,
   };
 }
 
@@ -331,6 +337,10 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.interventionUntil ??= 0;
     player.battle.decisionDueAt ??= now + index * 1000;
     player.battle.nextLocomotionAt ??= now + index * 280;
+    player.battle.locomotionProgressAt ??= now;
+    player.battle.locomotionX ??= player.position.x;
+    player.battle.locomotionY ??= player.position.y;
+    player.battle.locomotionRecoveries ??= 0;
     player.battle.areaEnteredAt ??= now;
     player.battle.areaSearches ??= 0;
     if (!player.battle.lastZoneDamageAt) player.battle.lastZoneDamageAt = now;
@@ -480,7 +490,25 @@ export function tickBattleRoyale(game: Game, now: number) {
 
 export function tickBattleLocomotion(game: Game, now: number, player: Player) {
   const stats = player.battle;
-  if (!stats || stats.eliminated || player.pathfinding || now < (stats.nextLocomotionAt ?? 0)) return false;
+  if (!stats || stats.eliminated) return false;
+  const previousPosition = { x: stats.locomotionX ?? player.position.x, y: stats.locomotionY ?? player.position.y };
+  if (distance(previousPosition, player.position) >= 0.2) {
+    stats.locomotionX = player.position.x;
+    stats.locomotionY = player.position.y;
+    stats.locomotionProgressAt = now;
+  }
+  if (player.pathfinding) {
+    const stalledFor = now - (stats.locomotionProgressAt ?? now);
+    const threshold = player.pathfinding.state.kind === 'waiting' ? 1800 : 2800;
+    if (stalledFor < threshold) return false;
+    delete player.pathfinding;
+    player.speed = 0;
+    stats.locomotionRecoveries = (stats.locomotionRecoveries ?? 0) + 1;
+    stats.nextLocomotionAt = now;
+    stats.locomotionProgressAt = now;
+    player.activity = { description: `${playerName(game, player)} 遇到阻挡，正在重新规划路线`, emoji: 'MOVE', until: now + 1400 };
+  }
+  if (now < (stats.nextLocomotionAt ?? 0)) return false;
   const activeActivity = player.activity && player.activity.until > now ? player.activity : undefined;
   if (activeActivity && ['TALK', 'ALLY'].includes(activeActivity.emoji ?? '')) {
     stats.nextLocomotionAt = activeActivity.until + 250;
@@ -492,13 +520,18 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
   const start = Math.floor(battleRandom(game) * Math.max(1, points.length));
   for (let offset = 0; offset < points.length; offset += 1) {
     const destination = points[(start + offset) % points.length];
-    if (distance(player.position, destination) < 2 || blocked(game, now, destination, player.id)) continue;
+    const crowded = [...game.world.players.values()].some((other) => other.id !== player.id && !other.battle?.eliminated && distance(other.position, destination) < 2.5);
+    if (distance(player.position, destination) < 2 || crowded || blocked(game, now, destination, player.id)) continue;
     movePlayer(game, now, player, destination);
+    stats.locomotionX = player.position.x;
+    stats.locomotionY = player.position.y;
+    stats.locomotionProgressAt = now;
     if (!activeActivity || activeActivity.emoji === 'MOVE') {
       player.activity = { description: `${playerName(game, player)} 正在巡查${areaName(areaId)}`, emoji: 'MOVE', until: now + 1800 };
     }
     return true;
   }
+  stats.nextLocomotionAt = now + 450;
   return false;
 }
 

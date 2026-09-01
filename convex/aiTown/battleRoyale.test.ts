@@ -75,6 +75,24 @@ describe('battle royale host intervention rules', () => {
     expect(player.activity?.description).toContain('正在巡查');
   });
 
+  it('abandons a stalled collision wait and immediately replans', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    player.battle.locomotionProgressAt = 1_000;
+    player.battle.locomotionX = player.position.x;
+    player.battle.locomotionY = player.position.y;
+    player.pathfinding = {
+      destination: { x: 79, y: 59 },
+      started: 1_000,
+      state: { kind: 'waiting', until: 9_000 },
+    };
+
+    expect(tickBattleLocomotion(game, 5_000, player)).toBe(true);
+    expect(player.battle.locomotionRecoveries).toBe(1);
+    expect(player.pathfinding?.started).toBe(5_000);
+    expect(player.pathfinding?.state.kind).toBe('needsPath');
+  });
+
   it('records model alliance speech and the partner response', () => {
     const first = createPlayer('p:1', 'C01', 'A01');
     const second = createPlayer('p:2', 'C02', 'A01');
