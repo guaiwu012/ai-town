@@ -207,6 +207,12 @@ export const CHARACTER_STORIES: Record<string, { areaId: string; item: string; t
   C12: { areaId: 'A12', item: '空白身份卡', title: '空', score: 10, effect: 'truthPath' },
 };
 
+export function availableAreaItemsFor(characterId: string | undefined, areaId: string) {
+  const characterStoryItems = new Set(Object.values(CHARACTER_STORIES).map((story) => story.item));
+  const ownStoryItem = characterId ? CHARACTER_STORIES[characterId]?.item : undefined;
+  return (BATTLE_CONFIG.areaItems[areaId] ?? []).filter((item) => !characterStoryItems.has(item) || item === ownStoryItem);
+}
+
 export const HIDDEN_MISSIONS = [
   { id: 'HID_01', title: '守护者', description: '确保阮清进入最后三人。', targetA: 'C05' },
   { id: 'HID_02', title: '猎人', description: '让阿隼被淘汰。', targetA: 'C09' },

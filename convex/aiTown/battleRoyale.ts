@@ -18,6 +18,7 @@ import {
   storyApproachFor,
   storyOptionFor,
   CHARACTER_STORIES,
+  availableAreaItemsFor,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
   profileForIndex,
@@ -946,6 +947,7 @@ export function resolveAreaStoryCheck(game: Game, now: number, player: Player, e
   const battle = game.world.battle!;
   const narrative = AREA_STORY_NARRATIVES[eventId];
   const profile = profileForCharacterId(player.battle?.characterId ?? 'C01');
+  const homeArea = BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.owner === profile.id;
   const pendingApproach = player.battle?.pendingStoryApproach;
   const pendingEventId = player.battle?.pendingStoryEventId;
   const approach = pendingApproach ? storyApproachFor(pendingApproach) : undefined;
@@ -953,7 +955,7 @@ export function resolveAreaStoryCheck(game: Game, now: number, player: Player, e
   player.battle!.pendingStoryApproach = undefined;
   player.battle!.pendingStoryEventId = undefined;
   const ability = option?.ability ?? (!approach || approach.ability === 'event' ? narrative?.ability ?? 'mind' : approach.ability);
-  const bonus = Math.max(0, profile[ability] - 2);
+  const bonus = Math.max(0, profile[ability] - 2) + (homeArea ? 1 : 0);
   const roll = 1 + Math.floor(battleRandom(game) * 20);
   const danger = BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.danger ?? 2;
   const difficulty = Math.max(7, 9 + danger + (option?.difficultyModifier ?? approach?.difficultyModifier ?? 0));
@@ -962,7 +964,7 @@ export function resolveAreaStoryCheck(game: Game, now: number, player: Player, e
     id: battle.nextStoryBeatId ?? 1, eventId, ts: now, areaId,
     title: AREA_SPECIAL_EVENTS.find((event) => event.id === eventId)?.title ?? '区域事件', actorId: player.id,
     scene: narrative?.scene ?? '区域中的异常装置突然启动。',
-    choice: option ? `${option.label}：${option.description}` : approach ? `${approach.label}：${narrative?.choice ?? '观察环境并选择应对方式。'}` : narrative?.choice ?? '观察环境并选择应对方式。',
+    choice: `${homeArea ? '熟悉地形：' : ''}${option ? `${option.label}：${option.description}` : approach ? `${approach.label}：${narrative?.choice ?? '观察环境并选择应对方式。'}` : narrative?.choice ?? '观察环境并选择应对方式。'}`,
     ...(approach ? { approach: approach.id } : {}),
     check: `${narrative?.check ?? '临场判断'}${option ? ` · ${option.label}` : approach ? ` · ${approach.label}` : ''}`, roll, bonus, difficulty, success,
     outcome: success ? narrative?.success ?? '角色控制住了局面。' : narrative?.failure ?? '局面朝不利方向发展。',
@@ -989,6 +991,8 @@ export function areaEventEligible(game: Game, now: number, event: (typeof AREA_S
   if (occupants.length === 0) return false;
   if ('requiredItem' in event && event.requiredItem && !occupants.some((player) => player.battle?.inventory?.includes(event.requiredItem))) return false;
   const stayedTwoMinutes = occupants.some((player) => now - (player.battle?.areaEnteredAt ?? now) >= 120000);
+  const stayedOneMinuteTogether = occupants.filter((player) => now - (player.battle?.areaEnteredAt ?? now) >= 60000).length >= 2;
+  const searchedOnce = occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
   const searched = occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 3);
   const battleRounds = battle.areaBattleRounds?.find((entry) => entry.areaId === areaId)?.count ?? 0;
   switch (eventId) {
@@ -1000,19 +1004,19 @@ export function areaEventEligible(game: Game, now: number, event: (typeof AREA_S
     case 'A03_02': return battle.timeOfDay === 'night' && occupants.length >= 2;
     case 'A04_01': return battleRounds >= 3;
     case 'A04_02': return battleRounds >= 1 && occupants.length >= 2;
-    case 'A05_01': return occupants.some((player) => player.battle?.inventory?.includes('演播档案带'));
-    case 'A05_02': return occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
+    case 'A05_01': return occupants.some((player) => player.battle?.inventory?.includes('校园广播磁带'));
+    case 'A05_02': return searchedOnce;
     case 'A06_01': return occupants.some((player) => player.battle!.hp / player.battle!.maxHp < 0.3);
-    case 'A06_02': return searched;
+    case 'A06_02': return searchedOnce && battleRandom(game) < 0.3;
     case 'A07_01': return occupants.some((player) => (player.battle?.areaSearches ?? 0) >= 1);
-    case 'A08_01': return occupants.length >= 2 && stayedTwoMinutes;
+    case 'A08_01': return stayedOneMinuteTogether;
     case 'A08_02': return battleRandom(game) < 0.25;
-    case 'A09_01': return battleRounds >= 1;
+    case 'A09_01': return battleRounds >= 1 && occupants.some((player) => player.battle?.weapon !== 'Fists');
     case 'A10_02': return occupants.some((player) => player.battle?.characterId !== 'C10');
     case 'A10_03': return battle.timeOfDay === 'night' && alivePlayers(game).some((player) => player.battle?.characterId === 'C10');
     case 'A11_01': return occupants.length >= 3;
-    case 'A11_02': return searched;
-    case 'A12_01': return !occupants.some((player) => player.battle?.characterId === 'C12') && searched;
+    case 'A11_02': return searchedOnce;
+    case 'A12_01': return !occupants.some((player) => player.battle?.characterId === 'C12') && searchedOnce;
     case 'A12_02': return occupants.some((player) => player.battle?.inventory?.includes('监控终端权限卡'));
     case 'S01_01': return occupants.some((player) => player.battle?.characterId === 'C12');
     default: return false;
@@ -1543,7 +1547,7 @@ function loot(game: Game, now: number, player: Player) {
   } else {
     const coins = 2 + Math.floor(battleRandom(game) * 6);
     stats.coins += coins;
-    const pool = BATTLE_CONFIG.areaItems[areaId] ?? [];
+    const pool = availableAreaItemsFor(stats.characterId, areaId);
     const foundItem = weightedAreaItem(game, pool);
     if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
       stats.inventory = [...(stats.inventory ?? []), foundItem];

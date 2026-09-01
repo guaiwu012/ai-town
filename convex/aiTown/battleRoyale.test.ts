@@ -188,7 +188,8 @@ describe('battle royale host intervention rules', () => {
 
     const beat = resolveAreaStoryCheck(game, 2_000, player, 'A03_01', 'A03');
 
-    expect(beat).toMatchObject({ approach: 'bold', bonus: 0, difficulty: 13 });
+    expect(beat).toMatchObject({ approach: 'bold', bonus: 1, difficulty: 13 });
+    expect(beat.choice).toContain('熟悉地形');
     expect(beat.choice).toContain('数据泄露·抢先突破');
     expect(beat.check).toContain('数据泄露·抢先突破');
     expect(player.battle.pendingStoryApproach).toBeUndefined();
@@ -235,6 +236,30 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.storyLog[0]).toMatchObject({ eventId: 'A01_02', approach: 'social' });
     expect(game.world.battle.storyLog[0].choice).toContain('暴风雪·协同应对');
     expect(player.battle.pendingStoryEventId).toBeUndefined();
+  });
+
+  it('uses the reference one-minute requirement for shadow-market auto trade', () => {
+    const first = createPlayer('p:8', 'C08', 'A08');
+    const second = createPlayer('p:9', 'C09', 'A08');
+    first.battle.areaEnteredAt = 1_000;
+    second.battle.areaEnteredAt = 1_000;
+    const game = createGame([first, second]);
+    const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === 'A08_01')!;
+
+    expect(areaEventEligible(game, 60_999, event)).toBe(false);
+    expect(areaEventEligible(game, 61_000, event)).toBe(true);
+  });
+
+  it('requires a remote weapon before armory ammunition can detonate', () => {
+    const player = createPlayer('p:9', 'C09', 'A09');
+    player.battle.weapon = 'Fists';
+    const game = createGame([player]);
+    game.world.battle.areaBattleRounds = [{ areaId: 'A09', count: 1 }];
+    const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === 'A09_01')!;
+
+    expect(areaEventEligible(game, 2_000, event)).toBe(false);
+    player.battle.weapon = 'Pistol';
+    expect(areaEventEligible(game, 2_000, event)).toBe(true);
   });
 
   it('reveals the selected character hidden relationship and leaves an audit event', () => {

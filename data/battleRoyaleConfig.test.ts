@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
@@ -99,6 +99,12 @@ describe('battle royale P0/P1 configuration', () => {
   test('gives every configured area item an explicit economy definition', () => {
     const allAreaItems = new Set(Object.values(BATTLE_CONFIG.areaItems).flat());
     expect(Object.keys(ITEM_DEFINITIONS)).toEqual(expect.arrayContaining([...allAreaItems]));
+  });
+
+  test('only exposes a character story item to its owner', () => {
+    expect(availableAreaItemsFor('C05', 'A05')).toContain('学生档案');
+    expect(availableAreaItemsFor('C01', 'A05')).not.toContain('学生档案');
+    expect(availableAreaItemsFor('C01', 'A05')).toContain('校园广播磁带');
   });
 });
 
