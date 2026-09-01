@@ -6,14 +6,11 @@ import type { BattleDialogue } from '../../convex/aiTown/battleRoyale';
 import type { GameId } from '../../convex/aiTown/ids';
 
 const speechStyle = new TextStyle({
-  fill: 0xf2fbff,
+  fill: 0x08131f,
   fontFamily: 'sans-serif',
-  fontSize: 12,
-  fontWeight: '600',
+  fontSize: 18,
+  fontWeight: '700',
   align: 'center',
-  wordWrap: true,
-  wordWrapWidth: 142,
-  lineHeight: 16,
 });
 
 export default function PixiBattleSpeech({
@@ -46,28 +43,25 @@ export default function PixiBattleSpeech({
       {visible.map((entry) => {
         const player = game.world.players.get(entry.speakerId as GameId<'players'>);
         if (!player) return null;
-        const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
-        const text = `${name}：${entry.text}`;
-        const height = text.length > 19 ? 52 : 38;
         return (
           <Container
             key={entry.id}
             x={player.position.x * tileDim + tileDim / 2}
-            y={player.position.y * tileDim - 50}
+            y={player.position.y * tileDim - 42}
           >
             <Graphics
               draw={(graphics) => {
                 graphics.clear();
-                graphics.lineStyle(2, entry.kind === 'alliance' ? 0x70e6ca : 0xf2c861, 0.95);
-                graphics.beginFill(0x07131f, 0.94);
-                graphics.drawRoundedRect(-80, -height, 160, height, 5);
+                graphics.lineStyle(2, 0x07131f, 0.9);
+                graphics.beginFill(entry.kind === 'alliance' ? 0x70e6ca : 0xf2c861, 0.96);
+                graphics.drawCircle(0, -16, 14);
                 graphics.endFill();
-                graphics.beginFill(0x07131f, 0.94);
-                graphics.drawPolygon([-7, 0, 7, 0, 0, 9]);
+                graphics.beginFill(entry.kind === 'alliance' ? 0x70e6ca : 0xf2c861, 0.96);
+                graphics.drawPolygon([-5, -5, 5, -5, 0, 3]);
                 graphics.endFill();
               }}
             />
-            <Text text={text} anchor={0.5} x={0} y={-height / 2} style={speechStyle} />
+            <Text text="…" anchor={0.5} x={0} y={-19} style={speechStyle} />
           </Container>
         );
       })}

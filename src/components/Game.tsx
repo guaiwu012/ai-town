@@ -19,6 +19,7 @@ import BattleReplayControls from './BattleReplayControls.tsx';
 import { selectDirectorTarget } from '../lib/battleDirector.ts';
 import { replayFrameAt } from '../lib/battleReplay.ts';
 import BattleStoryCard from './BattleStoryCard.tsx';
+import BattleDialogueBox from './BattleDialogueBox.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -144,6 +145,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             replayActive={replayActive}
           />
           <BattleStoryCard game={game} />
+          <BattleDialogueBox game={game} />
           <BattleReplayControls
             battle={game.world.battle}
             active={replayActive}
