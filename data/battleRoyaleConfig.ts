@@ -244,6 +244,35 @@ export const AREA_SPECIAL_EVENTS = [
   { id: 'S01_01', areaId: 'S01', title: '制造者日志', effect: 'truth', maxTriggers: 1 },
 ] as const;
 
+export const AREA_STORY_NARRATIVES: Record<string, {
+  scene: string; choice: string; check: string; ability: 'strength' | 'mind' | 'psyche' | 'social'; success: string; failure: string;
+}> = {
+  A01_01: { scene: '碎石下传来伺服电机的低鸣，锈死的哨戒炮忽然转向活物。', choice: '贴着断墙寻找射击死角，并尝试切断炮台电源。', check: '废墟求生', ability: 'mind', success: '在炮口锁定前钻入盲区，只被飞溅碎石擦伤。', failure: '误判了炮台的扫描节奏，正面吃下一轮点射。' },
+  A01_02: { scene: '没有云的夜空开始落雪，温度在数十秒内跌到呼吸结霜。', choice: '辨认背风结构，决定原地避寒还是冒险转移。', check: '极寒耐受', ability: 'psyche', success: '找到残存锅炉间，保住了大部分体力。', failure: '暴露在风口太久，四肢逐渐麻木，判断也开始迟缓。' },
+  A02_01: { scene: '演播塔的公共频道突然串入一段被剪碎的求救录音。', choice: '判断信号真伪，并决定是否借直播频道公开回应。', check: '信号辨识', ability: 'mind', success: '识破诱导剪辑，反用频道向观众揭露异常。', failure: '错误回应暴露了自己的位置和情绪。' },
+  A02_02: { scene: '权限卡点亮终端，屏幕回放出比赛开始前不该存在的影像。', choice: '在系统清除缓存前锁定关键帧。', check: '终端破解', ability: 'mind', success: '截获一段完整监控，真相链出现新的时间锚点。', failure: '只保住残缺画面，终端随即烧毁。' },
+  A03_01: { scene: '书库索引自行刷新，一组被隐藏的人物档案跳到最上层。', choice: '交叉核对档案中的时间、地点与关系记录。', check: '档案推理', ability: 'mind', success: '一条秘密关系被证据链完整揭开。', failure: '线索互相矛盾，反而加深了猜疑。' },
+  A03_02: { scene: '照明逐排熄灭，服务器风扇也在黑暗中停止。', choice: '凭记忆穿过书架，寻找独立电源。', check: '黑暗定向', ability: 'psyche', success: '在彻底失明前恢复了应急灯。', failure: '黑暗放大了每一声脚步，压力迅速累积。' },
+  A04_01: { scene: '格斗笼中央的地砖突然下沉，钢筋裂缝向脚下蔓延。', choice: '借笼壁支撑越过塌陷带。', check: '爆发跃迁', ability: 'strength', success: '抓住铁网荡到安全地面，只受轻伤。', failure: '落脚点整个崩落，被碎石和钢筋重击。' },
+  A04_02: { scene: '四周笼门同时落下，广播要求场内人员留下一个胜者。', choice: '寻找液压锁弱点，争取在系统锁死前破门。', check: '破门检定', ability: 'strength', success: '卡住一侧笼门，封锁时间被大幅缩短。', failure: '液压锁彻底咬合，所有出口进入红色封闭状态。' },
+  A05_01: { scene: '废弃校园的广播响起点名声，名单里夹着仍在场上的名字。', choice: '抢占播音室，决定回应、误导或保持沉默。', check: '临场表达', ability: 'social', success: '一段冷静回应扭转了直播舆论。', failure: '迟疑被无限放大，观众开始质疑角色的判断。' },
+  A05_02: { scene: '黑板上浮出新鲜粉笔字，准确写着进入者最不愿面对的往事。', choice: '辨认这是心理诱导还是来自熟人的留言。', check: '意志稳定', ability: 'psyche', success: '擦掉字迹，拒绝让它定义下一步行动。', failure: '旧记忆反复回响，压力突破了原有防线。' },
+  A06_01: { scene: '手术灯自动亮起，机械臂要求在倒计时内确认治疗方案。', choice: '阅读残缺病历，选择风险最低的急救流程。', check: '紧急医疗', ability: 'mind', success: '完成止血与修复，生命状态显著稳定。', failure: '操作只能勉强维持生命，恢复效果有限。' },
+  A06_02: { scene: '药柜弹出一支标签褪色的注射剂，生产日期已无法辨认。', choice: '通过沉淀物与封口状态判断药物是否还能使用。', check: '药品鉴别', ability: 'mind', success: '及时识别过期药物，避免损失医疗资源。', failure: '药效失常，医疗包被浪费并引发强烈不适。' },
+  A07_01: { scene: '起跑器无故鸣枪，远处同时亮起数个疑似敌人的热源。', choice: '压住本能反应，先判断枪声方向与回声。', check: '战场判断', ability: 'psyche', success: '识破诱饵，保持原有路线。', failure: '被假枪声带离安全位置，闯入相邻区域。' },
+  A08_01: { scene: '两份物资被摆上暗巷摊位，摊主要求双方同时交出筹码。', choice: '判断对方底线，提出一笔彼此都无法轻易背叛的交易。', check: '利益谈判', ability: 'social', success: '交易完成，双方关系出现短暂但真实的缓和。', failure: '报价暴露了弱点，谈判在互相提防中破裂。' },
+  A08_02: { scene: '蒙面信息贩子报出一个只有参赛者本人知道的细节。', choice: '压价并验证情报来源，决定是否支付物资。', check: '情报博弈', ability: 'social', success: '用较低代价换到一条可验证的真相线索。', failure: '付出更多物资，却只拿到一段令人不安的残缺消息。' },
+  A09_01: { scene: '武器架后的温度骤升，成箱弹药开始接连爆燃。', choice: '沿承重墙冲向防爆门，避开二次殉爆。', check: '爆炸规避', ability: 'strength', success: '及时扑入掩体，只承受冲击波余震。', failure: '被爆炸掀翻，弹片穿过了来不及闭合的护甲。' },
+  A10_01: { scene: '灌木被成片压倒，一双反光眼睛从低处快速逼近。', choice: '利用地形制造声源，把袭击者引向错误方向。', check: '荒野应对', ability: 'mind', success: '野兽扑向诱饵，角色趁机脱离。', failure: '诱饵失效，近距离遭到凶猛扑击。' },
+  A10_02: { scene: '树木排列悄然改变，指南针在同一条路上反复转圈。', choice: '用痕迹重建来路，确认哪条路径并非幻象。', check: '密林寻路', ability: 'mind', success: '识破循环路线，留在原区域继续探索。', failure: '越走越深，最终从陌生的相邻区域跌出迷雾。' },
+  A10_03: { scene: '风穿过树洞，低语准确说出了下一次禁区收缩的方向。', choice: '过滤重复声纹，寻找藏在噪声里的坐标。', check: '异常聆听', ability: 'psyche', success: '提前掌握禁区变化，并截获一段真相低语。', failure: '只听见自己的恐惧被森林复述。' },
+  A11_01: { scene: '法庭灯光逐一亮起，无人席位上出现双方过去的证词。', choice: '在公开记录前陈述立场，争取对方暂时停火。', check: '庭审交涉', ability: 'social', success: '证词形成最低共识，双方达成临时合作。', failure: '陈述漏洞被放大，谈判破裂并留下更深戒心。' },
+  A11_02: { scene: '证物柜吐出一份封存记录，签名与现有身份并不一致。', choice: '核验证物编号，判断记录是否被主办方篡改。', check: '证据审查', ability: 'mind', success: '隐藏关系得到证物与证词的双重印证。', failure: '关键页被替换，只留下无法证实的怀疑。' },
+  A12_01: { scene: '观测数据中多出第十三个生命信号，它与 C12 的心跳完全同步。', choice: '追踪异常信号的源头，而不是立即切断连接。', check: '异常解析', ability: 'mind', success: '从重叠数据中分离出一段制造者协议。', failure: '信号反向读取意识，留下剧烈精神压力。' },
+  A12_02: { scene: '监控屏幕播放同一场景的多个版本，每个版本都有不同幸存者。', choice: '用权限卡固定真实时间线，保存未被改写的画面。', check: '时间线校验', ability: 'mind', success: '确认了一段真实回放，真相拼图更加完整。', failure: '权限卡耗尽，只留下无法判断真假的回响。' },
+  S01_01: { scene: '制造者日志在黑暗中逐页解密，最后一页要求 C12 回答自己是谁。', choice: '接受记忆冲突，读取被删除的身份字段。', check: '自我锚定', ability: 'psyche', success: '身份与比赛真相同时解锁，隐藏终局开始显现。', failure: '日志拒绝继续展开，但一段加密坐标仍被保留下来。' },
+};
+
 export const GLOBAL_SPECIAL_EVENTS = [
   { id: 'GLB_01', title: '野怪暴走', effect: 'beastRage', maxTriggers: 1 },
   { id: 'GLB_02', title: '全图停电', effect: 'blackout', maxTriggers: 1 },

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { BattleEvent } from '../../convex/aiTown/battleRoyale';
 import BattleEventIcon from './BattleEventIcon';
 
@@ -6,19 +7,18 @@ type BattleBroadcastToastsProps = {
 };
 
 export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToastsProps) {
-  const visibleFeed = feed.slice(0, 4);
-  if (visibleFeed.length === 0) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(timer);
+  }, []);
+  const event = feed.find((candidate) => IMPORTANT_KINDS.has(candidate.kind) && now - candidate.ts < 6500);
+  if (!event) {
     return null;
   }
   return (
-    <div className="battle-toast-stack pointer-events-none absolute left-1/2 z-20 flex w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-2">
-      {visibleFeed.map((event, index) => (
-        <div
-          key={event.id}
-          className={`arena-toast w-full px-4 py-2 transition ${
-            index === 0 ? 'scale-100 opacity-100' : 'scale-[0.98] opacity-78'
-          }`}
-        >
+    <div className="battle-toast-stack pointer-events-none absolute left-1/2 z-20 flex w-[min(560px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center">
+        <div key={event.id} className="arena-toast w-full px-4 py-2 transition">
           <div className="flex items-center gap-3">
             <BattleEventIcon kind={event.kind} />
             <span className="arena-feed-tag shrink-0">
@@ -27,10 +27,11 @@ export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToas
             <span className="min-w-0 flex-1 truncate text-sm leading-tight">{displayEventText(event.text)}</span>
           </div>
         </div>
-      ))}
     </div>
   );
 }
+
+const IMPORTANT_KINDS = new Set(['eliminate', 'winner', 'zone', 'intervention', 'truth', 'betrayal', 'globalStory']);
 
 function displayEventKind(kind: string) {
   return ({ system: '系统', attack: '战斗', eliminate: '淘汰', zone: '禁区', loot: '搜索', buy: '交易', trade: '交易', dialogue: '交谈', heal: '治疗', move: '移动', ally: '结盟', alliance: '结盟', tip: '打赏', winner: '胜利' } as Record<string, string>)[kind] ?? kind;

@@ -13,6 +13,7 @@ import {
   itemDefinition,
   GLOBAL_SPECIAL_EVENTS,
   AREA_SPECIAL_EVENTS,
+  AREA_STORY_NARRATIVES,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
@@ -80,6 +81,12 @@ export const battleDialogue = v.object({
 });
 export type BattleDialogue = Infer<typeof battleDialogue>;
 
+export const battleStoryBeat = v.object({
+  id: v.number(), eventId: v.string(), ts: v.number(), areaId: v.string(), title: v.string(), actorId: playerId,
+  scene: v.string(), choice: v.string(), check: v.string(), roll: v.number(), bonus: v.number(), difficulty: v.number(), success: v.boolean(), outcome: v.string(),
+});
+export type BattleStoryBeat = Infer<typeof battleStoryBeat>;
+
 const battleReplayPlayerFrame = v.object({
   id: playerId,
   x: v.number(),
@@ -129,6 +136,8 @@ export const battleState = v.object({
   nextDialogueId: v.optional(v.number()),
   feed: v.array(battleEvent),
   dialogueLog: v.optional(v.array(battleDialogue)),
+  nextStoryBeatId: v.optional(v.number()),
+  storyLog: v.optional(v.array(battleStoryBeat)),
   phase: v.optional(v.string()),
   day: v.optional(v.number()),
   timeOfDay: v.optional(v.union(v.literal('day'), v.literal('night'))),
@@ -250,6 +259,8 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
       },
     ],
     dialogueLog: [],
+    nextStoryBeatId: 1,
+    storyLog: [],
     phase: 'early',
     day: 1,
     timeOfDay: 'day',
@@ -378,6 +389,8 @@ export function ensureBattleState(game: Game, now: number) {
   battle.nextActionId ??= 1;
   battle.nextDialogueId ??= 1;
   battle.dialogueLog ??= [];
+  battle.nextStoryBeatId ??= 1;
+  battle.storyLog ??= [];
   battle.actionLog ??= [];
   battle.replayCheckpoints ??= [];
   battle.lastReplayCheckpointAt ??= now;
@@ -753,23 +766,27 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     itemOwner.battle!.inventory = inventory.filter((item, index) => item !== requiredItem || index !== inventory.indexOf(requiredItem));
     pushEvent(game, now, 'story', `【剧情道具】${playerName(game, itemOwner)} 消耗${requiredItem}，开启「${event.title}」。`, itemOwner);
   }
-  if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15));
-  if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 15; });
+  const storyCheck = resolveAreaStoryCheck(game, now, randomPlayer, event.id, event.areaId);
+  if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) {
+    const baseDamage = event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15;
+    randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (storyCheck.success ? Math.ceil(baseDamage * 0.35) : baseDamage));
+  }
+  if (event.effect === 'stress' || event.effect === 'blackout') affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + (storyCheck.success ? 5 : 15); });
   if (event.effect === 'blizzard') affected.forEach((player) => {
-    player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - 12);
-    player.battle!.stress = (player.battle!.stress ?? 0) + 8;
+    player.battle!.stamina = Math.max(0, (player.battle!.stamina ?? 0) - (storyCheck.success ? 5 : 12));
+    player.battle!.stress = (player.battle!.stress ?? 0) + (storyCheck.success ? 3 : 8);
   });
-  if (event.effect === 'broadcast') awardPopularity(game, now, 10, affected);
-  if (event.effect === 'surgery') randomPlayer.battle!.hp = Math.max(randomPlayer.battle!.hp, Math.floor(randomPlayer.battle!.maxHp * 0.8));
+  if (event.effect === 'broadcast') awardPopularity(game, now, storyCheck.success ? 15 : 5, affected);
+  if (event.effect === 'surgery') randomPlayer.battle!.hp = Math.max(randomPlayer.battle!.hp, Math.floor(randomPlayer.battle!.maxHp * (storyCheck.success ? 0.8 : 0.55)));
   if (event.effect === 'expiredMedicine') {
-    randomPlayer.battle!.medkits = Math.max(0, randomPlayer.battle!.medkits - 1);
-    randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 10;
+    if (!storyCheck.success) randomPlayer.battle!.medkits = Math.max(0, randomPlayer.battle!.medkits - 1);
+    randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + (storyCheck.success ? 2 : 10);
   }
   if (event.effect === 'lockdown') {
-    setAreaLock(battle, event.areaId, now + 45000);
+    setAreaLock(battle, event.areaId, now + (storyCheck.success ? 20000 : 45000));
     affected.forEach((player) => { player.battle!.stress = (player.battle!.stress ?? 0) + 8; });
   }
-  if (event.effect === 'autoTrade' && affected.length >= 2) {
+  if (event.effect === 'autoTrade' && affected.length >= 2 && storyCheck.success) {
     const [first, second] = affected;
     const firstItem = first.battle!.inventory?.shift();
     const secondItem = second.battle!.inventory?.shift();
@@ -777,8 +794,8 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     if (secondItem) first.battle!.inventory!.push(secondItem);
     allyPlayers(game, now, first, second);
   }
-  if (event.effect === 'trial' && affected.length >= 2) allyPlayers(game, now, affected[0], affected[1]);
-  if (event.effect === 'falseGunshot' || event.effect === 'lost') {
+  if (event.effect === 'trial' && affected.length >= 2 && storyCheck.success) allyPlayers(game, now, affected[0], affected[1]);
+  if ((event.effect === 'falseGunshot' || event.effect === 'lost') && !storyCheck.success) {
     const destinations = adjacentAreaIds(event.areaId).filter((areaId) => battle.openAreas?.includes(areaId));
     const destination = destinations[Math.floor(battleRandom(game) * destinations.length)];
     if (destination && moveToBattleArea(game, now, randomPlayer, destination)) {
@@ -787,29 +804,55 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
   }
   if (event.effect === 'revealRelation') {
     const hidden = battle.relationshipEdges?.find((edge) => edge.hidden);
-    if (hidden) hidden.hidden = false;
+    if (hidden && storyCheck.success) hidden.hidden = false;
   }
   if (event.effect === 'broker') {
     if (randomPlayer.battle!.coins >= 12) {
-      randomPlayer.battle!.coins -= 12;
-      collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+      randomPlayer.battle!.coins -= storyCheck.success ? 8 : 12;
+      if (storyCheck.success) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
     } else {
       randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 8;
     }
   }
-  if (['c12Anomaly', 'replay'].includes(event.effect)) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+  if (['c12Anomaly', 'replay'].includes(event.effect)) {
+    if (storyCheck.success) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+    else randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 8;
+  }
   if (event.effect === 'zoneWarning') {
     randomPlayer.battle!.zoneTime = Math.min(randomPlayer.battle!.maxZoneTime ?? 40, (randomPlayer.battle!.zoneTime ?? 0) + 8);
-    collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
+    if (storyCheck.success) collectTruthClue(game, now, `区域-${event.id}`, randomPlayer);
   }
-  if (event.effect === 'truth' && randomPlayer.battle?.characterId === 'C12') unlockTruth(game, now, randomPlayer);
+  if (event.effect === 'truth' && randomPlayer.battle?.characterId === 'C12' && storyCheck.success) unlockTruth(game, now, randomPlayer);
   battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== event.id);
   battle.areaEventCooldowns.push({ id: event.id, until: now + 90000 });
   const count = battle.areaEventCounts!.find((entry) => entry.id === event.id);
   if (count) count.count += 1; else battle.areaEventCounts!.push({ id: event.id, count: 1 });
   if ((battle.areaEventCounts!.find((entry) => entry.id === event.id)?.count ?? 0) >= event.maxTriggers) battle.consumedAreaStories!.push(event.id);
   battle.interventionEffect = { kind: `story:${event.effect}`, areaId: event.areaId, until: now + 6500 };
-  pushEvent(game, now, 'areaStory', `【区域剧情】${areaName(event.areaId)}触发「${event.title}」：${areaEffectSummary(event.effect)}。`, randomPlayer);
+  pushEvent(game, now, 'areaStory', `【区域剧情】${playerName(game, randomPlayer)}在${areaName(event.areaId)}进行${storyCheck.check}检定：${storyCheck.roll + storyCheck.bonus}/${storyCheck.difficulty}，${storyCheck.success ? '成功' : '失败'}。`, randomPlayer);
+}
+
+export function resolveAreaStoryCheck(game: Game, now: number, player: Player, eventId: string, areaId: string) {
+  const battle = game.world.battle!;
+  const narrative = AREA_STORY_NARRATIVES[eventId];
+  const profile = profileForCharacterId(player.battle?.characterId ?? 'C01');
+  const ability = narrative?.ability ?? 'mind';
+  const bonus = Math.max(0, profile[ability] - 2);
+  const roll = 1 + Math.floor(battleRandom(game) * 20);
+  const danger = BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.danger ?? 2;
+  const difficulty = 9 + danger;
+  const success = roll + bonus >= difficulty;
+  const beat: BattleStoryBeat = {
+    id: battle.nextStoryBeatId ?? 1, eventId, ts: now, areaId,
+    title: AREA_SPECIAL_EVENTS.find((event) => event.id === eventId)?.title ?? '区域事件', actorId: player.id,
+    scene: narrative?.scene ?? '区域中的异常装置突然启动。',
+    choice: narrative?.choice ?? '观察环境并选择最稳妥的应对方式。',
+    check: narrative?.check ?? '临场判断', roll, bonus, difficulty, success,
+    outcome: success ? narrative?.success ?? '角色控制住了局面。' : narrative?.failure ?? '局面朝不利方向发展。',
+  };
+  battle.nextStoryBeatId = beat.id + 1;
+  battle.storyLog = [beat, ...(battle.storyLog ?? [])].slice(0, 24);
+  return beat;
 }
 
 function setAreaLock(battle: BattleState, areaId: string, until: number) {
@@ -820,17 +863,6 @@ function setAreaLock(battle: BattleState, areaId: string, until: number) {
 
 function isAreaLocked(battle: BattleState | undefined, now: number, areaId: string) {
   return (battle?.areaLocks ?? []).some((lock) => lock.areaId === areaId && lock.until > now);
-}
-
-function areaEffectSummary(effect: string) {
-  const summaries: Record<string, string> = {
-    turret: '哨戒炮命中一名参赛者', blizzard: '区域体力下降并累积压力', broadcast: '直播热度上升', replay: '获得一条真相线索',
-    revealRelation: '一条隐藏关系被公开', blackout: '区域内参赛者压力上升', collapse: '地板塌陷造成伤害', lockdown: '格斗笼封锁生效',
-    stress: '黑板留言引发压力', surgery: '濒危参赛者被紧急救治', expiredMedicine: '药品失效并增加压力', falseGunshot: '假枪声诱导一名参赛者转移',
-    autoTrade: '两名参赛者交换了物资并尝试结盟', broker: '信息贩子出售真相线索', explosion: '弹药殉爆造成伤害', beast: '野兽袭击一名参赛者',
-    lost: '迷雾将一名参赛者引向相邻区域', zoneWarning: '林中低语提供禁区线索', trial: '法庭促成谈判', c12Anomaly: '异常数据留下真相线索', truth: '制造者日志开始解锁',
-  };
-  return summaries[effect] ?? '战场状态发生变化';
 }
 
 export function areaEventEligible(game: Game, now: number, event: (typeof AREA_SPECIAL_EVENTS)[number]) {

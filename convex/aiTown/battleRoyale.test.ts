@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { isBattleArenaWalkable } from '../../data/battleArena';
 
@@ -47,6 +47,22 @@ describe('battle royale host intervention rules', () => {
 
     expect(firstSequence).toEqual(secondSequence);
     expect(first.world.battle.rngState).toBe(second.world.battle.rngState);
+  });
+
+  it('resolves a regional story as a deterministic tabletop check', () => {
+    const buildFixture = () => {
+      const player = createPlayer('p:1', 'C01', 'A01');
+      const game = createGame([player]);
+      game.world.battle = defaultBattleState(1_000, 20260807);
+      return { game, player };
+    };
+    const first = buildFixture();
+    const second = buildFixture();
+    const firstCheck = resolveAreaStoryCheck(first.game, 2_000, first.player, 'A01_01', 'A01');
+    const secondCheck = resolveAreaStoryCheck(second.game, 2_000, second.player, 'A01_01', 'A01');
+    expect(firstCheck).toEqual(secondCheck);
+    expect(firstCheck).toMatchObject({ check: '废墟求生', difficulty: 12 });
+    expect(first.game.world.battle.storyLog[0]).toEqual(firstCheck);
   });
 
   it('keeps an idle contestant moving between tactical decisions', () => {

@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
@@ -52,6 +52,16 @@ describe('battle royale P0/P1 configuration', () => {
     expect(GLOBAL_SPECIAL_EVENTS).toHaveLength(3);
     expect(AREA_SPECIAL_EVENTS.map((event) => event.id)).toEqual(expect.arrayContaining(['A02_02', 'A05_02', 'A10_03', 'S01_01']));
     expect(INTERVENTION_OPERATIONS.map((operation) => operation.id)).toEqual(expect.arrayContaining(['STO_01', 'STO_02', 'STO_03', 'STO_04', 'STO_05', 'STO_06']));
+  });
+
+  test('gives every regional story a tabletop scene, choice and branched outcome', () => {
+    expect(Object.keys(AREA_STORY_NARRATIVES)).toHaveLength(AREA_SPECIAL_EVENTS.length);
+    for (const event of AREA_SPECIAL_EVENTS) {
+      expect(AREA_STORY_NARRATIVES[event.id]).toEqual(expect.objectContaining({
+        scene: expect.any(String), choice: expect.any(String), check: expect.any(String),
+        success: expect.any(String), failure: expect.any(String),
+      }));
+    }
   });
 
   test('gives high-impact items explicit rarity and trade value', () => {

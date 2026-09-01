@@ -1,6 +1,8 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
 import BattleVitalBattery from './BattleVitalBattery';
+import { useEffect, useState } from 'react';
+import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
 
 type LiveBattleHudProps = {
   game: ServerGame;
@@ -28,6 +30,11 @@ export default function LiveBattleHud({
   replayActive,
 }: LiveBattleHudProps) {
   const battle = game.world.battle;
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
   const focus = focusPlayerId ? game.world.players.get(focusPlayerId) : undefined;
   const name = focus ? game.playerDescriptions.get(focus.id)?.name ?? focus.id : '等待导播目标';
   const stats = focus?.battle;
@@ -44,6 +51,14 @@ export default function LiveBattleHud({
           <button className="live-hud-button live-hud-danger" onClick={onRestart}>新开一局</button>
         </div>
       </div>
+
+      <section className="live-tactical-strip pointer-events-auto">
+        <div className="live-pulse"><i />直播态势</div>
+        <div><small>热度</small><strong>{battle?.popularity ?? 0}</strong></div>
+        <div><small>禁区收缩</small><strong>{formatCountdown(Math.max(0, Math.ceil(((battle?.zoneClosesAt ?? now) - now) / 1000)))}</strong></div>
+        <div><small>封锁区域</small><strong className={(battle?.areaLocks ?? []).some((lock) => lock.until > now) ? 'is-alert' : ''}>{(battle?.areaLocks ?? []).filter((lock) => lock.until > now).length}</strong></div>
+        <div><small>镜头区域</small><strong>{areaName(stats?.areaId)}</strong></div>
+      </section>
 
       <div className="live-hud-bottom pointer-events-auto">
         <section className="focus-card">
@@ -66,6 +81,14 @@ export default function LiveBattleHud({
 
 function displayWeapon(weapon: string) {
   return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon;
+}
+
+function formatCountdown(totalSeconds: number) {
+  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
+}
+
+function areaName(areaId?: string) {
+  return BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.name ?? areaId ?? '--';
 }
 
 function Portrait({ characterId }: { characterId?: string }) {

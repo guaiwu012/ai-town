@@ -356,7 +356,7 @@ p[contenteditable='true']:empty::before {
 }
 
 .live-hud { color: #ecf3ef; }
-.live-hud-top { position: absolute; top: 1rem; left: 1rem; right: 1rem; display: flex; align-items: center; gap: 0.8rem; border: 1px solid rgba(122, 162, 169, 0.7); background: rgba(3, 14, 23, 0.84); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3); padding: 0.55rem 0.7rem; }
+.live-hud-top { position: absolute; top: 0.75rem; left: 0.75rem; right: 0.75rem; display: flex; align-items: center; gap: 0.8rem; border-bottom: 1px solid rgba(122, 162, 169, 0.55); background: rgba(3, 14, 23, 0.66); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22); padding: 0.45rem 0.6rem; backdrop-filter: blur(7px); }
 .live-brand { color: #f4e6cf; font-family: var(--font-display); font-size: 1.15rem; white-space: nowrap; }
 .live-brand span, .live-match-meta { color: #78d8bf; font-size: 0.72rem; letter-spacing: 0.06em; }
 .live-top-actions { display: flex; gap: 0.45rem; margin-left: auto; }
@@ -380,6 +380,11 @@ p[contenteditable='true']:empty::before {
 .live-hud-primary { border-color: #dfb452; color: #fff0be; background: rgba(100, 65, 17, 0.9); }
 .live-hud-danger { border-color: #de7666; color: #ffd5cf; background: rgba(88, 27, 29, 0.9); }
 .live-hud-bottom { position: absolute; right: 1rem; bottom: 1rem; left: 1rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
+.live-tactical-strip { position: absolute; top: 4.45rem; left: 0.75rem; display: grid; width: 11.5rem; border-left: 2px solid rgba(90, 222, 190, 0.78); background: rgba(3, 14, 23, 0.72); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24); backdrop-filter: blur(5px); }
+.live-tactical-strip > div { display: flex; align-items: center; justify-content: space-between; min-height: 2rem; border-bottom: 1px solid rgba(87, 128, 139, 0.3); padding: 0.3rem 0.55rem; }
+.live-tactical-strip small { color: #829ca1; font-size: 0.6rem; }.live-tactical-strip strong { color: #dce8e3; font-size: 0.72rem; font-weight: 600; }.live-tactical-strip strong.is-alert { color: #ff7d70; }
+.live-pulse { justify-content: flex-start !important; gap: 0.45rem; color: #7be3c5; font-size: 0.65rem; letter-spacing: 0.08em; }.live-pulse i { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: #65e4b7; box-shadow: 0 0 10px #65e4b7; animation: live-pulse 1.4s ease-in-out infinite; }
+@keyframes live-pulse { 50% { opacity: 0.35; transform: scale(0.75); } }
 .focus-card, .live-control-cluster { border: 1px solid rgba(122, 162, 169, 0.68); background: rgba(3, 14, 23, 0.88); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32); padding: 0.7rem; }
 .focus-card { max-width: min(470px, 65vw); }
 .focus-card-identity, .drawer-identity { display: flex; align-items: center; gap: 0.6rem; }
@@ -401,7 +406,11 @@ p[contenteditable='true']:empty::before {
 .drawer-section { border-top: 1px solid rgba(91, 130, 140, 0.42); margin-top: 0.75rem; padding-top: 0.55rem; }.drawer-section h3 { margin: 0 0 0.35rem; color: #77d9c0; font-size: 0.72rem; letter-spacing: 0.08em; }.drawer-section p { margin: 0.22rem 0; color: #c5d0d0; font-size: 0.74rem; line-height: 1.45; }.drawer-warning { color: #f4bc70 !important; }
 
 .battle-event-icon { width: 1rem; height: 1rem; flex: 0 0 auto; object-fit: contain; filter: drop-shadow(0 0 5px rgba(89, 204, 220, 0.38)); }
-.battle-toast-stack { top: 4.85rem; }
+.battle-toast-stack { top: 4.35rem; }
+.story-card { position: absolute; z-index: 18; top: 4.45rem; right: 0.75rem; width: min(360px, calc(100vw - 2rem)); border: 1px solid rgba(203, 171, 101, 0.68); background: rgba(5, 15, 25, 0.94); box-shadow: 0 16px 38px rgba(0, 0, 0, 0.38); color: #dbe5e2; }
+.story-card-toggle { display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.55rem; border: 0; border-bottom: 1px solid rgba(203, 171, 101, 0.38); background: rgba(35, 42, 44, 0.7); padding: 0.55rem 0.65rem; color: inherit; text-align: left; }.story-card-toggle span { color: #e0b85f; font-size: 0.6rem; letter-spacing: 0.08em; }.story-card-toggle strong { overflow: hidden; color: #f3e4c8; font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }.story-card-toggle i { color: #89a6a8; font-size: 0.58rem; font-style: normal; }
+.story-card-body { padding: 0.7rem; }.story-card-location { color: #6ed8bc; font-size: 0.62rem; letter-spacing: 0.08em; }.story-card-scene { margin: 0.45rem 0 0; color: #d8ddd8; font-family: serif; font-size: 0.82rem; line-height: 1.65; }.story-card-choice { margin-top: 0.55rem; border-left: 2px solid #6da9b6; background: rgba(25, 57, 68, 0.44); padding: 0.42rem 0.55rem; }.story-card-choice small { color: #7fb9c2; font-size: 0.58rem; }.story-card-choice p { margin: 0.15rem 0 0; color: #c9d7d6; font-size: 0.7rem; line-height: 1.45; }
+.story-card-check { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 0.6rem; margin-top: 0.55rem; border: 1px solid rgba(116, 153, 157, 0.42); padding: 0.45rem 0.55rem; }.story-card-check div { display: grid; }.story-card-check small { color: #91a9aa; font-size: 0.57rem; }.story-card-check strong { color: #e8ede8; font-size: 0.68rem; }.story-card-check span { color: #aec2c0; font-family: var(--font-display); font-size: 0.78rem; }.story-card-check b { min-width: 2.5rem; color: #73dfb7; font-size: 0.7rem; text-align: right; }.story-card-check.is-failure b { color: #ff7569; }.story-card-outcome { margin: 0.55rem 0 0; color: #e4c77f; font-size: 0.72rem; line-height: 1.5; }.story-card.is-collapsed { width: min(280px, calc(100vw - 2rem)); }
 .battle-vital-battery { display: inline-block; width: 3.94rem; height: 1.5rem; flex: 0 0 auto; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; image-rendering: auto; }
 .battle-vital-battery.is-compact { width: 3.15rem; height: 1.2rem; }
 .battle-vital-battery[data-tone='green'] { background-image: url('/ai-town/assets/reference/ui/vitals/health-green.png'); }
@@ -656,7 +665,9 @@ p[contenteditable='true']:empty::before {
   .live-hud-top { align-items: start; flex-wrap: wrap; }.live-match-meta { order: 3; width: 100%; }.live-top-actions { margin-left: 0; }
   .live-hud-bottom { align-items: stretch; flex-direction: column; }.focus-card { max-width: none; }.live-control-cluster { display: flex; align-items: center; justify-content: space-between; }
   .character-drawer { top: 4.9rem; bottom: 0; right: 0; width: 100%; }
-  .battle-toast-stack { top: 7.8rem; }
+  .battle-toast-stack { top: 7.25rem; }
+  .live-tactical-strip { top: 7.2rem; left: 0.5rem; width: 9.5rem; }.live-tactical-strip > div:nth-child(n+4) { display: none; }
+  .story-card { top: auto; right: 0.5rem; bottom: 8.8rem; width: min(330px, calc(100vw - 1rem)); }.story-card-scene { max-height: 4.2rem; overflow: hidden; }
   .overview-toolbar-actions { width: 100%; }
   .overview-toolbar-actions .live-hud-button { flex: 1; }
 }
