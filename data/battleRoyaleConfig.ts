@@ -90,7 +90,7 @@ export const BATTLE_CONFIG = {
     A02: ['罐装咖啡', '隐蔽录音笔', '信号干扰器', '隐藏频道接收器', '演播档案带'],
     A03: ['营养补充剂', '电子破解器', '情报地图', '加密档案', '策略手稿'],
     A04: ['肾上腺素', '指虎', '铁链', '格斗绷带', '血染刺套'],
-    A05: ['午餐盒', '对讲机', '烟雾弹', '学生档案'],
+    A05: ['午餐盒', '对讲机', '烟雾弹', '校园广播磁带', '学生档案'],
     A06: ['急救包', '止痛药', '手术刀', '防护服', '医疗记录终端', '未署名病历'],
     A07: ['运动饮料', '蛋白棒', '铅球', '跑鞋', '奖牌'],
     A08: ['走私食品', '万能钥匙', '伪造身份卡', '账本残页', '欠条'],
@@ -149,7 +149,7 @@ export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
   '罐装咖啡': { rarity: 'common', tradeValue: 10 }, '隐蔽录音笔': { rarity: 'uncommon', tradeValue: 26 }, '信号干扰器': { rarity: 'rare', tradeValue: 42 }, '隐藏频道接收器': { rarity: 'rare', tradeValue: 50 },
   '营养补充剂': { rarity: 'common', tradeValue: 14 }, '电子破解器': { rarity: 'uncommon', tradeValue: 30 }, '情报地图': { rarity: 'rare', tradeValue: 45 },
   '肾上腺素': { rarity: 'rare', tradeValue: 42 }, '指虎': { rarity: 'common', tradeValue: 16 }, '铁链': { rarity: 'uncommon', tradeValue: 24 }, '格斗绷带': { rarity: 'uncommon', tradeValue: 22 }, '血染刺套': { rarity: 'rare', tradeValue: 58 },
-  '午餐盒': { rarity: 'common', tradeValue: 10 }, '对讲机': { rarity: 'uncommon', tradeValue: 25 }, '学生档案': { rarity: 'rare', tradeValue: 44 },
+  '午餐盒': { rarity: 'common', tradeValue: 10 }, '对讲机': { rarity: 'uncommon', tradeValue: 25 }, '校园广播磁带': { rarity: 'rare', tradeValue: 42 }, '学生档案': { rarity: 'rare', tradeValue: 44 },
   '止痛药': { rarity: 'common', tradeValue: 15 }, '手术刀': { rarity: 'uncommon', tradeValue: 32 }, '防护服': { rarity: 'uncommon', tradeValue: 30 }, '未署名病历': { rarity: 'rare', tradeValue: 52 },
   '运动饮料': { rarity: 'common', tradeValue: 12 }, '蛋白棒': { rarity: 'common', tradeValue: 12 }, '铅球': { rarity: 'uncommon', tradeValue: 20 }, '跑鞋': { rarity: 'uncommon', tradeValue: 26 }, '奖牌': { rarity: 'rare', tradeValue: 40 },
   '走私食品': { rarity: 'common', tradeValue: 14 }, '万能钥匙': { rarity: 'rare', tradeValue: 46 }, '伪造身份卡': { rarity: 'rare', tradeValue: 48 }, '账本残页': { rarity: 'uncommon', tradeValue: 32 }, '欠条': { rarity: 'rare', tradeValue: 55 },
@@ -226,7 +226,7 @@ export const AREA_SPECIAL_EVENTS = [
   { id: 'A03_02', areaId: 'A03', title: '电力中断', effect: 'blackout', maxTriggers: 1 },
   { id: 'A04_01', areaId: 'A04', title: '地板塌陷', effect: 'collapse', maxTriggers: 1 },
   { id: 'A04_02', areaId: 'A04', title: '笼门关闭', effect: 'lockdown', maxTriggers: 2 },
-  { id: 'A05_01', areaId: 'A05', title: '校园广播', effect: 'broadcast', maxTriggers: 1 },
+  { id: 'A05_01', areaId: 'A05', title: '校园广播', effect: 'broadcast', maxTriggers: 1, requiredItem: '校园广播磁带', consumeItem: true },
   { id: 'A05_02', areaId: 'A05', title: '黑板字迹', effect: 'stress', maxTriggers: 1 },
   { id: 'A06_01', areaId: 'A06', title: '紧急手术', effect: 'surgery', maxTriggers: 1 },
   { id: 'A06_02', areaId: 'A06', title: '药品过期', effect: 'expiredMedicine', maxTriggers: 3 },
@@ -283,6 +283,40 @@ export const AREA_STORY_NARRATIVES: Record<string, {
   A12_02: { scene: '监控屏幕播放同一场景的多个版本，每个版本都有不同幸存者。', choice: '用权限卡固定真实时间线，保存未被改写的画面。', check: '时间线校验', ability: 'mind', success: '确认了一段真实回放，真相拼图更加完整。', failure: '权限卡耗尽，只留下无法判断真假的回响。' },
   S01_01: { scene: '制造者日志在黑暗中逐页解密，最后一页要求 C12 回答自己是谁。', choice: '接受记忆冲突，读取被删除的身份字段。', check: '自我锚定', ability: 'psyche', success: '身份与比赛真相同时解锁，隐藏终局开始显现。', failure: '日志拒绝继续展开，但一段加密坐标仍被保留下来。' },
 };
+
+export function storyOptionsFor(eventId: string) {
+  const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === eventId);
+  const narrative = AREA_STORY_NARRATIVES[eventId];
+  const title = event?.title ?? '区域异常';
+  const baseChoice = narrative?.choice ?? '观察环境并选择应对方式。';
+  return [
+    {
+      id: 'cautious' as StoryApproachId,
+      label: `${title}·稳妥处置`,
+      description: `先确认退路与风险，再执行：${baseChoice}`,
+      ability: narrative?.ability ?? 'mind',
+      difficultyModifier: -1,
+    },
+    {
+      id: 'bold' as StoryApproachId,
+      label: `${title}·抢先突破`,
+      description: `抢在局势恶化前正面推进：${baseChoice}`,
+      ability: 'strength' as const,
+      difficultyModifier: 2,
+    },
+    {
+      id: 'social' as StoryApproachId,
+      label: `${title}·协同应对`,
+      description: `寻找同伴、广播或谈判渠道共同完成：${baseChoice}`,
+      ability: 'social' as const,
+      difficultyModifier: 0,
+    },
+  ];
+}
+
+export function storyOptionFor(eventId: string, approachId?: string) {
+  return storyOptionsFor(eventId).find((option) => option.id === approachId) ?? storyOptionsFor(eventId)[0];
+}
 
 export const GLOBAL_SPECIAL_EVENTS = [
   { id: 'GLB_01', title: '野怪暴走', effect: 'beastRage', maxTriggers: 1 },

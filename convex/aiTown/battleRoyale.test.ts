@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -154,14 +154,15 @@ describe('battle royale host intervention rules', () => {
     claimDecisionDriver(game, 9_000, 'driver-story-001');
 
     const result = submitAIDecision(game, 10_000, {
-      driverId: 'driver-story-001', playerId: player.id, action: 'investigate', storyApproach: 'bold', reason: '冒险抢在断电前取得档案',
+      driverId: 'driver-story-001', playerId: player.id, action: 'investigate', storyEventId: 'A03_01', storyApproach: 'bold', reason: '冒险抢在断电前取得档案',
     });
 
     expect(result).toMatchObject({ accepted: true });
     expect(player.battle.pendingStoryApproach).toBe('bold');
+    expect(player.battle.pendingStoryEventId).toBe('A03_01');
     expect(player.battle.areaSearches).toBe(1);
-    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'investigate', storyApproach: 'bold', accepted: true });
-    expect(game.world.battle.feed.some((event: any) => event.text.includes('强行突破'))).toBe(true);
+    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'investigate', storyEventId: 'A03_01', storyApproach: 'bold', accepted: true });
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('数据泄露·抢先突破'))).toBe(true);
   });
 
   it('rejects an investigation approach outside the server allowlist', () => {
@@ -170,7 +171,7 @@ describe('battle royale host intervention rules', () => {
     claimDecisionDriver(game, 9_000, 'driver-story-002');
 
     const result = submitAIDecision(game, 10_000, {
-      driverId: 'driver-story-002', playerId: player.id, action: 'investigate', storyApproach: 'teleport', reason: '尝试不存在的路线',
+      driverId: 'driver-story-002', playerId: player.id, action: 'investigate', storyEventId: 'A03_01', storyApproach: 'teleport', reason: '尝试不存在的路线',
     });
 
     expect(result).toMatchObject({ accepted: false, reason: '调查路线不在允许列表' });
@@ -181,15 +182,59 @@ describe('battle royale host intervention rules', () => {
   it('consumes the selected approach in the next seeded tabletop check', () => {
     const player = createPlayer('p:3', 'C03', 'A03');
     player.battle.pendingStoryApproach = 'bold';
+    player.battle.pendingStoryEventId = 'A03_01';
     const game = createGame([player]);
     game.world.battle = defaultBattleState(1_000, 20260807);
 
     const beat = resolveAreaStoryCheck(game, 2_000, player, 'A03_01', 'A03');
 
     expect(beat).toMatchObject({ approach: 'bold', bonus: 0, difficulty: 13 });
-    expect(beat.choice).toContain('强行突破');
-    expect(beat.check).toContain('强行突破');
+    expect(beat.choice).toContain('数据泄露·抢先突破');
+    expect(beat.check).toContain('数据泄露·抢先突破');
     expect(player.battle.pendingStoryApproach).toBeUndefined();
+    expect(player.battle.pendingStoryEventId).toBeUndefined();
+  });
+
+  it('rejects a model story from another area without spending quota', () => {
+    const player = createPlayer('p:3', 'C03', 'A03');
+    const game = createGame([player]);
+    claimDecisionDriver(game, 9_000, 'driver-story-area');
+
+    const result = submitAIDecision(game, 10_000, {
+      driverId: 'driver-story-area', playerId: player.id, action: 'investigate', storyEventId: 'A04_01', storyApproach: 'cautious', reason: '尝试调查别区剧情',
+    });
+
+    expect(result).toMatchObject({ accepted: false, reason: '所选剧情不在当前区域' });
+    expect(game.world.battle.decisionCount).toBe(0);
+  });
+
+  it('requires the configured item before a model can select a gated story', () => {
+    const player = createPlayer('p:2', 'C02', 'A02');
+    const game = createGame([player]);
+    claimDecisionDriver(game, 9_000, 'driver-story-item');
+
+    const result = submitAIDecision(game, 10_000, {
+      driverId: 'driver-story-item', playerId: player.id, action: 'investigate', storyEventId: 'A02_02', storyApproach: 'cautious', reason: '读取监控回放',
+    });
+
+    expect(result).toMatchObject({ accepted: false, reason: '调查需要监控终端权限卡' });
+    expect(game.world.battle.decisionCount).toBe(0);
+  });
+
+  it('prioritizes the exact story selected by the model when multiple events are eligible', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    player.battle.areaEnteredAt = 1_000;
+    player.battle.pendingStoryEventId = 'A01_02';
+    player.battle.pendingStoryApproach = 'social';
+    const game = createGame([player]);
+    game.world.battle.timeOfDay = 'night';
+    game.world.battle.lastAreaEventCheck = 0;
+
+    triggerAreaSpecialEvent(game, 130_000);
+
+    expect(game.world.battle.storyLog[0]).toMatchObject({ eventId: 'A01_02', approach: 'social' });
+    expect(game.world.battle.storyLog[0].choice).toContain('暴风雪·协同应对');
+    expect(player.battle.pendingStoryEventId).toBeUndefined();
   });
 
   it('reveals the selected character hidden relationship and leaves an audit event', () => {

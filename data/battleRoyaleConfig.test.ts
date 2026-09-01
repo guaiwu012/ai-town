@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
@@ -80,12 +80,19 @@ describe('battle royale P0/P1 configuration', () => {
         scene: expect.any(String), choice: expect.any(String), check: expect.any(String),
         success: expect.any(String), failure: expect.any(String),
       }));
+      const options = storyOptionsFor(event.id);
+      expect(options.map((option) => option.id)).toEqual(['cautious', 'bold', 'social']);
+      options.forEach((option) => {
+        expect(option.label).toContain(event.title);
+        expect(option.description).toContain(AREA_STORY_NARRATIVES[event.id].choice);
+      });
     }
   });
 
   test('gives high-impact items explicit rarity and trade value', () => {
     expect(ITEM_DEFINITIONS['真相数据核心']).toMatchObject({ rarity: 'legendary', tradeValue: 120 });
     expect(itemDefinition('突击步枪').rarity).toBe('rare');
+    expect(itemDefinition('校园广播磁带')).toMatchObject({ rarity: 'rare', tradeValue: 42 });
     expect(itemDefinition('不存在的普通物品')).toMatchObject({ rarity: 'common', tradeValue: 12 });
   });
 

@@ -3,12 +3,13 @@ import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { Doc, Id } from '../_generated/dataModel';
 import { playerId } from './ids';
-import { AREA_SPECIAL_EVENTS, BATTLE_ACTIONS, BATTLE_CONFIG, STORY_APPROACHES, adjacentAreaIds, profileForCharacterId } from '../../data/battleRoyaleConfig';
+import { AREA_SPECIAL_EVENTS, BATTLE_ACTIONS, BATTLE_CONFIG, adjacentAreaIds, profileForCharacterId, storyOptionsFor } from '../../data/battleRoyaleConfig';
 
 type Decision = {
   action: string;
   targetPlayerId?: string;
   targetAreaId?: string;
+  storyEventId?: string;
   storyApproach?: string;
   reason?: string;
   speech?: string;
@@ -94,7 +95,12 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
   const availableStories = AREA_SPECIAL_EVENTS
     .filter((event) => event.areaId === stats.areaId)
     .filter((event) => !(snapshot.world.battle?.consumedAreaStories ?? []).includes(event.id))
-    .map((event) => ({ id: event.id, title: event.title }));
+    .map((event) => ({
+      id: event.id,
+      title: event.title,
+      requiredItem: 'requiredItem' in event ? event.requiredItem : undefined,
+      options: storyOptionsFor(event.id).map(({ id, label, description, difficultyModifier }) => ({ id, label, description, difficultyModifier })),
+    }));
   const prompt = {
     role: `${nameFor(playerId)} (${stats.characterId})`,
     persona: { codename: profile.codename, strength: profile.strength, mind: profile.mind, psyche: profile.psyche, social: profile.social, aggression: profile.aggro, cooperation: profile.coop, riskPreference: profile.risk },
@@ -105,8 +111,7 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
     availableStories,
-    storyApproaches: STORY_APPROACHES.map(({ id, label, description }) => ({ id, label, description })),
-    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyApproach":"investigate 时必填：cautious|bold|social","reason":"不超过70字中文理由","speech":"结盟或交易时必填，第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。有可用区域剧情时可调查，并按照人设在成功率、热度和关系之间选择调查路线。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',
+    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟或交易时必填，第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',
   };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);
@@ -122,7 +127,10 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     const raw = String(json.choices?.[0]?.message?.content ?? '').replace(/^```json\s*|\s*```$/g, '').trim();
     const decision = JSON.parse(raw) as Decision;
     if (!BATTLE_ACTIONS.includes(decision.action as typeof BATTLE_ACTIONS[number])) throw new Error('模型返回了无效动作');
-    if (decision.action === 'investigate' && !STORY_APPROACHES.some((approach) => approach.id === decision.storyApproach)) throw new Error('模型返回了无效调查路线');
+    if (decision.action === 'investigate') {
+      const story = availableStories.find((candidate) => candidate.id === decision.storyEventId);
+      if (!story || !story.options.some((option) => option.id === decision.storyApproach)) throw new Error('模型返回了无效剧情选择');
+    }
     return { ...decision, reason: String(decision.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140), speech: String(decision.speech ?? '').replace(/[\r\n]/g, ' ').slice(0, 56) };
   } catch (error) {
     if (controller.signal.aborted) throw new Error('云端模型请求超时');

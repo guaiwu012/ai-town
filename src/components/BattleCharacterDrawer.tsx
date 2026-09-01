@@ -1,6 +1,6 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
-import { AREA_SPECIAL_EVENTS } from '../../data/battleRoyaleConfig';
+import { AREA_SPECIAL_EVENTS, storyOptionFor } from '../../data/battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
 import BattleVitalBattery from './BattleVitalBattery';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
@@ -43,11 +43,11 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
       <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
       <DrawerSection title="背包"><p>{stats.inventory?.length ? stats.inventory.join('、') : '暂无额外物资'} · 医疗包 {stats.medkits}</p></DrawerSection>
       <DrawerSection title="决策审计">
-        <p>{auditedAction ? `${auditedAction.source === 'model' ? '模型' : '规则'} · ${displayAction(auditedAction.action)}${auditedAction.storyApproach ? `（${storyApproachLabel(auditedAction.storyApproach)}）` : ''} · ${auditedAction.accepted ? '已执行' : '已拒绝'}` : '等待本轮决策'}</p>
+        <p>{auditedAction ? `${auditedAction.source === 'model' ? '模型' : '规则'} · ${displayAction(auditedAction.action)}${storyChoiceLabel(auditedAction.storyEventId, auditedAction.storyApproach)} · ${auditedAction.accepted ? '已执行' : '已拒绝'}` : '等待本轮决策'}</p>
         {auditedAction?.reason && <p className={auditedAction.accepted ? undefined : 'drawer-warning'}>{auditedAction.accepted ? auditedAction.reason : `回退：${auditedAction.reason}`}</p>}
       </DrawerSection>
       <DrawerSection title="行动日志">
-        {recentActions.length ? recentActions.map((entry) => <p key={entry.id}>{entry.source === 'model' ? '模型' : '规则'} · {displayAction(entry.action)}{entry.storyApproach ? `（${storyApproachLabel(entry.storyApproach)}）` : ''} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</p>) : <p>暂无已记录行动</p>}
+        {recentActions.length ? recentActions.map((entry) => <p key={entry.id}>{entry.source === 'model' ? '模型' : '规则'} · {displayAction(entry.action)}{storyChoiceLabel(entry.storyEventId, entry.storyApproach)} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</p>) : <p>暂无已记录行动</p>}
       </DrawerSection>
       <DrawerSection title="最近交谈">
         {recentDialogue.length ? recentDialogue.map((entry) => {
@@ -70,6 +70,10 @@ function Stat({ label, value }: { label: string; value: string | number }) { ret
 function displayWeapon(weapon: string) { return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon; }
 function displayAction(action: string) { return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查' } as Record<string, string>)[action] ?? action; }
 function storyApproachLabel(approach: string) { return ({ cautious: '谨慎勘察', bold: '强行突破', social: '交涉取证' } as Record<string, string>)[approach] ?? approach; }
+function storyChoiceLabel(eventId?: string, approach?: string) {
+  if (eventId) return `（${storyOptionFor(eventId, approach).label}）`;
+  return approach ? `（${storyApproachLabel(approach)}）` : '';
+}
 function relationshipLabel(type: string) { return ({ family: '亲属', ex: '旧识', rival: '宿敌', mentor: '师徒', friend: '同伴' } as Record<string, string>)[type] ?? type; }
 function Portrait({ characterId }: { characterId?: string }) {
   const index = Math.max(0, Number(characterId?.slice(1) ?? '1') - 1);

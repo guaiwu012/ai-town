@@ -16,6 +16,7 @@ import {
   AREA_STORY_NARRATIVES,
   STORY_APPROACHES,
   storyApproachFor,
+  storyOptionFor,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
@@ -67,6 +68,7 @@ export const battleStats = v.object({
   locomotionY: v.optional(v.number()),
   locomotionRecoveries: v.optional(v.number()),
   pendingStoryApproach: v.optional(v.string()),
+  pendingStoryEventId: v.optional(v.string()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -227,7 +229,7 @@ export const battleState = v.object({
   rngState: v.optional(v.number()),
   ruleVersion: v.optional(v.string()),
   actionLog: v.optional(v.array(v.object({
-    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), storyApproach: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()), patch: v.optional(battleReplayPatch),
+    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), storyEventId: v.optional(v.string()), storyApproach: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()), patch: v.optional(battleReplayPatch),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
     ts: v.number(), eventId: v.number(), actionId: v.optional(v.number()), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(), frame: v.optional(battleReplayFrame),
@@ -614,7 +616,7 @@ export function heartbeatDecisionDriver(game: Game, now: number, driverId: strin
 }
 
 export function submitAIDecision(game: Game, now: number, args: {
-  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyApproach?: string; reason?: string; speech?: string;
+  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyEventId?: string; storyApproach?: string; reason?: string; speech?: string;
 }) {
   ensureBattleState(game, now);
   const battle = game.world.battle!;
@@ -627,19 +629,20 @@ export function submitAIDecision(game: Game, now: number, args: {
       player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
     }
     pushEvent(game, now, 'decision', `【决策】${player ? playerName(game, player) : 'AI'} 的模型动作被拒绝：${reason}。`, player);
-    recordReplayAction(game, now, player, args.action, 'model', false, reason, args.targetPlayerId, args.targetAreaId);
+    recordReplayAction(game, now, player, args.action, 'model', false, reason, args.targetPlayerId, args.targetAreaId, undefined, args.storyApproach, args.storyEventId);
     return { accepted: false, reason };
   };
   if (battle.decisionDriverId !== args.driverId || (battle.decisionDriverUntil ?? 0) <= now) return fail('驾驶权已失效');
   if ((battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) return fail('本局模型决策额度已用尽');
   if (!player?.battle || player.battle.eliminated) return fail('角色已淘汰');
   if (!BATTLE_ACTIONS.includes(args.action as any)) return fail('动作不在允许列表');
+  if (args.action === 'investigate' && !args.storyEventId) return fail('调查必须选择区域剧情');
   if ((player.battle.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) return fail('动作冷却中');
   const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
   const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
   const safeSpeech = sanitizeDialogue(args.speech);
   const replayBaseline = captureReplayPatchBaseline(game);
-  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech, args.storyApproach);
+  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech, args.storyApproach, args.storyEventId);
   player.battle.lastDecisionAt = now;
   player.battle.lastDecisionAction = args.action;
   player.battle.lastDecisionReason = safeReason || '未提供理由';
@@ -648,10 +651,10 @@ export function submitAIDecision(game: Game, now: number, args: {
   player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
   if (result.accepted) {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
-    const approach = args.action === 'investigate' ? `（${storyApproachFor(args.storyApproach).label}）` : '';
+    const approach = args.action === 'investigate' && args.storyEventId ? `（${storyOptionFor(args.storyEventId, args.storyApproach).label}）` : '';
     pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}${approach}：${safeReason || '基于当前局势'}。`, player, target);
   }
-  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline, args.storyApproach);
+  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline, args.storyApproach, args.storyEventId);
   return result;
 }
 
@@ -834,7 +837,7 @@ function refreshAreaResources(game: Game, now: number) {
   pushEvent(game, now, 'resource', '【资源】部分区域资源已刷新。');
 }
 
-function triggerAreaSpecialEvent(game: Game, now: number) {
+export function triggerAreaSpecialEvent(game: Game, now: number) {
   const battle = game.world.battle!;
   battle.areaLocks = (battle.areaLocks ?? []).filter((lock) => lock.until > now);
   if (now < (battle.lastAreaEventCheck ?? 0) + 5000) return;
@@ -845,11 +848,16 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     const cooldown = battle.areaEventCooldowns?.find((entry) => entry.id === event.id);
     return (!cooldown || cooldown.until <= now) && areaEventEligible(game, now, event);
   });
-  const event = candidates[Math.floor(battleRandom(game) * candidates.length)];
+  const pendingPlayer = alivePlayers(game).find((player) => candidates.some((event) => (
+    event.id === player.battle?.pendingStoryEventId && event.areaId === player.battle?.areaId
+  )));
+  const event = pendingPlayer
+    ? candidates.find((candidate) => candidate.id === pendingPlayer.battle?.pendingStoryEventId)
+    : candidates[Math.floor(battleRandom(game) * candidates.length)];
   if (!event) return;
   const affected = alivePlayers(game).filter((player) => player.battle?.areaId === event.areaId);
   if (affected.length === 0) return;
-  const randomPlayer = affected[Math.floor(battleRandom(game) * affected.length)];
+  const randomPlayer = pendingPlayer ?? affected[Math.floor(battleRandom(game) * affected.length)];
   const requiredItem = 'requiredItem' in event ? event.requiredItem : undefined;
   const itemOwner = requiredItem
     ? affected.find((player) => player.battle?.inventory?.includes(requiredItem))
@@ -939,21 +947,24 @@ export function resolveAreaStoryCheck(game: Game, now: number, player: Player, e
   const narrative = AREA_STORY_NARRATIVES[eventId];
   const profile = profileForCharacterId(player.battle?.characterId ?? 'C01');
   const pendingApproach = player.battle?.pendingStoryApproach;
+  const pendingEventId = player.battle?.pendingStoryEventId;
   const approach = pendingApproach ? storyApproachFor(pendingApproach) : undefined;
+  const option = pendingApproach && pendingEventId === eventId ? storyOptionFor(eventId, pendingApproach) : undefined;
   player.battle!.pendingStoryApproach = undefined;
-  const ability = !approach || approach.ability === 'event' ? narrative?.ability ?? 'mind' : approach.ability;
+  player.battle!.pendingStoryEventId = undefined;
+  const ability = option?.ability ?? (!approach || approach.ability === 'event' ? narrative?.ability ?? 'mind' : approach.ability);
   const bonus = Math.max(0, profile[ability] - 2);
   const roll = 1 + Math.floor(battleRandom(game) * 20);
   const danger = BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.danger ?? 2;
-  const difficulty = Math.max(7, 9 + danger + (approach?.difficultyModifier ?? 0));
+  const difficulty = Math.max(7, 9 + danger + (option?.difficultyModifier ?? approach?.difficultyModifier ?? 0));
   const success = roll + bonus >= difficulty;
   const beat: BattleStoryBeat = {
     id: battle.nextStoryBeatId ?? 1, eventId, ts: now, areaId,
     title: AREA_SPECIAL_EVENTS.find((event) => event.id === eventId)?.title ?? '区域事件', actorId: player.id,
     scene: narrative?.scene ?? '区域中的异常装置突然启动。',
-    choice: approach ? `${approach.label}：${narrative?.choice ?? '观察环境并选择应对方式。'}` : narrative?.choice ?? '观察环境并选择应对方式。',
+    choice: option ? `${option.label}：${option.description}` : approach ? `${approach.label}：${narrative?.choice ?? '观察环境并选择应对方式。'}` : narrative?.choice ?? '观察环境并选择应对方式。',
     ...(approach ? { approach: approach.id } : {}),
-    check: `${narrative?.check ?? '临场判断'}${approach ? ` · ${approach.label}` : ''}`, roll, bonus, difficulty, success,
+    check: `${narrative?.check ?? '临场判断'}${option ? ` · ${option.label}` : approach ? ` · ${approach.label}` : ''}`, roll, bonus, difficulty, success,
     outcome: success ? narrative?.success ?? '角色控制住了局面。' : narrative?.failure ?? '局面朝不利方向发展。',
   };
   battle.nextStoryBeatId = beat.id + 1;
@@ -1168,12 +1179,12 @@ function interventionReaction(operationId: string) {
 export function replayRecordedAction(
   game: Game,
   now: number,
-  entry: { playerId?: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyApproach?: string },
+  entry: { playerId?: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyEventId?: string; storyApproach?: string },
 ) {
   const player = entry.playerId ? game.world.players.get(entry.playerId as any) : undefined;
   if (!player?.battle || player.battle.eliminated) return { accepted: false, reason: '回放角色不可用' };
   const target = entry.targetPlayerId ? game.world.players.get(entry.targetPlayerId as any) : undefined;
-  return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动', undefined, entry.storyApproach);
+  return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动', undefined, entry.storyApproach, entry.storyEventId);
 }
 
 /**
@@ -1189,6 +1200,7 @@ export function replayRecordedActions(
     playerId?: string;
     targetPlayerId?: string;
     targetAreaId?: string;
+    storyEventId?: string;
     storyApproach?: string;
     action: string;
     source?: string;
@@ -1224,6 +1236,7 @@ function executeBattleAction(
   _reason?: string,
   speech?: string,
   storyApproach?: string,
+  storyEventId?: string,
 ) {
   const stats = player.battle!;
   if (action === 'move') {
@@ -1299,10 +1312,24 @@ function executeBattleAction(
   }
   if (action === 'investigate') {
     if (storyApproach && !STORY_APPROACHES.some((approach) => approach.id === storyApproach)) return { accepted: false, reason: '调查路线不在允许列表' };
+    const inferredEventId = AREA_SPECIAL_EVENTS.find((candidate) => {
+      if (candidate.areaId !== (stats.areaId ?? 'A01')) return false;
+      const count = game.world.battle?.areaEventCounts?.find((entry) => entry.id === candidate.id)?.count ?? 0;
+      const requiredItem = 'requiredItem' in candidate ? candidate.requiredItem : undefined;
+      return count < candidate.maxTriggers && !game.world.battle?.consumedAreaStories?.includes(candidate.id) && (!requiredItem || stats.inventory?.includes(requiredItem));
+    })?.id;
+    const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === (storyEventId ?? inferredEventId));
+    if (!event || event.areaId !== (stats.areaId ?? 'A01')) return { accepted: false, reason: '所选剧情不在当前区域' };
+    const count = game.world.battle?.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0;
+    if (count >= event.maxTriggers || game.world.battle?.consumedAreaStories?.includes(event.id)) return { accepted: false, reason: '所选剧情已无法再次触发' };
+    const requiredItem = 'requiredItem' in event ? event.requiredItem : undefined;
+    if (requiredItem && !stats.inventory?.includes(requiredItem)) return { accepted: false, reason: `调查需要${requiredItem}` };
     const approach = storyApproachFor(storyApproach);
     stats.pendingStoryApproach = approach.id;
+    stats.pendingStoryEventId = event.id;
     stats.areaSearches = (stats.areaSearches ?? 0) + 1;
-    pushEvent(game, now, 'investigate', `【调查】${playerName(game, player)} 选择${approach.label}，正在调查${areaName(stats.areaId ?? 'A01')}。`, player);
+    const option = storyOptionFor(event.id, approach.id);
+    pushEvent(game, now, 'investigate', `【调查】${playerName(game, player)} 选择「${option.label}」，正在调查${areaName(stats.areaId ?? 'A01')}。`, player);
     return { accepted: true };
   }
   return { accepted: false, reason: '未实现的动作' };
@@ -2022,6 +2049,7 @@ function recordReplayAction(
   targetAreaId?: string,
   replayBaseline?: ReplayPatchBaseline,
   storyApproach?: string,
+  storyEventId?: string,
 ) {
   const battle = game.world.battle!;
   const patch = accepted && replayBaseline ? replayPatchSince(game, replayBaseline) : undefined;
@@ -2049,6 +2077,7 @@ function recordReplayAction(
   if (targetPlayerId) entry.targetPlayerId = targetPlayerId as any;
   if (targetAreaId) entry.targetAreaId = targetAreaId;
   if (storyApproach) entry.storyApproach = storyApproach;
+  if (storyEventId) entry.storyEventId = storyEventId;
   if (reason) entry.reason = reason.slice(0, 140);
   if (patch) entry.patch = patch;
   log.push(entry);
