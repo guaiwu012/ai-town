@@ -1,7 +1,11 @@
 import { BaseTexture, ISpritesheetData, Rectangle, Spritesheet, Texture } from 'pixi.js';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { AnimatedSprite, Container, Graphics, Sprite, Text } from '@pixi/react';
+import { AnimatedSprite, Container, Graphics, Sprite, Text, useTick } from '@pixi/react';
 import * as PIXI from 'pixi.js';
+
+const BATTLE_SPRITE_ATLAS = '/ai-town/assets/battle/contestant-sprites-v1.png';
+const BATTLE_SPRITE_CELL = { width: 362, height: 363 };
+const battleSpriteTextures = new Map<string, Texture>();
 
 export const Character = ({
   textureUrl,
@@ -92,17 +96,15 @@ export const Character = ({
   return (
     <Container x={x} y={y} interactive={true} pointerdown={onClick} cursor="pointer">
       {isThinking && (
-        // TODO: We'll eventually have separate assets for thinking and speech animations.
-        <Text x={-20} y={-10} scale={{ x: -0.8, y: 0.8 }} text={'💭'} anchor={{ x: 0.5, y: 0.5 }} />
+        <Text x={-22} y={-58} scale={{ x: -0.72, y: 0.72 }} text={'💭'} anchor={{ x: 0.5, y: 0.5 }} />
       )}
       {isSpeaking && (
-        // TODO: We'll eventually have separate assets for thinking and speech animations.
-        <Text x={18} y={-10} scale={0.8} text={'💬'} anchor={{ x: 0.5, y: 0.5 }} />
+        <Text x={22} y={-58} scale={0.72} text={'💬'} anchor={{ x: 0.5, y: 0.5 }} />
       )}
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
       {battleCharacterId
-        ? <BattleIdentityMarker characterId={battleCharacterId} eliminated={isEliminated} isMoving={isMoving} />
+        ? <BattleCharacterSprite characterId={battleCharacterId} eliminated={isEliminated} isMoving={isMoving} direction={direction} />
         : <AnimatedSprite
             ref={ref}
             isPlaying={isMoving}
@@ -114,7 +116,7 @@ export const Character = ({
       {isEliminated && (
         <Text
           x={0}
-          y={0}
+          y={-12}
           scale={0.62}
           text="KO"
           anchor={{ x: 0.5, y: 0.5 }}
@@ -132,7 +134,7 @@ export const Character = ({
       {emoji && (
         <Text
           x={0}
-          y={-38}
+          y={-68}
           scale={0.5}
           text={emoji}
           anchor={{ x: 0.5, y: 0.5 }}
@@ -157,10 +159,10 @@ function HealthBar({ ratio }: { ratio: number }) {
       const clamped = Math.max(0, Math.min(1, ratio));
       g.clear();
       g.beginFill(0x231423, 0.9);
-      g.drawRect(-14, -28, 28, 5);
+      g.drawRoundedRect(-16, -52, 32, 5, 2);
       g.endFill();
       g.beginFill(clamped > 0.45 ? 0x6ee7a8 : clamped > 0.2 ? 0xffdf5d : 0xff5f5f, 1);
-      g.drawRect(-13, -27, 26 * clamped, 3);
+      g.drawRoundedRect(-15, -51, 30 * clamped, 3, 1);
       g.endFill();
     },
     [ratio],
@@ -169,24 +171,69 @@ function HealthBar({ ratio }: { ratio: number }) {
   return <Graphics draw={draw} />;
 }
 
-function BattleIdentityMarker({ characterId, eliminated, isMoving }: { characterId: string; eliminated: boolean; isMoving: boolean }) {
+function battleSpriteTexture(characterId: string) {
+  const cached = battleSpriteTextures.get(characterId);
+  if (cached) return cached;
   const index = Math.max(0, Number(characterId.slice(1)) - 1) % 12;
-  const baseTexture = BaseTexture.from('/ai-town/assets/battle/contestant-portraits.png');
+  const baseTexture = BaseTexture.from(BATTLE_SPRITE_ATLAS);
   const col = index % 4;
   const row = Math.floor(index / 4);
-  const portrait = new Texture(baseTexture, new Rectangle(col * 362, row * 362, 362, 362));
+  const texture = new Texture(baseTexture, new Rectangle(
+    col * BATTLE_SPRITE_CELL.width,
+    row * BATTLE_SPRITE_CELL.height,
+    BATTLE_SPRITE_CELL.width,
+    BATTLE_SPRITE_CELL.height,
+  ));
+  battleSpriteTextures.set(characterId, texture);
+  return texture;
+}
+
+function BattleCharacterSprite({ characterId, eliminated, isMoving, direction }: { characterId: string; eliminated: boolean; isMoving: boolean; direction: string }) {
+  const bodyRef = useRef<PIXI.Container | null>(null);
+  const phaseRef = useRef(Math.max(0, Number(characterId.slice(1)) - 1) * 0.67);
+  useTick((delta) => {
+    const body = bodyRef.current;
+    if (!body) return;
+    phaseRef.current += delta * (isMoving ? 0.22 : 0.035);
+    body.y = -3 + Math.sin(phaseRef.current) * (isMoving ? 1.35 : 0.2);
+    body.rotation = eliminated ? -0.12 : Math.sin(phaseRef.current * 0.5) * (isMoving ? 0.018 : 0.004);
+  });
+  const flip = direction === 'left' ? -1 : 1;
   return <>
-    <Graphics draw={(g) => { g.clear(); g.beginFill(eliminated ? 0x442c42 : 0x0c1d2b, 0.98); g.lineStyle(isMoving ? 2.5 : 1.5, eliminated ? 0x92566b : isMoving ? 0x8ffff0 : 0x70e6ca, 0.98); g.drawCircle(0, 0, 15); g.endFill(); }} />
-    <Sprite texture={portrait} x={0} y={0} width={27} height={27} anchor={{ x: 0.5, y: 0.5 }} alpha={eliminated ? 0.38 : 1} />
-    <Text x={0} y={-22} scale={0.3} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 3 })} />
+    <Graphics draw={(g) => {
+      g.clear();
+      g.beginFill(0x02070c, eliminated ? 0.35 : 0.62);
+      g.drawEllipse(0, 5, 16, 6);
+      g.endFill();
+      if (isMoving && !eliminated) {
+        g.lineStyle(1.3, 0x72e4d1, 0.58);
+        g.drawEllipse(0, 5, 19, 8);
+      }
+    }} />
+    <Container ref={bodyRef} scale={{ x: flip, y: 1 }}>
+      <Sprite
+        texture={battleSpriteTexture(characterId)}
+        width={58}
+        height={58}
+        anchor={{ x: 0.5, y: 0.84 }}
+        alpha={eliminated ? 0.34 : 1}
+        tint={eliminated ? 0x8c8991 : 0xffffff}
+      />
+    </Container>
+    <Text x={0} y={12} scale={0.27} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: eliminated ? '#a79da8' : '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 4 })} />
   </>;
 }
 
 function ViewerIndicator() {
   const draw = useCallback((g: PIXI.Graphics) => {
     g.clear();
-    g.beginFill(0xffff0b, 0.5);
-    g.drawRoundedRect(-10, 10, 20, 10, 100);
+    g.lineStyle(2, 0xffd166, 0.94);
+    g.drawEllipse(0, 5, 21, 10);
+    g.beginFill(0xffd166, 0.95);
+    g.moveTo(-4, -55);
+    g.lineTo(4, -55);
+    g.lineTo(0, -48);
+    g.closePath();
     g.endFill();
   }, []);
 

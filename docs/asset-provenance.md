@@ -14,6 +14,15 @@
 | `public/assets/reference/ui/vitals/*.png` | `docs/superpowers/specs/美术/主面板/电池/` | 角色生命状态 |
 | `public/assets/reference/ui/controls/*.png` | `docs/superpowers/specs/美术/主面板/tag:button/`、`元素/ThresholdBar.png` | 热度组件视觉与按钮样式参考；按钮图含烘焙文字，不直接作为动态按钮背景 |
 
+## 本项目原创资产
+
+| 本地资产 | 生成依据 | 用途 |
+| --- | --- | --- |
+| `public/assets/battle/contestant-portraits.png` | 本项目角色设定 | HUD、角色档案、对话框和总览身份图 |
+| `public/assets/battle/contestant-sprites-v1.png` | 以原创头像图集作为身份与服装参考，通过 Codex 内置图像生成制作，色键去背后保存为透明 PNG | Pixi 场内 12 名全身俯视角角色精灵 |
+
+场内精灵生成约束：严格保持头像图集从左到右、从上到下的 4×3 身份顺序；每格一个完整人物；统一俯视三分之四视角、尺寸和科幻废墟生存风格；禁止文字、边框、阴影和身份外元素。生成源使用纯绿色背景，仅透明去背后的 PNG 进入运行时。
+
 ## 已复核但未直接接入
 
 | 参考仓库资源 | 当前处理 | 原因 |
@@ -22,7 +31,7 @@
 | `美术/主面板/全局日志弹窗.png`、`任务清单弹窗.png`、`面板.png` | 仅作版式参考 | 完整静态截图，不是可伸缩组件资产 |
 | `美术/主面板/元素/MissionCard*.png`、`TaskCard*.png`、`Container*.png` | 待九宫格切片接入 | 可以替换任务和日志容器，但需要先定义安全拉伸区，避免文字与烘焙边框重合 |
 | `美术/主面板/tag:button/Tag*`、`Tab*`、`StatesGrid*` | 待控件状态统一后接入 | 当前已有动态中文标签，直接套用固定尺寸图片会再次产生文字重叠 |
-| 12 名角色场内精灵 | 参考仓库不存在 | 当前直播战场改用本项目 12 人原创头像棋子；后续需要另行生产统一方向与移动帧 |
+| 12 名角色场内精灵 | 参考仓库不存在 | 已由本项目生产原创俯视角全身图集；参考仓库只用于确认不存在可替换资源 |
 
 2026-09-01 校验确认：参考仓库 `地图/pic/纯地图.png` 与本项目 `public/assets/battle/arena-live-map.png` 的 SHA-1 均为 `256fe3ecc030609d854e8fd01ebd710d44b67823`，因此仓库中没有一张尚未接入的“更高清实时地图”。
 
