@@ -146,6 +146,50 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 14, lastReason: '结盟' }));
   });
 
+  it('records a validated model-selected investigation approach', () => {
+    const player = createPlayer('p:3', 'C03', 'A03');
+    const game = createGame([player]);
+    claimDecisionDriver(game, 9_000, 'driver-story-001');
+
+    const result = submitAIDecision(game, 10_000, {
+      driverId: 'driver-story-001', playerId: player.id, action: 'investigate', storyApproach: 'bold', reason: '冒险抢在断电前取得档案',
+    });
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(player.battle.pendingStoryApproach).toBe('bold');
+    expect(player.battle.areaSearches).toBe(1);
+    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'investigate', storyApproach: 'bold', accepted: true });
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('强行突破'))).toBe(true);
+  });
+
+  it('rejects an investigation approach outside the server allowlist', () => {
+    const player = createPlayer('p:3', 'C03', 'A03');
+    const game = createGame([player]);
+    claimDecisionDriver(game, 9_000, 'driver-story-002');
+
+    const result = submitAIDecision(game, 10_000, {
+      driverId: 'driver-story-002', playerId: player.id, action: 'investigate', storyApproach: 'teleport', reason: '尝试不存在的路线',
+    });
+
+    expect(result).toMatchObject({ accepted: false, reason: '调查路线不在允许列表' });
+    expect(player.battle.pendingStoryApproach).toBeUndefined();
+    expect(game.world.battle.decisionCount).toBe(0);
+  });
+
+  it('consumes the selected approach in the next seeded tabletop check', () => {
+    const player = createPlayer('p:3', 'C03', 'A03');
+    player.battle.pendingStoryApproach = 'bold';
+    const game = createGame([player]);
+    game.world.battle = defaultBattleState(1_000, 20260807);
+
+    const beat = resolveAreaStoryCheck(game, 2_000, player, 'A03_01', 'A03');
+
+    expect(beat).toMatchObject({ approach: 'bold', bonus: 0, difficulty: 13 });
+    expect(beat.choice).toContain('强行突破');
+    expect(beat.check).toContain('强行突破');
+    expect(player.battle.pendingStoryApproach).toBeUndefined();
+  });
+
   it('reveals the selected character hidden relationship and leaves an audit event', () => {
     const game = createGame([createPlayer('p:4', 'C03', 'A05')]);
 
@@ -240,7 +284,8 @@ describe('battle royale host intervention rules', () => {
     expect(firstReplay.results.map((entry) => entry.id)).toEqual([1, 2]);
     expect(first.player.battle.hp).toBe(62);
     expect(first.player.battle.medkits).toBe(0);
-    expect(first.game.world.battle.truthClues).toEqual(['调查-A12']);
+    expect(first.game.world.battle.truthClues).toEqual([]);
+    expect(first.player.battle.pendingStoryApproach).toBe('cautious');
     expect(second.player.battle).toEqual(first.player.battle);
     expect(second.game.world.battle.rngState).toBe(first.game.world.battle.rngState);
     expect(second.game.world.battle.feed).toEqual(first.game.world.battle.feed);

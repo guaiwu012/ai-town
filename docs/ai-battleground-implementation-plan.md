@@ -30,6 +30,7 @@ flowchart LR
 | AI 调度 | `src/components/DecisionDriver.tsx`、`convex/aiTown/cloudDecision.ts` | 租约持有者每 12 秒调度存活角色；云端 Action 使用环境变量调用模型，全局最多 240 次，超时/错误/无效输出立即由规则 AI 接管。 |
 | 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、邻接、资源、禁区和视觉标签共享同一数据源。 |
 | 内容规则 | `AREA_SPECIAL_EVENTS`、`GLOBAL_SPECIAL_EVENTS`、`relationshipEdges`、`ITEM_DEFINITIONS` | 24 条区域剧情、3 条全局事件、关系戏剧、物品稀有度/价值、资源刷新和区域 buff 进入循环。 |
+| 剧情决策 | `STORY_APPROACHES`、`cloudDecision.ts`、`resolveAreaStoryCheck()` | DeepSeek 调查路线受服务端白名单约束，改变 D20 属性/难度及热度或关系后果，并进入审计与回放。 |
 | 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |
 | 稳定回放 | `battleState.seed/rngState/actionLog/replayCheckpoints`、`src/lib/battleReplay.ts` | 检查点后按 `actionId` 应用模型/规则/周期/干预状态补丁；回放绝不请求模型或读取密钥。 |
 

@@ -14,6 +14,8 @@ import {
   GLOBAL_SPECIAL_EVENTS,
   AREA_SPECIAL_EVENTS,
   AREA_STORY_NARRATIVES,
+  STORY_APPROACHES,
+  storyApproachFor,
   CHARACTER_STORIES,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
@@ -64,6 +66,7 @@ export const battleStats = v.object({
   locomotionX: v.optional(v.number()),
   locomotionY: v.optional(v.number()),
   locomotionRecoveries: v.optional(v.number()),
+  pendingStoryApproach: v.optional(v.string()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -87,7 +90,7 @@ export type BattleDialogue = Infer<typeof battleDialogue>;
 
 export const battleStoryBeat = v.object({
   id: v.number(), eventId: v.string(), ts: v.number(), areaId: v.string(), title: v.string(), actorId: playerId,
-  scene: v.string(), choice: v.string(), check: v.string(), roll: v.number(), bonus: v.number(), difficulty: v.number(), success: v.boolean(), outcome: v.string(),
+  scene: v.string(), choice: v.string(), approach: v.optional(v.string()), check: v.string(), roll: v.number(), bonus: v.number(), difficulty: v.number(), success: v.boolean(), outcome: v.string(),
 });
 export type BattleStoryBeat = Infer<typeof battleStoryBeat>;
 
@@ -224,7 +227,7 @@ export const battleState = v.object({
   rngState: v.optional(v.number()),
   ruleVersion: v.optional(v.string()),
   actionLog: v.optional(v.array(v.object({
-    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()), patch: v.optional(battleReplayPatch),
+    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), storyApproach: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()), patch: v.optional(battleReplayPatch),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
     ts: v.number(), eventId: v.number(), actionId: v.optional(v.number()), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(), frame: v.optional(battleReplayFrame),
@@ -611,7 +614,7 @@ export function heartbeatDecisionDriver(game: Game, now: number, driverId: strin
 }
 
 export function submitAIDecision(game: Game, now: number, args: {
-  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; reason?: string; speech?: string;
+  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyApproach?: string; reason?: string; speech?: string;
 }) {
   ensureBattleState(game, now);
   const battle = game.world.battle!;
@@ -636,7 +639,7 @@ export function submitAIDecision(game: Game, now: number, args: {
   const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
   const safeSpeech = sanitizeDialogue(args.speech);
   const replayBaseline = captureReplayPatchBaseline(game);
-  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech);
+  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech, args.storyApproach);
   player.battle.lastDecisionAt = now;
   player.battle.lastDecisionAction = args.action;
   player.battle.lastDecisionReason = safeReason || '未提供理由';
@@ -645,9 +648,10 @@ export function submitAIDecision(game: Game, now: number, args: {
   player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
   if (result.accepted) {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
-    pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}：${safeReason || '基于当前局势'}。`, player, target);
+    const approach = args.action === 'investigate' ? `（${storyApproachFor(args.storyApproach).label}）` : '';
+    pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}${approach}：${safeReason || '基于当前局势'}。`, player, target);
   }
-  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline);
+  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline, args.storyApproach);
   return result;
 }
 
@@ -857,6 +861,14 @@ function triggerAreaSpecialEvent(game: Game, now: number) {
     pushEvent(game, now, 'story', `【剧情道具】${playerName(game, itemOwner)} 消耗${requiredItem}，开启「${event.title}」。`, itemOwner);
   }
   const storyCheck = resolveAreaStoryCheck(game, now, randomPlayer, event.id, event.areaId);
+  if (storyCheck.approach === 'bold') {
+    if (storyCheck.success) awardPopularity(game, now, 10, [randomPlayer]);
+    else randomPlayer.battle!.stress = (randomPlayer.battle!.stress ?? 0) + 6;
+  }
+  if (storyCheck.approach === 'social' && storyCheck.success) {
+    const partner = affected.find((player) => player.id !== randomPlayer.id);
+    if (partner) updateRelationship(game, randomPlayer, partner, 6, '剧情协作');
+  }
   if (['turret', 'collapse', 'explosion', 'beast'].includes(event.effect)) {
     const baseDamage = event.effect === 'turret' ? 25 : event.effect === 'beast' ? 24 : 15;
     randomPlayer.battle!.hp = Math.max(1, randomPlayer.battle!.hp - (storyCheck.success ? Math.ceil(baseDamage * 0.35) : baseDamage));
@@ -926,18 +938,22 @@ export function resolveAreaStoryCheck(game: Game, now: number, player: Player, e
   const battle = game.world.battle!;
   const narrative = AREA_STORY_NARRATIVES[eventId];
   const profile = profileForCharacterId(player.battle?.characterId ?? 'C01');
-  const ability = narrative?.ability ?? 'mind';
+  const pendingApproach = player.battle?.pendingStoryApproach;
+  const approach = pendingApproach ? storyApproachFor(pendingApproach) : undefined;
+  player.battle!.pendingStoryApproach = undefined;
+  const ability = !approach || approach.ability === 'event' ? narrative?.ability ?? 'mind' : approach.ability;
   const bonus = Math.max(0, profile[ability] - 2);
   const roll = 1 + Math.floor(battleRandom(game) * 20);
   const danger = BATTLE_CONFIG.areas.find((area) => area.id === areaId)?.danger ?? 2;
-  const difficulty = 9 + danger;
+  const difficulty = Math.max(7, 9 + danger + (approach?.difficultyModifier ?? 0));
   const success = roll + bonus >= difficulty;
   const beat: BattleStoryBeat = {
     id: battle.nextStoryBeatId ?? 1, eventId, ts: now, areaId,
     title: AREA_SPECIAL_EVENTS.find((event) => event.id === eventId)?.title ?? '区域事件', actorId: player.id,
     scene: narrative?.scene ?? '区域中的异常装置突然启动。',
-    choice: narrative?.choice ?? '观察环境并选择最稳妥的应对方式。',
-    check: narrative?.check ?? '临场判断', roll, bonus, difficulty, success,
+    choice: approach ? `${approach.label}：${narrative?.choice ?? '观察环境并选择应对方式。'}` : narrative?.choice ?? '观察环境并选择应对方式。',
+    ...(approach ? { approach: approach.id } : {}),
+    check: `${narrative?.check ?? '临场判断'}${approach ? ` · ${approach.label}` : ''}`, roll, bonus, difficulty, success,
     outcome: success ? narrative?.success ?? '角色控制住了局面。' : narrative?.failure ?? '局面朝不利方向发展。',
   };
   battle.nextStoryBeatId = beat.id + 1;
@@ -1152,12 +1168,12 @@ function interventionReaction(operationId: string) {
 export function replayRecordedAction(
   game: Game,
   now: number,
-  entry: { playerId?: string; action: string; targetPlayerId?: string; targetAreaId?: string },
+  entry: { playerId?: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyApproach?: string },
 ) {
   const player = entry.playerId ? game.world.players.get(entry.playerId as any) : undefined;
   if (!player?.battle || player.battle.eliminated) return { accepted: false, reason: '回放角色不可用' };
   const target = entry.targetPlayerId ? game.world.players.get(entry.targetPlayerId as any) : undefined;
-  return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动');
+  return executeBattleAction(game, now, player, entry.action, target, entry.targetAreaId, '回放已验证行动', undefined, entry.storyApproach);
 }
 
 /**
@@ -1173,6 +1189,7 @@ export function replayRecordedActions(
     playerId?: string;
     targetPlayerId?: string;
     targetAreaId?: string;
+    storyApproach?: string;
     action: string;
     source?: string;
     accepted?: boolean;
@@ -1206,6 +1223,7 @@ function executeBattleAction(
   targetAreaId?: string,
   _reason?: string,
   speech?: string,
+  storyApproach?: string,
 ) {
   const stats = player.battle!;
   if (action === 'move') {
@@ -1280,8 +1298,11 @@ function executeBattleAction(
     return { accepted: true };
   }
   if (action === 'investigate') {
-    collectTruthClue(game, now, `调查-${stats.areaId}`, player);
-    pushEvent(game, now, 'investigate', `【调查】${playerName(game, player)} 正在调查${areaName(stats.areaId ?? 'A01')}。`, player);
+    if (storyApproach && !STORY_APPROACHES.some((approach) => approach.id === storyApproach)) return { accepted: false, reason: '调查路线不在允许列表' };
+    const approach = storyApproachFor(storyApproach);
+    stats.pendingStoryApproach = approach.id;
+    stats.areaSearches = (stats.areaSearches ?? 0) + 1;
+    pushEvent(game, now, 'investigate', `【调查】${playerName(game, player)} 选择${approach.label}，正在调查${areaName(stats.areaId ?? 'A01')}。`, player);
     return { accepted: true };
   }
   return { accepted: false, reason: '未实现的动作' };
@@ -2000,6 +2021,7 @@ function recordReplayAction(
   targetPlayerId?: string,
   targetAreaId?: string,
   replayBaseline?: ReplayPatchBaseline,
+  storyApproach?: string,
 ) {
   const battle = game.world.battle!;
   const patch = accepted && replayBaseline ? replayPatchSince(game, replayBaseline) : undefined;
@@ -2026,6 +2048,7 @@ function recordReplayAction(
   if (player) entry.playerId = player.id;
   if (targetPlayerId) entry.targetPlayerId = targetPlayerId as any;
   if (targetAreaId) entry.targetAreaId = targetAreaId;
+  if (storyApproach) entry.storyApproach = storyApproach;
   if (reason) entry.reason = reason.slice(0, 140);
   if (patch) entry.patch = patch;
   log.push(entry);

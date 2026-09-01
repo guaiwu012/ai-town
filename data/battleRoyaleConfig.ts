@@ -244,6 +244,17 @@ export const AREA_SPECIAL_EVENTS = [
   { id: 'S01_01', areaId: 'S01', title: '制造者日志', effect: 'truth', maxTriggers: 1 },
 ] as const;
 
+export const STORY_APPROACHES = [
+  { id: 'cautious', label: '谨慎勘察', ability: 'event', difficultyModifier: -1, description: '沿用事件原本的能力检定，先确认退路与证据；成功率更高，直播收益较低。' },
+  { id: 'bold', label: '强行突破', ability: 'strength', difficultyModifier: 2, description: '抢在局势恶化前正面推进；难度更高，成功会获得额外热度。' },
+  { id: 'social', label: '交涉取证', ability: 'social', difficultyModifier: 0, description: '借助同伴、广播或谈判换取信息；成功会改善同区关系。' },
+] as const;
+export type StoryApproachId = (typeof STORY_APPROACHES)[number]['id'];
+
+export function storyApproachFor(id?: string) {
+  return STORY_APPROACHES.find((approach) => approach.id === id) ?? STORY_APPROACHES[0];
+}
+
 export const AREA_STORY_NARRATIVES: Record<string, {
   scene: string; choice: string; check: string; ability: 'strength' | 'mind' | 'psyche' | 'social'; success: string; failure: string;
 }> = {
