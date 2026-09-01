@@ -26,6 +26,7 @@
 - `public/assets/battle/arena-live-map.png`：使用参考仓库纯地图的 13 区俯视战场视觉层，与战略总览保持一致。
 - `public/assets/battle/contestant-portraits.png`：12 名原创参赛者识别图集，用于直播焦点、角色档案、对话框和战略总览。
 - `public/assets/battle/contestant-sprites-v1.png`：12 名原创参赛者的 4×3 透明俯视角全身图集，保持头像身份顺序；Pixi 按角色 ID 切片，并渲染移动起伏、左右朝向、选中环、生命条和淘汰态。
+- `public/assets/battle/area-landmarks-v1.png`：A01-A12、S01 的 4×4 透明地标图集，依次对应堡垒、演播塔、书库、格斗笼、学园、医院、训练场、市场、武器库、密林、法庭、观测站与真相之间。
 - `public/assets/reference/ui/`：接入参考仓库的事件图标、生命电池和按钮状态资源；来源及授权注意事项见 [美术资产来源与接入记录](./asset-provenance.md)。
 - 所有区域 ID、锚点、邻接、出生点、区域多边形、导航节点和地标碰撞都由 `data/battleRoyaleConfig.ts` 与 `data/battleArena.ts` 统一定义；跨区落点及 AI 搜索游走从同一份可走导航节点取点。
 - Pixi 区域锚点是可点击直播地标：点击后锁定区域镜头并显示危险、开放/剧情封锁、存活人数、资源余量、机制与 Buff；总览的区域跟拍按钮调用同一入口。

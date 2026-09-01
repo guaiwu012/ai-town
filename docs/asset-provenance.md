@@ -20,6 +20,7 @@
 | --- | --- | --- |
 | `public/assets/battle/contestant-portraits.png` | 本项目角色设定 | HUD、角色档案、对话框和总览身份图 |
 | `public/assets/battle/contestant-sprites-v1.png` | 以原创头像图集作为身份与服装参考，通过 Codex 内置图像生成制作，色键去背后保存为透明 PNG | Pixi 场内 12 名全身俯视角角色精灵 |
+| `public/assets/battle/area-landmarks-v1.png` | 依据 13 区配置名称与机制，通过 Codex 内置图像生成制作，色键去背后保存为透明 PNG | Pixi 区域锚点的独立地标识别图标 |
 
 场内精灵生成约束：严格保持头像图集从左到右、从上到下的 4×3 身份顺序；每格一个完整人物；统一俯视三分之四视角、尺寸和科幻废墟生存风格；禁止文字、边框、阴影和身份外元素。生成源使用纯绿色背景，仅透明去背后的 PNG 进入运行时。
 
