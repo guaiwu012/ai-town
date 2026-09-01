@@ -1,6 +1,6 @@
 import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
-import { isBattleArenaWalkable } from '../../data/battleArena';
+import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
@@ -8,7 +8,7 @@ type TestPlayer = ReturnType<typeof createPlayer>;
 function createPlayer(id: string, characterId: string, areaId: string): any {
   return {
     id,
-    position: { x: 10, y: 10 },
+    position: battleAreaSpawnPoints(areaId, 80, 60)[0],
     facing: { dx: 1, dy: 0 },
     speed: 0,
     battle: {
@@ -114,7 +114,7 @@ describe('battle royale host intervention rules', () => {
   it('uses the logical battle layer instead of legacy AI Town object tiles', () => {
     const player = createPlayer('p:1', 'C01', 'A01');
     const game = createGame([player]);
-    game.worldMap.objectTiles[0][10][10] = 1;
+    game.worldMap.objectTiles[0][Math.floor(player.position.x)][Math.floor(player.position.y)] = 1;
 
     expect(blocked(game, 2_000, player.position, player.id)).toBeNull();
     expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
@@ -125,7 +125,9 @@ describe('battle royale host intervention rules', () => {
     const player = createPlayer('p:1', 'C01', 'A01');
     const eliminated = createPlayer('p:2', 'C02', 'A01');
     eliminated.battle.eliminated = true;
-    eliminated.position = { x: 11, y: 10 };
+    eliminated.position = battleAreaNavigationPoints('A01', 80, 60).find((point) => (
+      Math.hypot(point.x - player.position.x, point.y - player.position.y) > 2
+    ))!;
     const game = createGame([player, eliminated]);
 
     expect(blocked(game, 2_000, eliminated.position, player.id)).toBeNull();

@@ -7,6 +7,7 @@ import { Game } from './game';
 import { GameId } from './ids';
 import { Player } from './player';
 import { WorldMap } from './worldMap';
+import { isBattleArenaPositionWalkable } from '../../data/battleArena';
 
 type PathCandidate = {
   position: Point;
@@ -178,6 +179,9 @@ function blockedWithBattlePositions(position: Point, otherPositions: Point[], ma
   }
   if (position.x < 0 || position.y < 0 || position.x >= map.width || position.y >= map.height) {
     return 'out of bounds';
+  }
+  if (!isBattleArenaPositionWalkable(position, map.width, map.height)) {
+    return 'world blocked';
   }
   for (const otherPosition of otherPositions) {
     if (distance(otherPosition, position) < COLLISION_THRESHOLD) {

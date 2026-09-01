@@ -1,5 +1,5 @@
 import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, itemDefinition, validateBattleConfig } from './battleRoyaleConfig';
-import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
+import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
   test('has a valid 13-area graph and an anchor for every area', () => {
@@ -20,12 +20,31 @@ describe('battle royale P0/P1 configuration', () => {
       navigationPoints.forEach((point) => expect(isBattleArenaWalkable(zone.id, point, 80, 60)).toBe(true));
       expect(isPointInBattleArea(zone.id, { x: zone.anchor.x * 80, y: zone.anchor.y * 60 }, 80, 60)).toBe(true);
       expect(isBattleArenaWalkable(zone.id, { x: zone.anchor.x * 80, y: zone.anchor.y * 60 }, 80, 60)).toBe(true);
-      expect(zone.obstacles).toHaveLength(1);
-      const obstacle = zone.obstacles[0];
-      expect(isBattleArenaWalkable(zone.id, {
-        x: (obstacle.x + obstacle.width / 2) * 80,
-        y: (obstacle.y + obstacle.height / 2) * 60,
-      }, 80, 60)).toBe(false);
+      expect(zone.obstacles).toHaveLength(2);
+      for (const obstacle of zone.obstacles) {
+        expect(isBattleArenaWalkable(zone.id, {
+          x: (obstacle.x + obstacle.width / 2) * 80,
+          y: (obstacle.y + obstacle.height / 2) * 60,
+        }, 80, 60)).toBe(false);
+      }
+    }
+  });
+
+  test('builds a deterministic navigation raster with connected adjacency corridors', () => {
+    const first = buildBattleArenaGrid(80, 60);
+    const second = buildBattleArenaGrid(80, 60);
+    expect(second).toBe(first);
+    expect(first.cells).toHaveLength(80);
+    expect(first.cells[0]).toHaveLength(60);
+    for (const zone of BATTLE_ARENA_ZONES) {
+      for (const spawn of battleAreaSpawnPoints(zone.id, 80, 60)) {
+        expect(isBattleArenaPositionWalkable(spawn, 80, 60)).toBe(true);
+      }
+    }
+    for (const [fromId, toId] of BATTLE_CONFIG.adjacency) {
+      const start = battleAreaSpawnPoints(fromId, 80, 60)[0];
+      const target = battleAreaSpawnPoints(toId, 80, 60)[0];
+      expect(gridPathExists(first, start, target)).toBe(true);
     }
   });
 
@@ -75,3 +94,22 @@ describe('battle royale P0/P1 configuration', () => {
     expect(Object.keys(ITEM_DEFINITIONS)).toEqual(expect.arrayContaining([...allAreaItems]));
   });
 });
+
+function gridPathExists(grid: ReturnType<typeof buildBattleArenaGrid>, start: { x: number; y: number }, target: { x: number; y: number }) {
+  const queue = [{ x: Math.floor(start.x), y: Math.floor(start.y) }];
+  const targetKey = `${Math.floor(target.x)},${Math.floor(target.y)}`;
+  const visited = new Set(queue.map((point) => `${point.x},${point.y}`));
+  while (queue.length) {
+    const current = queue.shift()!;
+    if (`${current.x},${current.y}` === targetKey) return true;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const x = current.x + dx;
+      const y = current.y + dy;
+      const key = `${x},${y}`;
+      if (x < 0 || y < 0 || x >= grid.width || y >= grid.height || visited.has(key) || !grid.cells[x][y].walkable) continue;
+      visited.add(key);
+      queue.push({ x, y });
+    }
+  }
+  return false;
+}

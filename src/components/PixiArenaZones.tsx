@@ -54,6 +54,23 @@ export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, o
           graphics.drawPolygon(points.flatMap((point) => [x + (point.x - x) * (1 - ring * 0.035), y + (point.y - y) * (1 - ring * 0.035)]));
         }
       }
+      if (focusedAreaId === zone.id) {
+        for (const obstacle of zone.obstacles) {
+          const obstacleX = obstacle.x * map.width * map.tileDim;
+          const obstacleY = obstacle.y * map.height * map.tileDim;
+          const obstacleWidth = obstacle.width * map.width * map.tileDim;
+          const obstacleHeight = obstacle.height * map.height * map.tileDim;
+          graphics.lineStyle(1.5, 0xffd166, 0.8);
+          graphics.beginFill(0x071622, 0.66);
+          graphics.drawRoundedRect(obstacleX, obstacleY, obstacleWidth, obstacleHeight, 3);
+          graphics.endFill();
+          graphics.lineStyle(1, 0xffd166, 0.32);
+          graphics.moveTo(obstacleX, obstacleY);
+          graphics.lineTo(obstacleX + obstacleWidth, obstacleY + obstacleHeight);
+          graphics.moveTo(obstacleX + obstacleWidth, obstacleY);
+          graphics.lineTo(obstacleX, obstacleY + obstacleHeight);
+        }
+      }
     }
   };
   return <Container>

@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- | --- |
 | 比赛规则 | `convex/aiTown/battleRoyale.ts` | 统一执行模型动作和规则 AI 回退；校验角色、冷却、距离、物品、区域邻接、禁区和剧情前置。 |
 | AI 调度 | `src/components/DecisionDriver.tsx`、`convex/aiTown/cloudDecision.ts` | 租约持有者每 12 秒调度存活角色；云端 Action 使用环境变量调用模型，全局最多 240 次，超时/错误/无效输出立即由规则 AI 接管。 |
-| 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、邻接、资源、禁区和视觉标签共享同一数据源。 |
+| 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、17 条邻接走廊、80×60 导航栅格、26 个地标障碍、资源、禁区和视觉标签共享同一数据源。 |
 | 内容规则 | `AREA_SPECIAL_EVENTS`、`GLOBAL_SPECIAL_EVENTS`、`relationshipEdges`、`ITEM_DEFINITIONS` | 24 条区域剧情、3 条全局事件、关系戏剧、物品稀有度/价值、资源刷新和区域 buff 进入循环。 |
 | 剧情决策 | `STORY_APPROACHES`、`cloudDecision.ts`、`resolveAreaStoryCheck()` | DeepSeek 调查路线受服务端白名单约束，改变 D20 属性/难度及热度或关系后果，并进入审计与回放。 |
 | 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |
@@ -62,7 +62,7 @@ flowchart LR
 ### 尚未完成，不能误报为成品
 
 1. 为 24 条剧情逐条补齐原配表的全部道具消耗、分支文案和后果。
-2. 建立 Pixi 可碰撞网格、障碍物与完整导航寻路；当前权威的是逻辑区域邻接，不是像素碰撞。
-3. 为 13 区补齐场景内大尺寸可碰撞地标物件；独立地标图标、可交互锚点、区域直播卡和 12 名角色场内全身精灵已接入。
+2. 将已运行的逐格导航层和 26 个矩形地标障碍升级为贴合 13 区美术的精细碰撞轮廓与场内交互点。
+3. 为 13 区补齐场景内大尺寸地标物件；独立地标图标、可交互锚点、区域直播卡和 12 名角色场内全身精灵已接入。
 
 具体配表映射和未消费字段见 [参考配表覆盖矩阵](./reference-table-coverage.md)，交付资产与发布检查见 [P2 交付说明](./p2-delivery.md)。
