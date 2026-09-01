@@ -19,6 +19,7 @@ import { PixiArenaZones } from './PixiArenaZones.tsx';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena.ts';
 import { GameId } from '../../convex/aiTown/ids.ts';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale.ts';
+import PixiBattleSpeech from './PixiBattleSpeech.tsx';
 
 export const PixiGame = (props: {
   worldId: Id<'worlds'>;
@@ -162,6 +163,7 @@ export const PixiGame = (props: {
           replayFrame={props.replayFrame?.players.find((frame) => frame.id === p.id)}
         />
       ))}
+      <PixiBattleSpeech game={props.game} enabled={!props.replayMode} />
       <PixiBattleEffects game={props.game} />
     </PixiViewport>
   );

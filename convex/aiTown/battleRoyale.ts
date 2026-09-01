@@ -58,6 +58,7 @@ export const battleStats = v.object({
   lastDecisionStatus: v.optional(v.string()),
   lastDecisionFallback: v.optional(v.string()),
   lastZoneDamageAt: v.optional(v.number()),
+  nextLocomotionAt: v.optional(v.number()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -73,6 +74,11 @@ export const battleEvent = v.object({
   text: v.string(),
 });
 export type BattleEvent = Infer<typeof battleEvent>;
+
+export const battleDialogue = v.object({
+  id: v.number(), ts: v.number(), speakerId: playerId, listenerId: v.optional(playerId), kind: v.string(), text: v.string(),
+});
+export type BattleDialogue = Infer<typeof battleDialogue>;
 
 const battleReplayPlayerFrame = v.object({
   id: playerId,
@@ -120,7 +126,9 @@ export const battleState = v.object({
   nextEventId: v.number(),
   // Replay actions have their own sequence: several actions may occur between feed events.
   nextActionId: v.optional(v.number()),
+  nextDialogueId: v.optional(v.number()),
   feed: v.array(battleEvent),
+  dialogueLog: v.optional(v.array(battleDialogue)),
   phase: v.optional(v.string()),
   day: v.optional(v.number()),
   timeOfDay: v.optional(v.union(v.literal('day'), v.literal('night'))),
@@ -222,6 +230,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     areaEnteredAt: 0,
     areaSearches: 0,
     lastZoneDamageAt: 0,
+    nextLocomotionAt: 0,
   };
 }
 
@@ -231,6 +240,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     lastTick: 0,
     nextEventId: 1,
     nextActionId: 1,
+    nextDialogueId: 1,
       feed: [
       {
         id: 0,
@@ -239,6 +249,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
         text: '【系统】大逃杀大厅已开启，12 名 AI 正在进入战场。',
       },
     ],
+    dialogueLog: [],
     phase: 'early',
     day: 1,
     timeOfDay: 'day',
@@ -278,7 +289,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     lastGlobalEventCheck: 0, globalEffects: [],
     seed,
     rngState: seed || 1,
-    ruleVersion: 'p2.0',
+    ruleVersion: 'p2.1',
     actionLog: [],
     replayCheckpoints: [],
     lastReplayCheckpointAt: now,
@@ -308,6 +319,7 @@ export function ensureBattleState(game: Game, now: number) {
     player.battle.inventory ??= [];
     player.battle.interventionUntil ??= 0;
     player.battle.decisionDueAt ??= now + index * 1000;
+    player.battle.nextLocomotionAt ??= now + index * 280;
     player.battle.areaEnteredAt ??= now;
     player.battle.areaSearches ??= 0;
     if (!player.battle.lastZoneDamageAt) player.battle.lastZoneDamageAt = now;
@@ -364,6 +376,8 @@ export function ensureBattleState(game: Game, now: number) {
   battle.rngState ??= battle.seed || 1;
   battle.ruleVersion ??= 'p2.0';
   battle.nextActionId ??= 1;
+  battle.nextDialogueId ??= 1;
+  battle.dialogueLog ??= [];
   battle.actionLog ??= [];
   battle.replayCheckpoints ??= [];
   battle.lastReplayCheckpointAt ??= now;
@@ -413,6 +427,7 @@ export function resetBattleMatch(game: Game, now: number) {
 
 export function tickBattleRoyale(game: Game, now: number) {
   ensureBattleState(game, now);
+  for (const player of alivePlayers(game)) tickBattleLocomotion(game, now, player);
   tickMatchRules(game, now);
   const battle = game.world.battle!;
   if (now < battle.lastTick + BATTLE_TICK_MS) {
@@ -443,8 +458,35 @@ export function tickBattleRoyale(game: Game, now: number) {
     if ((stats.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) {
       continue;
     }
-    runAgentBattleAction(game, now, player, battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined);
+    const fallbackReason = (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)
+      ? '本局模型额度已用尽，规则 AI 接管'
+      : battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined;
+    runAgentBattleAction(game, now, player, fallbackReason);
   }
+}
+
+export function tickBattleLocomotion(game: Game, now: number, player: Player) {
+  const stats = player.battle;
+  if (!stats || stats.eliminated || player.pathfinding || now < (stats.nextLocomotionAt ?? 0)) return false;
+  const activeActivity = player.activity && player.activity.until > now ? player.activity : undefined;
+  if (activeActivity && ['TALK', 'ALLY'].includes(activeActivity.emoji ?? '')) {
+    stats.nextLocomotionAt = activeActivity.until + 250;
+    return false;
+  }
+  stats.nextLocomotionAt = now + 900 + Math.floor(battleRandom(game) * 900);
+  const areaId = stats.areaId ?? 'A01';
+  const points = battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
+  const start = Math.floor(battleRandom(game) * Math.max(1, points.length));
+  for (let offset = 0; offset < points.length; offset += 1) {
+    const destination = points[(start + offset) % points.length];
+    if (distance(player.position, destination) < 2 || blocked(game, now, destination, player.id)) continue;
+    movePlayer(game, now, player, destination);
+    if (!activeActivity || activeActivity.emoji === 'MOVE') {
+      player.activity = { description: `${playerName(game, player)} 正在巡查${areaName(areaId)}`, emoji: 'MOVE', until: now + 1800 };
+    }
+    return true;
+  }
+  return false;
 }
 
 export function claimDecisionDriver(game: Game, now: number, driverId: string) {
@@ -469,7 +511,7 @@ export function heartbeatDecisionDriver(game: Game, now: number, driverId: strin
 }
 
 export function submitAIDecision(game: Game, now: number, args: {
-  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; reason?: string;
+  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; reason?: string; speech?: string;
 }) {
   ensureBattleState(game, now);
   const battle = game.world.battle!;
@@ -492,7 +534,8 @@ export function submitAIDecision(game: Game, now: number, args: {
   if ((player.battle.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) return fail('动作冷却中');
   const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
   const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
-  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason);
+  const safeSpeech = sanitizeDialogue(args.speech);
+  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech);
   player.battle.lastDecisionAt = now;
   player.battle.lastDecisionAction = args.action;
   player.battle.lastDecisionReason = safeReason || '未提供理由';
@@ -1035,6 +1078,7 @@ function executeBattleAction(
   target?: Player,
   targetAreaId?: string,
   _reason?: string,
+  speech?: string,
 ) {
   const stats = player.battle!;
   if (action === 'move') {
@@ -1067,7 +1111,7 @@ function executeBattleAction(
   }
   if (action === 'ally') {
     if (!target || target.battle?.eliminated || target.battle?.areaId !== stats.areaId) return { accepted: false, reason: '盟友必须在同一区域' };
-    return allyPlayers(game, now, player, target) ? { accepted: true } : { accepted: false, reason: '无法结盟' };
+    return allyPlayers(game, now, player, target, speech) ? { accepted: true } : { accepted: false, reason: '无法结盟' };
   }
   if (action === 'trade') {
     if (!target?.battle || target.battle.eliminated || target.battle.areaId !== stats.areaId) return { accepted: false, reason: '交易对象必须在同一区域' };
@@ -1081,6 +1125,8 @@ function executeBattleAction(
       target.battle.coins = Math.max(0, target.battle.coins - balance);
       stats.coins += balance;
       updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
+      recordBattleDialogue(game, now, player, target, 'trade', speech || `我用${offered}${received ? `换你的${received}` : '换一些物资'}，成交吗？`);
+      recordBattleDialogue(game, now + 1, target, player, 'trade', received ? '成交，各取所需。' : '成交，我会记住这次帮助。');
       pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 以${offered}${received ? `换得${received}` : '完成出售'}。`, player, target);
       return { accepted: true };
     }
@@ -1088,6 +1134,8 @@ function executeBattleAction(
     if (transfer < 1) return { accepted: false, reason: '物资不足以交易' };
     stats.coins -= transfer; target.battle.coins += transfer;
     updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
+    recordBattleDialogue(game, now, player, target, 'trade', speech || `我分你 ${transfer} 点物资，之后互相照应。`);
+    recordBattleDialogue(game, now + 1, target, player, 'trade', '收到，这份人情我会还。');
     pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 与 ${playerName(game, target)} 交换物资。`, player, target);
     return { accepted: true };
   }
@@ -1410,7 +1458,8 @@ function tryAlliance(game: Game, now: number, player: Player) {
     (candidate) =>
       candidate.id !== player.id &&
       candidate.battle?.alliance !== player.id &&
-      !candidate.battle?.eliminated,
+      !candidate.battle?.eliminated &&
+      candidate.battle?.areaId === player.battle?.areaId,
   );
   if (!partner || !player.battle || !partner.battle) {
     return false;
@@ -1418,20 +1467,14 @@ function tryAlliance(game: Game, now: number, player: Player) {
   return allyPlayers(game, now, player, partner);
 }
 
-function allyPlayers(game: Game, now: number, player: Player, partner: Player) {
+function allyPlayers(game: Game, now: number, player: Player, partner: Player, proposal?: string) {
   if (!player.battle || !partner.battle || player.id === partner.id) return false;
   player.battle.alliance = partner.id;
   partner.battle.alliance = player.id;
-  player.activity = {
-    description: `${playerName(game, player)} 正在协商结盟`,
-    emoji: 'TALK',
-    until: now + 2400,
-  };
-  partner.activity = {
-    description: `${playerName(game, partner)} 接受结盟`,
-    emoji: 'ALLY',
-    until: now + 2400,
-  };
+  delete player.pathfinding; delete partner.pathfinding;
+  player.speed = 0; partner.speed = 0;
+  recordBattleDialogue(game, now, player, partner, 'alliance', proposal || defaultAllianceProposal(game, player, partner));
+  recordBattleDialogue(game, now + 1, partner, player, 'alliance', allianceReply(game, partner, player));
   const transfer = Math.min(15, Math.floor(player.battle.coins / 3));
   if (transfer > 0) {
     player.battle.coins -= transfer;
@@ -1448,6 +1491,37 @@ function allyPlayers(game: Game, now: number, player: Player, partner: Player) {
   updateRelationship(game, player, partner, 14, '结盟');
   awardPopularity(game, now, 20, [player, partner]);
   return true;
+}
+
+function sanitizeDialogue(text?: string) {
+  return String(text ?? '').replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 56);
+}
+
+function defaultAllianceProposal(game: Game, speaker: Player, listener: Player) {
+  if ((speaker.battle?.hp ?? 100) < 45) return `先停火。${playerName(game, listener)}，我们一起活过下一轮。`;
+  if ((speaker.battle?.stress ?? 0) > 55) return '这里不对劲。先结盟调查，真相出来前别互相开枪。';
+  return '两个人比一个人活得久。结盟，物资和情报共享。';
+}
+
+function allianceReply(game: Game, speaker: Player, listener: Player) {
+  const edge = game.world.battle?.relationshipEdges?.find((candidate) => {
+    const a = speaker.battle?.characterId; const b = listener.battle?.characterId;
+    return (candidate.a === a && candidate.b === b) || (candidate.a === b && candidate.b === a);
+  });
+  if ((edge?.strength ?? 0) >= 35) return '我信你。背靠背行动，别掉队。';
+  if ((speaker.battle?.hp ?? 100) < 40) return '成交，但先找药，活下来再谈条件。';
+  return '可以。暂时停火，发现敌人马上报位置。';
+}
+
+function recordBattleDialogue(game: Game, now: number, speaker: Player, listener: Player | undefined, kind: string, rawText: string) {
+  const battle = game.world.battle!; const text = sanitizeDialogue(rawText);
+  if (!text) return;
+  const entry: BattleDialogue = { id: battle.nextDialogueId ?? 1, ts: now, speakerId: speaker.id, ...(listener ? { listenerId: listener.id } : {}), kind, text };
+  battle.nextDialogueId = entry.id + 1;
+  battle.dialogueLog = [entry, ...(battle.dialogueLog ?? [])].slice(0, 40);
+  speaker.activity = { description: `${playerName(game, speaker)}：“${text}”`, emoji: kind === 'alliance' ? 'TALK' : 'TRADE', until: now + 5500 };
+  speaker.battle!.nextLocomotionAt = now + 5750;
+  pushEvent(game, now, 'dialogue', `【交谈】${playerName(game, speaker)}：${text}`, speaker, listener);
 }
 
 function updateRelationship(game: Game, first: Player, second: Player, delta: number, reason: string) {

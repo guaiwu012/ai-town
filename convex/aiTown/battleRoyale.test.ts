@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { isBattleArenaWalkable } from '../../data/battleArena';
 
@@ -47,6 +47,29 @@ describe('battle royale host intervention rules', () => {
 
     expect(firstSequence).toEqual(secondSequence);
     expect(first.world.battle.rngState).toBe(second.world.battle.rngState);
+  });
+
+  it('keeps an idle contestant moving between tactical decisions', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    player.battle.nextLocomotionAt = 1_500;
+    expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
+    expect(player.pathfinding?.destination).toBeDefined();
+    expect(player.battle.nextLocomotionAt).toBeGreaterThan(2_000);
+    expect(player.activity?.description).toContain('正在巡查');
+  });
+
+  it('records model alliance speech and the partner response', () => {
+    const first = createPlayer('p:1', 'C01', 'A01');
+    const second = createPlayer('p:2', 'C02', 'A01');
+    const game = createGame([first, second]);
+    claimDecisionDriver(game, 9_000, 'driver-test-001');
+    const result = submitAIDecision(game, 10_000, { driverId: 'driver-test-001', playerId: first.id, action: 'ally', targetPlayerId: second.id, reason: '共同防守更有利', speech: '我们先停火，一起守住这个区域。' });
+    expect(result).toMatchObject({ accepted: true });
+    expect(first.battle.alliance).toBe(second.id);
+    expect(game.world.battle.dialogueLog).toHaveLength(2);
+    expect(game.world.battle.dialogueLog.some((entry: any) => entry.text.includes('我们先停火'))).toBe(true);
+    expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
   });
 
   it('reveals the selected character hidden relationship and leaves an audit event', () => {

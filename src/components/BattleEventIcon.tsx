@@ -8,6 +8,8 @@ const EVENT_ICON_BY_KIND: Record<string, string> = {
   alliance: 'relationship',
   relation: 'relationship',
   reunion: 'relationship',
+  dialogue: 'relationship',
+  trade: 'relationship',
   betrayal: 'betrayal',
   zone: 'forbidden',
   intervention: 'organizer',

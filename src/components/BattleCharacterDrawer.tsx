@@ -18,6 +18,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
   const area = BATTLE_ARENA_ZONES.find((zone) => zone.id === stats.areaId);
   const areaLock = (game.world.battle?.areaLocks ?? []).find((lock) => lock.areaId === stats.areaId && lock.until > Date.now());
   const recentActions = (game.world.battle?.actionLog ?? []).filter((entry) => entry.playerId === player.id).slice(-3).reverse();
+  const recentDialogue = (game.world.battle?.dialogueLog ?? []).filter((entry) => entry.speakerId === player.id || entry.listenerId === player.id).slice(0, 6);
   return (
     <aside className="character-drawer pointer-events-auto" aria-label={`${name}角色详情`}>
       <div className="character-drawer-header">
@@ -40,6 +41,13 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
       </DrawerSection>
       <DrawerSection title="行动日志">
         {recentActions.length ? recentActions.map((entry) => <p key={entry.id}>{entry.source === 'model' ? '模型' : '规则'} · {displayAction(entry.action)} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</p>) : <p>暂无已记录行动</p>}
+      </DrawerSection>
+      <DrawerSection title="最近交谈">
+        {recentDialogue.length ? recentDialogue.map((entry) => {
+          const speaker = game.playerDescriptions.get(entry.speakerId as GameId<'players'>)?.name ?? entry.speakerId;
+          const listener = entry.listenerId ? game.playerDescriptions.get(entry.listenerId as GameId<'players'>)?.name ?? entry.listenerId : undefined;
+          return <p key={entry.id}><strong>{speaker}</strong>{listener ? ` 对 ${listener}` : ''}：{entry.text}</p>;
+        }) : <p>暂无交谈。角色相遇后可能发起结盟或交易。</p>}
       </DrawerSection>
       <DrawerSection title="公开关系">
         {relationships.length ? relationships.map((edge) => <p key={edge.id}>{relationshipLabel(edge.type)} · 强度 {edge.strength}{edge.lastReason ? ` · ${edge.lastReason}` : ''}</p>) : <p>暂无公开关系</p>}

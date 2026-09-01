@@ -10,6 +10,7 @@ type Decision = {
   targetPlayerId?: string;
   targetAreaId?: string;
   reason?: string;
+  speech?: string;
 };
 
 type DecisionContext = {
@@ -98,7 +99,7 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     relationships,
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
-    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","reason":"不超过70字中文理由"}。攻击、结盟、交易只可选同区域目标。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',
+    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","reason":"不超过70字中文理由","speech":"结盟或交易时必填，第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',
   };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);
@@ -107,14 +108,14 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
       method: 'POST',
       signal: controller.signal,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ model: 'deepseek-chat', temperature: 0.65, max_tokens: 180, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: '你是严格输出 JSON 的游戏战术代理。' }, { role: 'user', content: JSON.stringify(prompt) }] }),
+      body: JSON.stringify({ model: 'deepseek-chat', temperature: 0.65, max_tokens: 220, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: '你是严格输出 JSON 的游戏战术代理。' }, { role: 'user', content: JSON.stringify(prompt) }] }),
     });
     if (!response.ok) throw new Error(`云端 DS ${response.status}`);
     const json = await response.json();
     const raw = String(json.choices?.[0]?.message?.content ?? '').replace(/^```json\s*|\s*```$/g, '').trim();
     const decision = JSON.parse(raw) as Decision;
     if (!BATTLE_ACTIONS.includes(decision.action as typeof BATTLE_ACTIONS[number])) throw new Error('模型返回了无效动作');
-    return { ...decision, reason: String(decision.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140) };
+    return { ...decision, reason: String(decision.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140), speech: String(decision.speech ?? '').replace(/[\r\n]/g, ' ').slice(0, 56) };
   } catch (error) {
     if (controller.signal.aborted) throw new Error('云端模型请求超时');
     if (error instanceof SyntaxError) throw new Error('模型返回的 JSON 无效');

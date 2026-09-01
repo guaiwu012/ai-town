@@ -14,7 +14,7 @@
 | --- | --- | --- | --- |
 | `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters`；`convex/world.ts` 写入名称、身份与计划；`defaultBattleStats()` 推导生命/体力；`DecisionDriver` 发送角色属性、人格倾向与生存状态给战术模型 | 部分抽象 | 代号、强度、心智、心理、社交、攻击/协作/风险偏好已进入战术提示词；完整背景、说话风格、个人目标和剧情钩子仍待逐字段接入。 |
 | `人物/配表_角色运行时属性` | `BattleStats`：HP、体力、饱食、区域停留、压力、热度、背包；`defaultBattleStats()`；`applyBattleVitals()` | 部分抽象 | 饱食会消耗体力并增压，医院可恢复压力/区域停留，高压 AI 优先撤离；完整的饥饿死亡、所有状态衰减曲线和 UI 数值解释仍待补齐。 |
-| `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()`；`triggerRelationshipDrama()` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨、重逢、危局守护与绝境逆转的强度/热度变化均运行并有测试；4-6 条随机戏剧关系和所有关系类型的独立效果仍待补齐。 |
+| `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()`；`triggerRelationshipDrama()`；`dialogueLog` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨、重逢、危局守护与绝境逆转均已运行；结盟/交易还会保存模型提议和规则回应。4-6 条随机戏剧关系和所有关系类型的独立效果仍待补齐。 |
 | `人物.xmind` | 角色名、代号、属性和关系的辅助校对来源 | 未接入 | 节点层级、叙事分支和人物关系说明没有单独导入。 |
 
 ## 地图与物品表
@@ -27,7 +27,7 @@
 | `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
 | `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |
 | `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 13 区物品池的每个条目都具备稀有度与交易价值，并有自动测试覆盖；食物/饮料/药草会恢复饱食或压力，合成与更复杂使用条件仍待补齐。 |
-| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点、六边形边界、出生落点、地标障碍和邻接 | 部分抽象 | 同区战术移动和跨区落点已使用关卡多边形与地标可走性；逐瓦片碰撞、完整寻路网格与地标交互仍在接入。 |
+| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点、六边形边界、出生落点、地标障碍、巡逻导航点和邻接 | 部分抽象 | 同区持续 A* 巡逻、战术移动和跨区落点已使用关卡多边形与地标可走性；更细的逐地标交互仍在接入。 |
 | `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
 
 ## 系统表

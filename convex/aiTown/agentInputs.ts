@@ -183,7 +183,7 @@ export const agentInputs = {
   }),
   submitAIDecision: inputHandler({
     args: {
-      driverId: v.string(), playerId, action: v.string(), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), reason: v.optional(v.string()),
+      driverId: v.string(), playerId, action: v.string(), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), reason: v.optional(v.string()), speech: v.optional(v.string()),
     },
     handler: (game, now, args) => submitAIDecision(game, now, args),
   }),
