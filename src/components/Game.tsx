@@ -98,6 +98,15 @@ export default function Game() {
     setDrawerOpen(openDrawer);
   };
 
+  const focusArea = (areaId: string) => {
+    setFocusAreaId(areaId);
+    setFocusPlayerId(undefined);
+    setSelectedElement(undefined);
+    setCameraMode('locked');
+    setDrawerOpen(false);
+    setViewMode('live');
+  };
+
   const handleSelection = (element: { kind: 'player'; id: GameId<'players'> } | undefined) => {
     setSelectedElement(element);
     if (element) followPlayer(element.id);
@@ -136,6 +145,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
                 replayFrame={replayFrame}
                 selectedPlayerId={focusPlayerId}
                 focusAreaId={focusAreaId}
+                onFocusArea={focusArea}
                 setSelectedElement={handleSelection}
               />
             </ConvexProvider>
@@ -148,6 +158,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           <LiveBattleHud
             game={game}
             focusPlayerId={focusPlayerId}
+            focusAreaId={focusAreaId}
             cameraMode={cameraMode}
             directorCaption={directorCaption}
             replayFrame={replayFrame}
@@ -155,7 +166,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onOpenOverview={() => setViewMode('overview')}
             onOpenDetails={() => setDrawerOpen(true)}
             onOpenMine={() => { setLaunchModal('mine'); setViewMode('overview'); }}
-            onResumeDirector={() => { setCameraMode('auto'); setDrawerOpen(false); }}
+            onResumeDirector={() => { setCameraMode('auto'); setFocusAreaId(undefined); setDrawerOpen(false); }}
             onRestart={() => { setLaunchModal('reset'); setViewMode('overview'); }}
             onToggleReplay={() => { setReplayTime((time) => availableReplayStart === undefined ? time : Math.max(time ?? availableReplayStart, availableReplayStart)); setReplayActive((active) => !active); }}
             replayActive={replayActive}
@@ -181,14 +192,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onBackToLive={() => setViewMode('live')}
             onMatchReset={handleMatchReset}
             onFollowPlayer={followPlayer}
-            onFocusArea={(areaId) => {
-              setFocusAreaId(areaId);
-              setFocusPlayerId(undefined);
-              setSelectedElement(undefined);
-              setCameraMode('locked');
-              setDrawerOpen(false);
-              setViewMode('live');
-            }}
+            onFocusArea={focusArea}
             launchModal={launchModal}
             onLaunchModalHandled={() => setLaunchModal(undefined)}
           />

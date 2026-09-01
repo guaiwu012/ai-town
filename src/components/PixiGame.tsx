@@ -36,6 +36,7 @@ export const PixiGame = (props: {
   height: number;
   selectedPlayerId?: GameId<'players'>;
   focusAreaId?: string;
+  onFocusArea?: (areaId: string) => void;
   setSelectedElement: SelectElement;
 }) => {
   // PIXI setup.
@@ -132,7 +133,13 @@ export const PixiGame = (props: {
         onpointerup={onMapPointerUp}
         onpointerdown={onMapPointerDown}
       />
-      <PixiArenaZones game={props.game} replayFrame={props.replayFrame} replayTime={props.replayMode ? props.historicalTime : undefined} />
+      <PixiArenaZones
+        game={props.game}
+        replayFrame={props.replayFrame}
+        replayTime={props.replayMode ? props.historicalTime : undefined}
+        focusedAreaId={props.focusAreaId}
+        onFocusArea={props.onFocusArea}
+      />
       <SmoothCameraFollow
         key={props.selectedPlayerId ?? props.focusAreaId ?? 'free-camera'}
         viewportRef={viewportRef}
@@ -159,7 +166,7 @@ export const PixiGame = (props: {
           key={`player-${p.id}`}
           game={props.game}
           player={p}
-          isViewer={p.id === humanPlayerId}
+          isViewer={p.id === props.selectedPlayerId}
           onClick={props.setSelectedElement}
           historicalTime={props.historicalTime}
           replayMode={props.replayMode}

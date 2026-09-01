@@ -5,7 +5,7 @@ import { ServerGame } from '../hooks/serverGame';
 import { useEffect, useState } from 'react';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
 
-export function PixiArenaZones({ game, replayFrame, replayTime }: { game: ServerGame; replayFrame?: BattleReplayFrame; replayTime?: number }) {
+export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, onFocusArea }: { game: ServerGame; replayFrame?: BattleReplayFrame; replayTime?: number; focusedAreaId?: string; onFocusArea?: (areaId: string) => void }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 120);
@@ -48,7 +48,27 @@ export function PixiArenaZones({ game, replayFrame, replayTime }: { game: Server
       const isOpen = open.includes(zone.id);
       const lock = (replayFrame?.areaLocks ?? battle?.areaLocks)?.find((entry) => entry.areaId === zone.id && entry.until > displayedNow);
       const dangerText = !isOpen ? '永久禁区' : lock ? `剧情封锁 ${Math.ceil((lock.until - displayedNow) / 1000)}秒` : '';
-      return <Text key={zone.id} x={zone.anchor.x * map.width * map.tileDim} y={zone.anchor.y * map.height * map.tileDim + (dangerText ? 32 : 0)} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.82 : 0.98} text={`${zone.label}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.64 : 0.52} style={new TextStyle({ align: 'center', fill: isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: dangerText ? '700' : '400', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />;
+      const resource = (replayFrame?.resources ?? battle?.areaResources)?.find((entry) => entry.areaId === zone.id);
+      const selected = focusedAreaId === zone.id;
+      const x = zone.anchor.x * map.width * map.tileDim;
+      const y = zone.anchor.y * map.height * map.tileDim;
+      return <Container key={zone.id} x={x} y={y} eventMode="static" cursor="pointer" pointertap={() => onFocusArea?.(zone.id)}>
+        <Graphics draw={(g) => {
+          g.clear();
+          g.beginFill(isOpen ? 0x071622 : 0x3d0c14, 0.88);
+          g.lineStyle(selected ? 3 : 1.5, selected ? 0xffd166 : isOpen ? 0x65d9bd : 0xff6e68, selected ? 1 : 0.78);
+          g.drawPolygon([0, -12, 12, 0, 0, 12, -12, 0]);
+          g.endFill();
+          g.beginFill(selected ? 0xffd166 : isOpen ? 0x65d9bd : 0xff6e68, 0.95);
+          g.drawCircle(0, 0, selected ? 4 : 3);
+          g.endFill();
+          if (selected) {
+            g.lineStyle(1.5, 0xffd166, 0.72);
+            g.drawCircle(0, 0, 18 + Math.sin(now / 180) * 2);
+          }
+        }} />
+        <Text y={dangerText ? 33 : 25} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.88 : 0.98} text={`${zone.label}${selected && resource ? ` · 资源 ${resource.remaining}/${resource.max}` : ''}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.64 : selected ? 0.58 : 0.5} style={new TextStyle({ align: 'center', fill: selected ? '#ffe7a6' : isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: dangerText || selected ? '700' : '400', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />
+      </Container>;
     })}
   </Container>;
 }

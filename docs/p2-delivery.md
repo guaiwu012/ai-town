@@ -28,6 +28,7 @@
 - `public/assets/battle/contestant-sprites-v1.png`：12 名原创参赛者的 4×3 透明俯视角全身图集，保持头像身份顺序；Pixi 按角色 ID 切片，并渲染移动起伏、左右朝向、选中环、生命条和淘汰态。
 - `public/assets/reference/ui/`：接入参考仓库的事件图标、生命电池和按钮状态资源；来源及授权注意事项见 [美术资产来源与接入记录](./asset-provenance.md)。
 - 所有区域 ID、锚点、邻接、出生点、区域多边形、导航节点和地标碰撞都由 `data/battleRoyaleConfig.ts` 与 `data/battleArena.ts` 统一定义；跨区落点及 AI 搜索游走从同一份可走导航节点取点。
+- Pixi 区域锚点是可点击直播地标：点击后锁定区域镜头并显示危险、开放/剧情封锁、存活人数、资源余量、机制与 Buff；总览的区域跟拍按钮调用同一入口。
 
 ## P2 验收清单
 

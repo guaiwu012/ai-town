@@ -8,6 +8,7 @@ import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
 type LiveBattleHudProps = {
   game: ServerGame;
   focusPlayerId?: GameId<'players'>;
+  focusAreaId?: string;
   cameraMode: 'auto' | 'locked';
   directorCaption: string;
   replayFrame?: BattleReplayFrame;
@@ -24,6 +25,7 @@ type LiveBattleHudProps = {
 export default function LiveBattleHud({
   game,
   focusPlayerId,
+  focusAreaId,
   cameraMode,
   directorCaption,
   replayFrame,
@@ -57,6 +59,14 @@ export default function LiveBattleHud({
   const areaLocks = replayFrame?.areaLocks ?? battle?.areaLocks ?? [];
   const interventionPoints = replayFrame?.interventionPoints ?? battle?.interventionPoints ?? 0;
   const interventionPointsMax = replayFrame?.interventionPointsMax ?? battle?.interventionPointsMax ?? 30;
+  const focusArea = BATTLE_CONFIG.areas.find((area) => area.id === focusAreaId);
+  const areaResource = (replayFrame?.resources ?? battle?.areaResources)?.find((entry) => entry.areaId === focusAreaId);
+  const areaOpen = (replayFrame?.openAreas ?? battle?.openAreas)?.includes(focusAreaId ?? '') ?? true;
+  const areaLock = areaLocks.find((lock) => lock.areaId === focusAreaId && lock.until > displayedNow);
+  const areaOccupants = focusAreaId
+    ? (replayFrame?.players ?? [...game.world.players.values()].map((player) => ({ areaId: player.battle?.areaId, eliminated: player.battle?.eliminated })))
+      .filter((player) => player.areaId === focusAreaId && !player.eliminated).length
+    : 0;
 
   return (
     <div className="live-hud pointer-events-none absolute inset-0 z-10">
@@ -75,11 +85,25 @@ export default function LiveBattleHud({
         <div><small>热度</small><strong>{popularity}</strong></div>
         <div><small>禁区收缩</small><strong>{zoneClosesAt ? formatCountdown(Math.max(0, Math.ceil((zoneClosesAt - displayedNow) / 1000))) : '--'}</strong></div>
         <div><small>封锁区域</small><strong className={areaLocks.some((lock) => lock.until > displayedNow) ? 'is-alert' : ''}>{areaLocks.filter((lock) => lock.until > displayedNow).length}</strong></div>
-        <div><small>镜头区域</small><strong>{areaName(stats?.areaId)}</strong></div>
+        <div><small>镜头区域</small><strong>{areaName(focusAreaId ?? stats?.areaId)}</strong></div>
       </section>
 
       <div className="live-hud-bottom pointer-events-auto">
-        <section className="focus-card">
+        {focusArea ? <section className="focus-card focus-area-card">
+          <div className="focus-card-kicker">区域直播 · 手动锁定</div>
+          <div className="focus-card-title">{focusArea.name}</div>
+          <div className="focus-area-status">
+            <span>危险 {focusArea.danger}/5</span>
+            <span>{areaOpen ? areaLock ? '剧情封锁' : '开放' : '永久禁区'}</span>
+            <span>{areaOccupants} 人在场</span>
+            <span>资源 {areaResource ? `${areaResource.remaining}/${areaResource.max}` : '--'}</span>
+          </div>
+          <div className="focus-area-rule"><b>{focusArea.mechanic}</b><span>{focusArea.buff}</span></div>
+          <div className="focus-card-actions">
+            <button className="live-hud-button" onClick={onOpenOverview}>查看战略总览</button>
+            <button className="live-hud-button" onClick={onResumeDirector}>恢复自动导播</button>
+          </div>
+        </section> : <section className="focus-card">
           <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? directorCaption : '手动锁定 · 选手跟拍'}</div><div className="focus-card-title">{name}</div></div></div>
           {stats && <div className="focus-card-stats flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} /><span>{Math.ceil(stats.hp)}/{stats.maxHp} · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</span></div>}
           {!replayActive && focus?.activity && focus.activity.until > now && <div className="focus-card-action">{focus.activity.emoji === 'MOVE' && focus.speed <= 0 ? `${name} 正在观察路线` : focus.activity.description}</div>}
@@ -87,7 +111,7 @@ export default function LiveBattleHud({
             <button className="live-hud-button" onClick={onOpenDetails}>角色详情</button>
             {cameraMode === 'locked' && <button className="live-hud-button" onClick={onResumeDirector}>恢复自动导播</button>}
           </div>
-        </section>
+        </section>}
         <section className="live-control-cluster">
           <div className="live-point-readout">干预点 <strong>{interventionPoints}</strong>/{interventionPointsMax}</div>
           <button className="live-hud-button live-hud-primary" disabled={replayActive} onClick={onOpenMine}>{replayActive ? '回放中不可干预' : '扫雷赚取干预点'}</button>
