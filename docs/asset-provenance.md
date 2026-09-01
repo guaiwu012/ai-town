@@ -12,7 +12,7 @@
 | `public/assets/battle/arena-live-map.png` | `docs/superpowers/specs/地图/pic/纯地图.png` | Pixi 直播战场视觉层 |
 | `public/assets/reference/ui/events/*.svg` | `docs/superpowers/specs/美术/主面板/日志icon/` | 公屏和顶部播报事件分类图标 |
 | `public/assets/reference/ui/vitals/*.png` | `docs/superpowers/specs/美术/主面板/电池/` | 角色生命状态 |
-| `public/assets/reference/ui/controls/*.png` | `docs/superpowers/specs/美术/主面板/tag:button/`、`元素/ThresholdBar.png` | 按钮状态与热度组件视觉 |
+| `public/assets/reference/ui/controls/*.png` | `docs/superpowers/specs/美术/主面板/tag:button/`、`元素/ThresholdBar.png` | 热度组件视觉与按钮样式参考；按钮图含烘焙文字，不直接作为动态按钮背景 |
 
 ## 工程约束
 

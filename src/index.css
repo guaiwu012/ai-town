@@ -360,8 +360,22 @@ p[contenteditable='true']:empty::before {
 .live-brand { color: #f4e6cf; font-family: var(--font-display); font-size: 1.15rem; white-space: nowrap; }
 .live-brand span, .live-match-meta { color: #78d8bf; font-size: 0.72rem; letter-spacing: 0.06em; }
 .live-top-actions { display: flex; gap: 0.45rem; margin-left: auto; }
-.live-hud-button { border: 1px solid rgba(137, 186, 190, 0.76); background: rgba(10, 34, 47, 0.92) url('/ai-town/assets/reference/ui/controls/button-default.png') center / 100% 100% no-repeat; color: #e8f5ef; padding: 0.42rem 0.65rem; font-size: 0.74rem; transition: filter 140ms ease, border-color 140ms ease; }
-.live-hud-button:hover { border-color: #6fe1c2; background-image: url('/ai-town/assets/reference/ui/controls/button-hover.png'); filter: brightness(1.1); }
+.live-hud-button {
+  position: relative;
+  border: 1px solid #527d98;
+  background: linear-gradient(180deg, rgba(20, 61, 84, 0.98), rgba(7, 31, 48, 0.98));
+  box-shadow: inset 0 0 0 2px rgba(91, 151, 180, 0.18), 0 0 0 1px rgba(2, 10, 18, 0.9);
+  color: #e8f5ef;
+  padding: 0.42rem 0.65rem;
+  font-size: 0.74rem;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+.live-hud-button:hover {
+  border-color: #6fe1c2;
+  background: linear-gradient(180deg, rgba(29, 83, 101, 0.98), rgba(12, 48, 63, 0.98));
+  color: #ffffff;
+}
+.live-hud-button:active { transform: translateY(1px); }
 .live-hud-button.is-active { border-color: #e3bc5b; color: #fff0bf; background: rgba(100, 65, 17, 0.92); }
 .live-hud-primary { border-color: #dfb452; color: #fff0be; background: rgba(100, 65, 17, 0.9); }
 .live-hud-danger { border-color: #de7666; color: #ffd5cf; background: rgba(88, 27, 29, 0.9); }
