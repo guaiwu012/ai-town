@@ -3,8 +3,9 @@ import { Graphics as PixiGraphics, TextStyle } from 'pixi.js';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
 import { ServerGame } from '../hooks/serverGame';
 import { useEffect, useState } from 'react';
+import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
 
-export function PixiArenaZones({ game }: { game: ServerGame }) {
+export function PixiArenaZones({ game, replayFrame, replayTime }: { game: ServerGame; replayFrame?: BattleReplayFrame; replayTime?: number }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 120);
@@ -12,12 +13,13 @@ export function PixiArenaZones({ game }: { game: ServerGame }) {
   }, []);
   const map = game.worldMap;
   const battle = game.world.battle;
-  const open = battle?.openAreas ?? BATTLE_ARENA_ZONES.map((zone) => zone.id);
+  const displayedNow = replayTime ?? now;
+  const open = replayFrame?.openAreas ?? battle?.openAreas ?? BATTLE_ARENA_ZONES.map((zone) => zone.id);
   const draw = (graphics: PixiGraphics) => {
     graphics.clear();
     for (const zone of BATTLE_ARENA_ZONES) {
       const isOpen = open.includes(zone.id);
-      const lock = battle?.areaLocks?.find((entry) => entry.areaId === zone.id && entry.until > now);
+      const lock = (replayFrame?.areaLocks ?? battle?.areaLocks)?.find((entry) => entry.areaId === zone.id && entry.until > displayedNow);
       const isDanger = !isOpen || !!lock;
       const x = zone.anchor.x * map.width * map.tileDim;
       const y = zone.anchor.y * map.height * map.tileDim;
@@ -44,8 +46,8 @@ export function PixiArenaZones({ game }: { game: ServerGame }) {
     <Graphics draw={draw} />
     {BATTLE_ARENA_ZONES.map((zone) => {
       const isOpen = open.includes(zone.id);
-      const lock = battle?.areaLocks?.find((entry) => entry.areaId === zone.id && entry.until > now);
-      const dangerText = !isOpen ? '永久禁区' : lock ? `剧情封锁 ${Math.ceil((lock.until - now) / 1000)}秒` : '';
+      const lock = (replayFrame?.areaLocks ?? battle?.areaLocks)?.find((entry) => entry.areaId === zone.id && entry.until > displayedNow);
+      const dangerText = !isOpen ? '永久禁区' : lock ? `剧情封锁 ${Math.ceil((lock.until - displayedNow) / 1000)}秒` : '';
       return <Text key={zone.id} x={zone.anchor.x * map.width * map.tileDim} y={zone.anchor.y * map.height * map.tileDim + (dangerText ? 32 : 0)} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.82 : 0.98} text={`${zone.label}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.64 : 0.52} style={new TextStyle({ align: 'center', fill: isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: dangerText ? '700' : '400', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />;
     })}
   </Container>;

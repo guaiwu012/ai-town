@@ -1,6 +1,6 @@
 # AI 大逃杀实施架构与验收
 
-最后更新：2026-08-07。本文档描述当前实现，不把已上线的能力重新写成待办。
+最后更新：2026-09-01。本文档描述当前实现，不把已上线的能力重新写成待办。
 
 ## 产品边界
 
@@ -31,13 +31,13 @@ flowchart LR
 | 区域图 | `data/battleRoyaleConfig.ts`、`data/battleArena.ts` | 13 区 ID、锚点、邻接、资源、禁区和视觉标签共享同一数据源。 |
 | 内容规则 | `AREA_SPECIAL_EVENTS`、`GLOBAL_SPECIAL_EVENTS`、`relationshipEdges`、`ITEM_DEFINITIONS` | 24 条区域剧情、3 条全局事件、关系戏剧、物品稀有度/价值、资源刷新和区域 buff 进入循环。 |
 | 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |
-| 回放基础 | `battleState.seed/rngState/actionLog/replayCheckpoints` | 已验证行动和规则 RNG 持久化；回放绝不请求模型或读取密钥。 |
+| 稳定回放 | `battleState.seed/rngState/actionLog/replayCheckpoints`、`src/lib/battleReplay.ts` | 检查点后按 `actionId` 应用模型/规则/周期/干预状态补丁；回放绝不请求模型或读取密钥。 |
 
 ## 回放契约
 
-每个新局写入 `seed` 与规则版本。服务器端随机数只能通过 `battleRandom()` 取得；`actionLog` 以独立 `nextActionId` 记录每次模型提交和规则 AI 的实际结构化行动，同时保留规则回退原因；`replayCheckpoints` 每 30 秒写入轻量状态帧。状态帧包含观赛所需的角色位置/状态、区域、关系、资源、剧情和热度，不包含提示词、API 密钥或完整世界副本。
+每个新局写入 `seed` 与规则版本。服务器端随机数只能通过 `battleRandom()` 取得；`actionLog` 以独立 `nextActionId` 记录模型与规则 AI 的实际结构化行动及规则回退原因，被接受的动作附带角色、关系、资源、剧情、区域和全局状态的紧凑补丁。世界周期、观众得分与主办方干预也使用该格式；`replayCheckpoints` 每 30 秒写入轻量状态帧。任何回放数据都不包含提示词、API 密钥或完整世界副本。
 
-当前客户端回放支持暂停、倍速、跳到关键事件；实时缓冲使用位置历史，持久化检查点会恢复 Pixi 的角色位置、生命、装备与淘汰状态。完整“从检查点逐条执行全部规则行动”的状态还原器仍属于后续内容生产，需要固定行动夹具覆盖所有规则动作后才可宣称完成。
+客户端回放支持暂停、倍速和跳到关键事件。它选择不晚于目标时间的最近检查点，再按 `ts`、`actionId` 应用后续补丁；HUD、Pixi、角色抽屉、关系、资源、区域封锁和决策审计因此保持时间一致。生产动作执行层另有固定 seed 夹具验证模型和规则动作的确定性重演。
 
 ## 单一重置契约
 
@@ -62,7 +62,6 @@ flowchart LR
 
 1. 为 24 条剧情逐条补齐原配表的全部道具消耗、分支文案和后果。
 2. 建立 Pixi 可碰撞网格、障碍物与完整导航寻路；当前权威的是逻辑区域邻接，不是像素碰撞。
-3. 用固定 seed + 已验证行动日志实现全世界状态重建的 CI 回放夹具。
-4. 将 12 名角色图集进一步接为场内精灵与每区独立可交互地标。
+3. 将 12 名角色图集进一步接为场内精灵与每区独立可交互地标。
 
 具体配表映射和未消费字段见 [参考配表覆盖矩阵](./reference-table-coverage.md)，交付资产与发布检查见 [P2 交付说明](./p2-delivery.md)。

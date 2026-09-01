@@ -120,6 +120,10 @@ export type BattleReplayPlayerFrame = Infer<typeof battleReplayPlayerFrame>;
 export const battleReplayFrame = v.object({
   openAreas: v.array(v.string()),
   popularity: v.number(),
+  zoneClosesAt: v.optional(v.number()),
+  interventionPoints: v.optional(v.number()),
+  interventionPointsMax: v.optional(v.number()),
+  areaLocks: v.optional(v.array(v.object({ areaId: v.string(), until: v.number() }))),
   phase: v.string(),
   day: v.number(),
   timeOfDay: v.union(v.literal('day'), v.literal('night')),
@@ -130,6 +134,25 @@ export const battleReplayFrame = v.object({
   storyTriggers: v.array(v.string()),
 });
 export type BattleReplayFrame = Infer<typeof battleReplayFrame>;
+
+const battleReplayPatch = v.object({
+  rngState: v.number(),
+  popularity: v.number(),
+  zoneClosesAt: v.optional(v.number()),
+  interventionPoints: v.number(),
+  interventionPointsMax: v.number(),
+  areaLocks: v.array(v.object({ areaId: v.string(), until: v.number() })),
+  phase: v.string(),
+  day: v.number(),
+  timeOfDay: v.union(v.literal('day'), v.literal('night')),
+  openAreas: v.optional(v.array(v.string())),
+  players: v.array(battleReplayPlayerFrame),
+  relationships: v.array(v.object({ id: v.string(), strength: v.number(), hidden: v.boolean(), lastReason: v.optional(v.string()) })),
+  resources: v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() })),
+  truthCluesAdded: v.array(v.string()),
+  storyTriggersAdded: v.array(v.string()),
+});
+export type BattleReplayPatch = Infer<typeof battleReplayPatch>;
 
 export const battleState = v.object({
   started: v.number(),
@@ -201,10 +224,10 @@ export const battleState = v.object({
   rngState: v.optional(v.number()),
   ruleVersion: v.optional(v.string()),
   actionLog: v.optional(v.array(v.object({
-    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()),
+    id: v.number(), ts: v.number(), playerId: v.optional(playerId), targetPlayerId: v.optional(playerId), targetAreaId: v.optional(v.string()), action: v.string(), source: v.string(), accepted: v.boolean(), reason: v.optional(v.string()), patch: v.optional(battleReplayPatch),
   }))),
   replayCheckpoints: v.optional(v.array(v.object({
-    ts: v.number(), eventId: v.number(), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(), frame: v.optional(battleReplayFrame),
+    ts: v.number(), eventId: v.number(), actionId: v.optional(v.number()), rngState: v.number(), alive: v.number(), popularity: v.number(), phase: v.string(), stateDigest: v.string(), frame: v.optional(battleReplayFrame),
   }))),
   lastReplayCheckpointAt: v.optional(v.number()),
   lastVitalsUpdate: v.optional(v.number()),
@@ -612,6 +635,7 @@ export function submitAIDecision(game: Game, now: number, args: {
   const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
   const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
   const safeSpeech = sanitizeDialogue(args.speech);
+  const replayBaseline = captureReplayPatchBaseline(game);
   const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech);
   player.battle.lastDecisionAt = now;
   player.battle.lastDecisionAction = args.action;
@@ -623,7 +647,7 @@ export function submitAIDecision(game: Game, now: number, args: {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
     pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}：${safeReason || '基于当前局势'}。`, player, target);
   }
-  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId);
+  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline);
   return result;
 }
 
@@ -642,6 +666,7 @@ export function reportAIDecisionFailure(game: Game, now: number, args: { driverI
 
 function tickMatchRules(game: Game, now: number) {
   const battle = game.world.battle!;
+  const replayBaseline = captureReplayPatchBaseline(game);
   applyBattleVitals(game, now);
   const elapsed = Math.max(0, now - battle.started);
   const dayLength = BATTLE_CONFIG.match.dayMs + BATTLE_CONFIG.match.nightMs;
@@ -731,6 +756,7 @@ function tickMatchRules(game: Game, now: number) {
   triggerRelationshipDrama(game, now);
   refreshAreaResources(game, now);
   updateMissionProgress(game, now);
+  recordReplayAction(game, now, undefined, 'worldTick', 'rule', true, '周期状态更新', undefined, undefined, replayBaseline);
 }
 
 export function applyBattleVitals(game: Game, now: number) {
@@ -988,11 +1014,13 @@ function triggerGlobalSpecialEvent(game: Game, now: number) {
 export function applyAudienceScore(game: Game, now: number, score: number) {
   ensureBattleState(game, now);
   const battle = game.world.battle!;
+  const replayBaseline = captureReplayPatchBaseline(game);
   const points = Math.max(1, Math.min(8, Math.floor(score / 25)));
   const before = battle.interventionPoints ?? 0;
   battle.interventionPoints = Math.min(battle.interventionPointsMax ?? 30, before + points);
   battle.interventionEarnedTotal = (battle.interventionEarnedTotal ?? 0) + (battle.interventionPoints - before);
   pushEvent(game, now, 'audience', `【观众】扫雷挑战结算，主办方获得 ${battle.interventionPoints - before} 点干预点。`);
+  recordReplayAction(game, now, undefined, 'audience', 'rule', true, `扫雷得分 ${score}`, undefined, undefined, replayBaseline);
   return { points: battle.interventionPoints - before, total: battle.interventionPoints };
 }
 
@@ -1017,6 +1045,7 @@ export function applyIntervention(
   if (operation.target === 'area' && !BATTLE_CONFIG.areas.some((area) => area.id === areaId)) throw new Error('无效区域。');
   if (operation.target === 'player' && !target) throw new Error('请选择角色。');
   if (operation.target === 'pair' && (!target || !second || target.id === second.id)) throw new Error('请选择两名不同角色。');
+  const replayBaseline = captureReplayPatchBaseline(game);
 
   switch (operation.id) {
     case 'ENV_01': affected.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - 8); }); announce(`${areaName(areaId)}升起障碍物，区域内角色受到冲击。`); break;
@@ -1093,6 +1122,7 @@ export function applyIntervention(
       ? affected
       : [target, second].filter((player): player is Player => !!player && !player.battle?.eliminated);
   responders.forEach((player) => markInterventionReaction(game, now, player, operation.id));
+  recordReplayAction(game, now, target, 'intervention', 'rule', true, `${operation.id} ${operation.name}`, second?.id, operation.target === 'area' ? areaId : undefined, replayBaseline);
   return { remainingPoints: battle.interventionPoints, operation: operation.name };
 }
 
@@ -1131,7 +1161,7 @@ export function replayRecordedAction(
 }
 
 /**
- * Replays the accepted model decisions in their recorded order. This deliberately
+ * Replays accepted model and rule decisions in their recorded order. This deliberately
  * does not consult the driver lease, decision budget, or DeepSeek: a replay is a
  * pure execution of the already-audited structured actions against a fresh match.
  */
@@ -1149,7 +1179,8 @@ export function replayRecordedActions(
   }>,
 ) {
   const ordered = entries
-    .filter((entry) => entry.accepted !== false && (entry.source === undefined || entry.source === 'model'))
+    .filter((entry) => entry.accepted !== false && BATTLE_ACTIONS.includes(entry.action as any))
+    .filter((entry) => entry.source === undefined || entry.source === 'model' || entry.source === 'rule')
     .sort((first, second) => first.ts - second.ts || (first.id ?? 0) - (second.id ?? 0));
   const results = ordered.map((entry) => ({
     id: entry.id,
@@ -1178,7 +1209,17 @@ function executeBattleAction(
 ) {
   const stats = player.battle!;
   if (action === 'move') {
-    if (!targetAreaId || !adjacentAreaIds(stats.areaId ?? 'A01').map(String).includes(targetAreaId)) return { accepted: false, reason: '目标区域不相邻' };
+    if (!targetAreaId && target) {
+      return tacticalMove(game, now, player, target, 'approach')
+        ? { accepted: true }
+        : { accepted: false, reason: '无法逼近目标' };
+    }
+    if (!targetAreaId) {
+      if (player.pathfinding) return { accepted: false, reason: '角色已经在移动' };
+      wander(game, now, player);
+      return player.pathfinding ? { accepted: true } : { accepted: false, reason: '没有可用巡逻路线' };
+    }
+    if (!adjacentAreaIds(stats.areaId ?? 'A01').map(String).includes(targetAreaId)) return { accepted: false, reason: '目标区域不相邻' };
     if (!game.world.battle?.openAreas?.includes(targetAreaId)) return { accepted: false, reason: '目标区域已关闭' };
     if (isAreaLocked(game.world.battle, now, stats.areaId ?? 'A01')) return { accepted: false, reason: '当前区域被剧情封锁' };
     if (!moveToBattleArea(game, now, player, targetAreaId)) return { accepted: false, reason: '无法抵达目标区域' };
@@ -1201,7 +1242,10 @@ function executeBattleAction(
   }
   if (action === 'flee') {
     const enemy = target ?? nearestEnemy(game, player);
-    if (!enemy || !tacticalMove(game, now, player, enemy, 'retreat')) return { accepted: false, reason: '没有可撤离路线' };
+    const escaped = enemy
+      ? tacticalMove(game, now, player, enemy, 'retreat')
+      : tacticalLootMove(game, now, player);
+    if (!escaped) return { accepted: false, reason: '没有可撤离路线' };
     pushEvent(game, now, 'move', `【撤离】${playerName(game, player)} 按模型决策脱离战斗。`, player, enemy);
     return { accepted: true };
   }
@@ -1249,20 +1293,24 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   stats.lastDecisionStatus = '规则回退';
   stats.lastDecisionFallback = fallbackReason ?? '未启用模型驾驶器';
   stats.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
-  const recordRuleAction = (action: string, target?: Player, targetAreaId?: string) =>
-    recordReplayAction(game, now, player, action, 'rule', true, fallbackReason, target?.id, targetAreaId);
+  const performRuleAction = (action: string, target?: Player, targetAreaId?: string) => {
+    const baseline = captureReplayPatchBaseline(game);
+    const result = executeBattleAction(game, now, player, action, target, targetAreaId, fallbackReason);
+    if (result.accepted) {
+      recordReplayAction(game, now, player, action, 'rule', true, fallbackReason, target?.id, targetAreaId, baseline);
+    }
+    return result.accepted;
+  };
 
   if ((stats.interventionUntil ?? 0) > now) {
     if (stats.interventionKind?.startsWith('ENV') || stats.interventionKind === 'SUP_03') {
-      if (tacticalLootMove(game, now, player)) {
-        recordRuleAction('flee');
+      if (performRuleAction('flee')) {
         pushEvent(game, now, 'reaction', `【反应】${playerName(game, player)} 正在避开主办方干预区域。`, player);
         return;
       }
     }
     if (stats.interventionKind === 'SUP_01' || stats.interventionKind === 'SUP_02') {
-      recordRuleAction('search');
-      loot(game, now, player);
+      performRuleAction('search');
       return;
     }
   }
@@ -1272,28 +1320,20 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     const destination = adjacentAreaIds(stats.areaId ?? 'A01')
       .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
       .sort((first, second) => areaDanger(first) - areaDanger(second))[0];
-    if (destination && moveToBattleArea(game, now, player, destination)) {
-      recordRuleAction('move', undefined, destination);
+    if (destination && performRuleAction('move', undefined, destination)) {
       pushEvent(game, now, 'reaction', `【压力】${playerName(game, player)} 压力过高，撤离至${areaName(destination)}。`, player);
       return;
     }
   }
   if (stats.hp <= 36 && stats.medkits > 0) {
-    recordRuleAction('heal');
-    stats.medkits -= 1;
-    stats.hp = Math.min(stats.maxHp, stats.hp + 18);
-    player.activity = {
-      description: `${playerName(game, player)} 使用医疗包`,
-      emoji: 'MED',
-      until: now + 1800,
-    };
-    pushEvent(game, now, 'heal', `【治疗】${playerName(game, player)} 使用医疗包恢复了状态。`, player);
-    return;
+    if (performRuleAction('heal')) {
+      player.activity = { description: `${playerName(game, player)} 使用医疗包`, emoji: 'MED', until: now + 1800 };
+      return;
+    }
   }
 
   if (enemy && stats.hp <= 45 && distance(player.position, enemy.position) <= BATTLE_CONFIG.match.dangerRange) {
-    if (tacticalMove(game, now, player, enemy, 'retreat')) {
-      recordRuleAction('flee', enemy);
+    if (performRuleAction('flee', enemy)) {
       player.activity = {
         description: `${playerName(game, player)} 正在撤离`,
         emoji: 'MOVE',
@@ -1306,14 +1346,12 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
 
   const weaponConfig = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
   if (enemy && distance(player.position, enemy.position) <= weaponConfig.range) {
-    recordRuleAction('attack', enemy);
-    attack(game, now, player, enemy);
+    performRuleAction('attack', enemy);
     return;
   }
 
   if (enemy && !player.pathfinding && battleRandom(game) < 0.48) {
-    if (tacticalMove(game, now, player, enemy, 'approach')) {
-      recordRuleAction('move', enemy);
+    if (performRuleAction('move', enemy)) {
       player.activity = {
         description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
         emoji: 'MOVE',
@@ -1323,29 +1361,25 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     }
   }
 
-  if (tryBuyUpgrade(game, now, player)) {
-    recordRuleAction('buy');
+  if (performRuleAction('buy')) {
     return;
   }
 
-  if (battleRandom(game) < 0.24 && tryAlliance(game, now, player)) {
-    recordRuleAction('ally');
-    return;
+  if (battleRandom(game) < 0.24) {
+    const partner = allianceCandidate(game, player);
+    if (partner && performRuleAction('ally', partner)) return;
   }
 
   if (battleRandom(game) < 0.62) {
-    recordRuleAction('search');
-    loot(game, now, player);
+    performRuleAction('search');
     return;
   }
 
   if (enemy) {
-    recordRuleAction('move', enemy);
-    moveToward(game, now, player, enemy);
+    performRuleAction('move', enemy);
     return;
   }
-  recordRuleAction('move');
-  wander(game, now, player);
+  performRuleAction('move');
 }
 
 function areaDanger(areaId: string) {
@@ -1538,7 +1572,7 @@ function tryBuyUpgrade(game: Game, now: number, player: Player) {
   return false;
 }
 
-function tryAlliance(game: Game, now: number, player: Player) {
+function allianceCandidate(game: Game, player: Player) {
   const relatedPartners = (game.world.battle?.relationshipEdges ?? [])
     .filter((relation) => relation.type !== 'rival' && relation.strength >= 20)
     .map((relation) => {
@@ -1558,9 +1592,9 @@ function tryAlliance(game: Game, now: number, player: Player) {
       candidate.battle?.areaId === player.battle?.areaId,
   );
   if (!partner || !player.battle || !partner.battle) {
-    return false;
+    return undefined;
   }
-  return allyPlayers(game, now, player, partner);
+  return partner;
 }
 
 function allyPlayers(game: Game, now: number, player: Player, partner: Player, proposal?: string) {
@@ -1755,10 +1789,6 @@ function nearestEnemy(game: Game, player: Player) {
   )[0];
 }
 
-function moveToward(game: Game, now: number, player: Player, target: Player) {
-  tacticalMove(game, now, player, target, 'approach');
-}
-
 function wander(game: Game, now: number, player: Player) {
   if (player.pathfinding) {
     return;
@@ -1888,6 +1918,77 @@ export function battleRandom(game: Game) {
   return next / 0x1_0000_0000;
 }
 
+type ReplayPatchBaseline = {
+  globals: string;
+  openAreas: string;
+  players: Map<string, string>;
+  relationships: Map<string, string>;
+  resources: Map<string, string>;
+  truthClues: Set<string>;
+  storyTriggers: Set<string>;
+};
+
+function captureReplayPatchBaseline(game: Game): ReplayPatchBaseline {
+  const battle = game.world.battle!;
+  return {
+    globals: replayGlobalsDigest(battle),
+    openAreas: JSON.stringify(battle.openAreas ?? []),
+    players: new Map([...game.world.players.values()].map((entry) => [entry.id, JSON.stringify(battleReplayPlayerFrameFor(entry))])),
+    relationships: new Map((battle.relationshipEdges ?? []).map((entry) => [entry.id, JSON.stringify(entry)])),
+    resources: new Map((battle.areaResources ?? []).map((entry) => [entry.areaId, JSON.stringify(entry)])),
+    truthClues: new Set(battle.truthClues ?? []),
+    storyTriggers: new Set(battle.storyTriggers ?? []),
+  };
+}
+
+function replayGlobalsDigest(battle: BattleState) {
+  return JSON.stringify({
+    popularity: battle.popularity ?? 0,
+    zoneClosesAt: battle.zoneClosesAt,
+    interventionPoints: battle.interventionPoints ?? 0,
+    interventionPointsMax: battle.interventionPointsMax ?? 30,
+    areaLocks: battle.areaLocks ?? [],
+    phase: battle.phase ?? 'early',
+    day: battle.day ?? 1,
+    timeOfDay: battle.timeOfDay ?? 'day',
+    openAreas: battle.openAreas ?? [],
+  });
+}
+
+function replayPatchSince(
+  game: Game,
+  baseline: ReplayPatchBaseline,
+): BattleReplayPatch {
+  const battle = game.world.battle!;
+  const players = [...game.world.players.values()]
+    .map(battleReplayPlayerFrameFor)
+    .filter((entry) => baseline.players.get(entry.id) !== JSON.stringify(entry));
+  const relationships = (battle.relationshipEdges ?? [])
+    .filter((entry) => baseline.relationships.get(entry.id) !== JSON.stringify(entry))
+    .map(({ id, strength, hidden, lastReason }) => ({ id, strength, hidden, lastReason }));
+  const resources = (battle.areaResources ?? [])
+    .filter((entry) => baseline.resources.get(entry.areaId) !== JSON.stringify(entry))
+    .map(({ areaId, remaining, max }) => ({ areaId, remaining, max }));
+  const currentOpenAreas = JSON.stringify(battle.openAreas ?? []);
+  return {
+    rngState: battle.rngState ?? battle.seed ?? 1,
+    popularity: battle.popularity ?? 0,
+    zoneClosesAt: battle.zoneClosesAt,
+    interventionPoints: battle.interventionPoints ?? 0,
+    interventionPointsMax: battle.interventionPointsMax ?? 30,
+    areaLocks: (battle.areaLocks ?? []).map((entry) => ({ ...entry })),
+    phase: battle.phase ?? 'early',
+    day: battle.day ?? 1,
+    timeOfDay: battle.timeOfDay ?? 'day',
+    ...(currentOpenAreas !== baseline.openAreas ? { openAreas: [...(battle.openAreas ?? [])] } : {}),
+    players,
+    relationships,
+    resources,
+    truthCluesAdded: (battle.truthClues ?? []).filter((entry) => !baseline.truthClues.has(entry)),
+    storyTriggersAdded: (battle.storyTriggers ?? []).filter((entry) => !baseline.storyTriggers.has(entry)),
+  };
+}
+
 function recordReplayAction(
   game: Game,
   now: number,
@@ -1898,8 +1999,20 @@ function recordReplayAction(
   reason?: string,
   targetPlayerId?: string,
   targetAreaId?: string,
+  replayBaseline?: ReplayPatchBaseline,
 ) {
   const battle = game.world.battle!;
+  const patch = accepted && replayBaseline ? replayPatchSince(game, replayBaseline) : undefined;
+  const hasReplayChange = !replayBaseline || replayBaseline.globals !== replayGlobalsDigest(battle) || Boolean(
+    patch && (
+      patch.players.length > 0 ||
+      patch.relationships.length > 0 ||
+      patch.resources.length > 0 ||
+      patch.truthCluesAdded.length > 0 ||
+      patch.storyTriggersAdded.length > 0
+    ),
+  );
+  if (action === 'worldTick' && !hasReplayChange) return;
   const log = battle.actionLog ?? (battle.actionLog = []);
   const entry: NonNullable<BattleState['actionLog']>[number] = {
     id: battle.nextActionId!++,
@@ -1914,6 +2027,7 @@ function recordReplayAction(
   if (targetPlayerId) entry.targetPlayerId = targetPlayerId as any;
   if (targetAreaId) entry.targetAreaId = targetAreaId;
   if (reason) entry.reason = reason.slice(0, 140);
+  if (patch) entry.patch = patch;
   log.push(entry);
   if (log.length > 480) log.splice(0, log.length - 480);
 }
@@ -1925,6 +2039,7 @@ function recordReplayCheckpoint(game: Game, now: number) {
   checkpoints.push({
     ts: now,
     eventId: Math.max(0, battle.nextEventId - 1),
+    actionId: Math.max(0, (battle.nextActionId ?? 1) - 1),
     rngState: battle.rngState ?? battle.seed ?? 1,
     alive: alivePlayers(game).length,
     popularity: battle.popularity ?? 0,
@@ -1946,40 +2061,46 @@ export function battleReplayFrameFor(game: Game): BattleReplayFrame {
   return {
     openAreas: [...(battle.openAreas ?? [])],
     popularity: battle.popularity ?? 0,
+    zoneClosesAt: battle.zoneClosesAt,
+    interventionPoints: battle.interventionPoints ?? 0,
+    interventionPointsMax: battle.interventionPointsMax ?? 30,
+    areaLocks: (battle.areaLocks ?? []).map((entry) => ({ ...entry })),
     phase: battle.phase ?? 'early',
     day: battle.day ?? 1,
     timeOfDay: battle.timeOfDay ?? 'day',
-    players: [...game.world.players.values()].map((player) => {
-      const stats = player.battle!;
-      return {
-        id: player.id,
-        x: player.position.x,
-        y: player.position.y,
-        dx: player.facing.dx,
-        dy: player.facing.dy,
-        speed: player.speed,
-        hp: stats.hp,
-        maxHp: stats.maxHp,
-        weapon: stats.weapon,
-        armor: stats.armor,
-        medkits: stats.medkits,
-        kills: stats.kills,
-        stamina: stats.stamina ?? stats.maxStamina ?? 0,
-        maxStamina: stats.maxStamina ?? 0,
-        satiety: stats.satiety ?? 0,
-        zoneTime: stats.zoneTime ?? 0,
-        stress: stats.stress ?? 0,
-        heat: stats.heat ?? 0,
-        areaId: stats.areaId ?? 'A01',
-        eliminated: !!stats.eliminated,
-        alliance: stats.alliance,
-        inventory: [...(stats.inventory ?? [])],
-      };
-    }),
+    players: [...game.world.players.values()].map(battleReplayPlayerFrameFor),
     relationships: (battle.relationshipEdges ?? []).map(({ id, strength, hidden, lastReason }) => ({ id, strength, hidden, lastReason })),
     resources: (battle.areaResources ?? []).map(({ areaId, remaining, max }) => ({ areaId, remaining, max })),
     truthClues: [...(battle.truthClues ?? [])],
     storyTriggers: [...(battle.storyTriggers ?? [])],
+  };
+}
+
+function battleReplayPlayerFrameFor(player: Player): BattleReplayPlayerFrame {
+  const stats = player.battle!;
+  return {
+    id: player.id,
+    x: player.position.x,
+    y: player.position.y,
+    dx: player.facing.dx,
+    dy: player.facing.dy,
+    speed: player.speed,
+    hp: stats.hp,
+    maxHp: stats.maxHp,
+    weapon: stats.weapon,
+    armor: stats.armor,
+    medkits: stats.medkits,
+    kills: stats.kills,
+    stamina: stats.stamina ?? stats.maxStamina ?? 0,
+    maxStamina: stats.maxStamina ?? 0,
+    satiety: stats.satiety ?? 0,
+    zoneTime: stats.zoneTime ?? 0,
+    stress: stats.stress ?? 0,
+    heat: stats.heat ?? 0,
+    areaId: stats.areaId ?? 'A01',
+    eliminated: !!stats.eliminated,
+    alliance: stats.alliance,
+    inventory: [...(stats.inventory ?? [])],
   };
 }
 

@@ -3,26 +3,34 @@ import { GameId } from '../../convex/aiTown/ids';
 import { AREA_SPECIAL_EVENTS } from '../../data/battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
 import BattleVitalBattery from './BattleVitalBattery';
+import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
 
-export default function BattleCharacterDrawer({ game, playerId, onClose }: {
+export default function BattleCharacterDrawer({ game, playerId, replayFrame, replayTime, onClose }: {
   game: ServerGame;
   playerId?: GameId<'players'>;
+  replayFrame?: BattleReplayFrame;
+  replayTime?: number;
   onClose: () => void;
 }) {
   const player = playerId ? game.world.players.get(playerId) : undefined;
   if (!player?.battle) return null;
-  const stats = player.battle;
+  const historicalPlayer = replayFrame?.players.find((entry) => entry.id === player.id);
+  const stats = historicalPlayer ? { ...player.battle, ...historicalPlayer } : player.battle;
   const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
-  const relationships = (game.world.battle?.relationshipEdges ?? []).filter((edge) => !edge.hidden && (edge.a === stats.characterId || edge.b === stats.characterId));
+  const replayRelationships = new Map(replayFrame?.relationships.map((entry) => [entry.id, entry]));
+  const relationships = (game.world.battle?.relationshipEdges ?? [])
+    .map((edge) => ({ ...edge, ...(replayRelationships.get(edge.id) ?? {}) }))
+    .filter((edge) => !edge.hidden && (edge.a === stats.characterId || edge.b === stats.characterId));
   const areaStories = AREA_SPECIAL_EVENTS.filter((event) => event.areaId === stats.areaId).map((event) => ({ event, count: game.world.battle?.areaEventCounts?.find((entry) => entry.id === event.id)?.count ?? 0 }));
   const area = BATTLE_ARENA_ZONES.find((zone) => zone.id === stats.areaId);
   const areaLock = (game.world.battle?.areaLocks ?? []).find((lock) => lock.areaId === stats.areaId && lock.until > Date.now());
-  const recentActions = (game.world.battle?.actionLog ?? []).filter((entry) => entry.playerId === player.id).slice(-3).reverse();
-  const recentDialogue = (game.world.battle?.dialogueLog ?? []).filter((entry) => entry.speakerId === player.id || entry.listenerId === player.id).slice(0, 6);
+  const recentActions = (game.world.battle?.actionLog ?? []).filter((entry) => entry.playerId === player.id && (!replayTime || entry.ts <= replayTime)).slice(-3).reverse();
+  const recentDialogue = (game.world.battle?.dialogueLog ?? []).filter((entry) => (!replayTime || entry.ts <= replayTime) && (entry.speakerId === player.id || entry.listenerId === player.id)).slice(0, 6);
+  const auditedAction = recentActions[0];
   return (
     <aside className="character-drawer pointer-events-auto" aria-label={`${name}角色详情`}>
       <div className="character-drawer-header">
-        <div className="drawer-identity"><Portrait characterId={stats.characterId} /><div><div className="drawer-kicker">直播角色档案</div><h2>{name}</h2></div></div>
+        <div className="drawer-identity"><Portrait characterId={stats.characterId} /><div><div className="drawer-kicker">{replayTime ? '回放角色档案' : '直播角色档案'}</div><h2>{name}</h2></div></div>
         <button className="live-hud-button" onClick={onClose}>关闭</button>
       </div>
       <div className="drawer-stat-grid">
@@ -31,13 +39,12 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
         <Stat label="武器" value={displayWeapon(stats.weapon)} />
         <Stat label="物资" value={stats.coins} />
       </div>
-      <DrawerSection title="当前状态"><p>{player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{Math.ceil(stats.stress ?? 0)}/{stats.stressThreshold ?? '--'}</p><p>饱食：{Math.ceil(stats.satiety ?? 0)} · 区域停留：{Math.ceil(stats.zoneTime ?? 0)}/{stats.maxZoneTime ?? '--'}</p></DrawerSection>
+      <DrawerSection title="当前状态"><p>{replayTime ? '回放时刻状态' : player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{Math.ceil(stats.stress ?? 0)}/{stats.stressThreshold ?? '--'}</p><p>饱食：{Math.ceil(stats.satiety ?? 0)} · 区域停留：{Math.ceil(stats.zoneTime ?? 0)}/{stats.maxZoneTime ?? '--'}</p></DrawerSection>
       <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
       <DrawerSection title="背包"><p>{stats.inventory?.length ? stats.inventory.join('、') : '暂无额外物资'} · 医疗包 {stats.medkits}</p></DrawerSection>
       <DrawerSection title="决策审计">
-        <p>{stats.lastDecisionStatus ?? '等待本轮决策'}{stats.lastDecisionAction ? ` · ${displayAction(stats.lastDecisionAction)}` : ''}</p>
-        {stats.lastDecisionReason && <p>{stats.lastDecisionReason}</p>}
-        {stats.lastDecisionFallback && <p className="drawer-warning">回退：{stats.lastDecisionFallback}</p>}
+        <p>{auditedAction ? `${auditedAction.source === 'model' ? '模型' : '规则'} · ${displayAction(auditedAction.action)} · ${auditedAction.accepted ? '已执行' : '已拒绝'}` : '等待本轮决策'}</p>
+        {auditedAction?.reason && <p className={auditedAction.accepted ? undefined : 'drawer-warning'}>{auditedAction.accepted ? auditedAction.reason : `回退：${auditedAction.reason}`}</p>}
       </DrawerSection>
       <DrawerSection title="行动日志">
         {recentActions.length ? recentActions.map((entry) => <p key={entry.id}>{entry.source === 'model' ? '模型' : '规则'} · {displayAction(entry.action)} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</p>) : <p>暂无已记录行动</p>}
@@ -52,7 +59,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
       <DrawerSection title="公开关系">
         {relationships.length ? relationships.map((edge) => <p key={edge.id}>{relationshipLabel(edge.type)} · 强度 {edge.strength}{edge.lastReason ? ` · ${edge.lastReason}` : ''}</p>) : <p>暂无公开关系</p>}
       </DrawerSection>
-      <DrawerSection title="线索与任务"><p>真相线索 {game.world.battle?.truthClues?.length ?? 0}/3</p></DrawerSection>
+      <DrawerSection title="线索与任务"><p>真相线索 {replayFrame?.truthClues.length ?? game.world.battle?.truthClues?.length ?? 0}/3</p></DrawerSection>
       <DrawerSection title="区域剧情">{areaStories.length ? areaStories.map(({ event, count }) => <p key={event.id}>{event.title} · {count}/{event.maxTriggers} 次</p>) : <p>当前区域暂无特殊剧情</p>}</DrawerSection>
     </aside>
   );

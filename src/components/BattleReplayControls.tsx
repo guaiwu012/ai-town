@@ -18,8 +18,15 @@ export default function BattleReplayControls({
   onJump: (time: number) => void;
 }) {
   if (!battle) return null;
-  const events = [...(battle.feed ?? [])].filter((event) => ['eliminate', 'attack', 'areaStory', 'globalStory', 'intervention', 'truth', 'betrayal'].includes(event.kind)).slice(0, 5);
-  const actions = [...(battle.actionLog ?? [])].slice(-4).reverse();
+  const events = [...(battle.feed ?? [])]
+    .filter((event) => !currentTime || event.ts <= currentTime)
+    .filter((event) => ['eliminate', 'attack', 'areaStory', 'globalStory', 'intervention', 'truth', 'betrayal'].includes(event.kind))
+    .slice(0, 5);
+  const actions = [...(battle.actionLog ?? [])]
+    .filter((entry) => !currentTime || entry.ts <= currentTime)
+    .filter((entry) => entry.action !== 'worldTick')
+    .slice(-4)
+    .reverse();
   return <section className="replay-controls pointer-events-auto">
     <div className="replay-header"><span>回放控制</span><small>种子 {battle.seed ?? '旧局'}</small></div>
     <div className="replay-actions">
@@ -43,5 +50,5 @@ function formatReplayTime(time: number | undefined, started: number | undefined)
 }
 
 function actionName(action: string) {
-  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查', fallback: '规则回退' } as Record<string, string>)[action] ?? action;
+  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查', intervention: '主办方干预', audience: '观众结算', fallback: '规则回退' } as Record<string, string>)[action] ?? action;
 }

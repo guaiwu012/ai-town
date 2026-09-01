@@ -132,7 +132,7 @@ export const PixiGame = (props: {
         onpointerup={onMapPointerUp}
         onpointerdown={onMapPointerDown}
       />
-      <PixiArenaZones game={props.game} />
+      <PixiArenaZones game={props.game} replayFrame={props.replayFrame} replayTime={props.replayMode ? props.historicalTime : undefined} />
       <SmoothCameraFollow
         key={props.selectedPlayerId ?? props.focusAreaId ?? 'free-camera'}
         viewportRef={viewportRef}
@@ -167,7 +167,7 @@ export const PixiGame = (props: {
         />
       ))}
       <PixiBattleSpeech game={props.game} enabled={!props.replayMode} />
-      <PixiBattleEffects game={props.game} />
+      {!props.replayMode && <PixiBattleEffects game={props.game} />}
     </PixiViewport>
   );
 };

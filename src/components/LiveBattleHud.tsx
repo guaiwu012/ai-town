@@ -3,12 +3,15 @@ import { GameId } from '../../convex/aiTown/ids';
 import BattleVitalBattery from './BattleVitalBattery';
 import { useEffect, useState } from 'react';
 import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
+import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
 
 type LiveBattleHudProps = {
   game: ServerGame;
   focusPlayerId?: GameId<'players'>;
   cameraMode: 'auto' | 'locked';
   directorCaption: string;
+  replayFrame?: BattleReplayFrame;
+  replayTime?: number;
   onOpenOverview: () => void;
   onOpenDetails: () => void;
   onOpenMine: () => void;
@@ -23,6 +26,8 @@ export default function LiveBattleHud({
   focusPlayerId,
   cameraMode,
   directorCaption,
+  replayFrame,
+  replayTime,
   onOpenOverview,
   onOpenDetails,
   onOpenMine,
@@ -39,14 +44,25 @@ export default function LiveBattleHud({
   }, []);
   const focus = focusPlayerId ? game.world.players.get(focusPlayerId) : undefined;
   const name = focus ? game.playerDescriptions.get(focus.id)?.name ?? focus.id : '等待导播目标';
-  const stats = focus?.battle;
-  const alive = [...game.world.players.values()].filter((player) => player.battle && !player.battle.eliminated).length;
+  const replayPlayer = replayFrame?.players.find((player) => player.id === focusPlayerId);
+  const stats = replayPlayer && focus?.battle ? { ...focus.battle, ...replayPlayer } : focus?.battle;
+  const alive = replayFrame
+    ? replayFrame.players.filter((player) => !player.eliminated).length
+    : [...game.world.players.values()].filter((player) => player.battle && !player.battle.eliminated).length;
+  const day = replayFrame?.day ?? battle?.day ?? 1;
+  const timeOfDay = replayFrame?.timeOfDay ?? battle?.timeOfDay;
+  const popularity = replayFrame?.popularity ?? battle?.popularity ?? 0;
+  const displayedNow = replayTime ?? now;
+  const zoneClosesAt = replayFrame?.zoneClosesAt ?? battle?.zoneClosesAt;
+  const areaLocks = replayFrame?.areaLocks ?? battle?.areaLocks ?? [];
+  const interventionPoints = replayFrame?.interventionPoints ?? battle?.interventionPoints ?? 0;
+  const interventionPointsMax = replayFrame?.interventionPointsMax ?? battle?.interventionPointsMax ?? 30;
 
   return (
     <div className="live-hud pointer-events-none absolute inset-0 z-10">
       <div className="live-hud-top pointer-events-auto">
-        <div className="live-brand"><b className="live-badge">LIVE</b> AI 大逃杀 <span>直播跟随</span></div>
-        <div className="live-match-meta">第 {battle?.day ?? 1} 天 · {battle?.timeOfDay === 'night' ? '夜间' : '白天'} · {alive} 人存活</div>
+        <div className="live-brand"><b className="live-badge">{replayActive ? 'REPLAY' : 'LIVE'}</b> AI 大逃杀 <span>{replayActive ? '历史回放' : '直播跟随'}</span></div>
+        <div className="live-match-meta">第 {day} 天 · {timeOfDay === 'night' ? '夜间' : '白天'} · {alive} 人存活</div>
         <div className="live-top-actions">
           <button className="live-hud-button" onClick={onOpenOverview}>战略总览</button>
           <button className={`live-hud-button ${replayActive ? 'is-active' : ''}`} onClick={onToggleReplay}>{replayActive ? '回放中' : '回放'}</button>
@@ -56,9 +72,9 @@ export default function LiveBattleHud({
 
       <section className="live-tactical-strip pointer-events-auto">
         <div className="live-pulse"><i />直播态势</div>
-        <div><small>热度</small><strong>{battle?.popularity ?? 0}</strong></div>
-        <div><small>禁区收缩</small><strong>{formatCountdown(Math.max(0, Math.ceil(((battle?.zoneClosesAt ?? now) - now) / 1000)))}</strong></div>
-        <div><small>封锁区域</small><strong className={(battle?.areaLocks ?? []).some((lock) => lock.until > now) ? 'is-alert' : ''}>{(battle?.areaLocks ?? []).filter((lock) => lock.until > now).length}</strong></div>
+        <div><small>热度</small><strong>{popularity}</strong></div>
+        <div><small>禁区收缩</small><strong>{zoneClosesAt ? formatCountdown(Math.max(0, Math.ceil((zoneClosesAt - displayedNow) / 1000))) : '--'}</strong></div>
+        <div><small>封锁区域</small><strong className={areaLocks.some((lock) => lock.until > displayedNow) ? 'is-alert' : ''}>{areaLocks.filter((lock) => lock.until > displayedNow).length}</strong></div>
         <div><small>镜头区域</small><strong>{areaName(stats?.areaId)}</strong></div>
       </section>
 
@@ -66,15 +82,15 @@ export default function LiveBattleHud({
         <section className="focus-card">
           <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? directorCaption : '手动锁定 · 选手跟拍'}</div><div className="focus-card-title">{name}</div></div></div>
           {stats && <div className="focus-card-stats flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} /><span>{Math.ceil(stats.hp)}/{stats.maxHp} · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</span></div>}
-          {focus?.activity && focus.activity.until > now && <div className="focus-card-action">{focus.activity.emoji === 'MOVE' && focus.speed <= 0 ? `${name} 正在观察路线` : focus.activity.description}</div>}
+          {!replayActive && focus?.activity && focus.activity.until > now && <div className="focus-card-action">{focus.activity.emoji === 'MOVE' && focus.speed <= 0 ? `${name} 正在观察路线` : focus.activity.description}</div>}
           <div className="focus-card-actions">
             <button className="live-hud-button" onClick={onOpenDetails}>角色详情</button>
             {cameraMode === 'locked' && <button className="live-hud-button" onClick={onResumeDirector}>恢复自动导播</button>}
           </div>
         </section>
         <section className="live-control-cluster">
-          <div className="live-point-readout">干预点 <strong>{battle?.interventionPoints ?? 0}</strong>/{battle?.interventionPointsMax ?? 30}</div>
-          <button className="live-hud-button live-hud-primary" onClick={onOpenMine}>扫雷赚取干预点</button>
+          <div className="live-point-readout">干预点 <strong>{interventionPoints}</strong>/{interventionPointsMax}</div>
+          <button className="live-hud-button live-hud-primary" disabled={replayActive} onClick={onOpenMine}>{replayActive ? '回放中不可干预' : '扫雷赚取干预点'}</button>
         </section>
       </div>
     </div>

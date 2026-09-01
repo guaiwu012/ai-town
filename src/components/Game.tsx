@@ -17,7 +17,7 @@ import LiveBattleHud from './LiveBattleHud.tsx';
 import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
 import BattleReplayControls from './BattleReplayControls.tsx';
 import { selectDirectorShot } from '../lib/battleDirector.ts';
-import { replayFrameAt } from '../lib/battleReplay.ts';
+import { replayFrameAt, replayStartTime } from '../lib/battleReplay.ts';
 import BattleStoryCard from './BattleStoryCard.tsx';
 import BattleDialogueBox from './BattleDialogueBox.tsx';
 
@@ -115,6 +115,7 @@ export default function Game() {
     directorSwitchRef.current = { at: 0, eventId: -1 };
   };
   const replayFrame = replayActive ? replayFrameAt(game.world.battle, replayTime) : undefined;
+  const availableReplayStart = replayStartTime(game.world.battle);
   return (
     <>
       {SHOW_DEBUG_UI && <DebugTimeManager timeManager={timeManager} width={200} height={100} />}
@@ -141,7 +142,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           </Stage>
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
-        <BattleBroadcastToasts feed={game.world.battle?.feed} />
+        {!replayActive && <BattleBroadcastToasts feed={game.world.battle?.feed} />}
         <DecisionDriver worldId={worldId} game={game} enabled={!replayActive} />
         {viewMode === 'live' ? <>
           <LiveBattleHud
@@ -149,26 +150,28 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             focusPlayerId={focusPlayerId}
             cameraMode={cameraMode}
             directorCaption={directorCaption}
+            replayFrame={replayFrame}
+            replayTime={replayActive ? replayTime : undefined}
             onOpenOverview={() => setViewMode('overview')}
             onOpenDetails={() => setDrawerOpen(true)}
             onOpenMine={() => { setLaunchModal('mine'); setViewMode('overview'); }}
             onResumeDirector={() => { setCameraMode('auto'); setDrawerOpen(false); }}
             onRestart={() => { setLaunchModal('reset'); setViewMode('overview'); }}
-            onToggleReplay={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
+            onToggleReplay={() => { setReplayTime((time) => availableReplayStart === undefined ? time : Math.max(time ?? availableReplayStart, availableReplayStart)); setReplayActive((active) => !active); }}
             replayActive={replayActive}
           />
-          <BattleStoryCard game={game} />
-          <BattleDialogueBox game={game} />
+          {!replayActive && <BattleStoryCard game={game} />}
+          {!replayActive && <BattleDialogueBox game={game} />}
           {replayActive && <BattleReplayControls
             battle={game.world.battle}
             active={replayActive}
             speed={replaySpeed}
             currentTime={replayTime}
-            onToggle={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
+              onToggle={() => { setReplayTime((time) => availableReplayStart === undefined ? time : Math.max(time ?? availableReplayStart, availableReplayStart)); setReplayActive((active) => !active); }}
             onSpeed={setReplaySpeed}
             onJump={(time) => { setReplayTime(time); setReplayActive(true); }}
           />}
-          {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} onClose={() => setDrawerOpen(false)} />}
+          {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} replayFrame={replayFrame} replayTime={replayActive ? replayTime : undefined} onClose={() => setDrawerOpen(false)} />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
             worldId={worldId}

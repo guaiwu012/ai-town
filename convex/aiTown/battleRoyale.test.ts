@@ -9,6 +9,7 @@ function createPlayer(id: string, characterId: string, areaId: string): any {
   return {
     id,
     position: { x: 10, y: 10 },
+    facing: { dx: 1, dy: 0 },
     speed: 0,
     battle: {
       ...defaultBattleStats(profileForCharacterId(characterId)),
@@ -141,6 +142,8 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.dialogueLog).toHaveLength(2);
     expect(game.world.battle.dialogueLog.some((entry: any) => entry.text.includes('我们先停火'))).toBe(true);
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
+    expect(game.world.battle.actionLog.at(-1)?.patch?.players.map((entry: any) => entry.id)).toEqual([first.id, second.id]);
+    expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 14, lastReason: '结盟' }));
   });
 
   it('reveals the selected character hidden relationship and leaves an audit event', () => {
@@ -152,6 +155,9 @@ describe('battle royale host intervention rules', () => {
     expect(mentorLink.hidden).toBe(false);
     expect(mentorLink.lastReason).toBe('主办方关系侦察');
     expect(game.world.battle.feed.some((event: any) => event.text.includes('隐藏师徒关系已被公开侦察'))).toBe(true);
+    const replayEntry = game.world.battle.actionLog.at(-1);
+    expect(replayEntry).toMatchObject({ action: 'intervention', accepted: true });
+    expect(replayEntry.patch.relationships).toContainEqual(expect.objectContaining({ id: 'REL_SEED_04', hidden: false }));
   });
 
   it('turns anonymous provocation into a durable negative relationship change', () => {
@@ -208,7 +214,7 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.decisionCount).toBe(0);
   });
 
-  it('replays accepted model actions deterministically in timestamp and action-id order', () => {
+  it('replays accepted model and rule actions deterministically in timestamp and action-id order', () => {
     const buildFixture = () => {
       const player = createPlayer('p:12', 'C12', 'A12');
       player.battle.hp = 40;
@@ -219,7 +225,7 @@ describe('battle royale host intervention rules', () => {
     };
     const log = [
       // Intentionally out of order: the replay executor is the authority for ordering.
-      { id: 2, ts: 2_100, playerId: 'p:12', action: 'investigate', source: 'model', accepted: true },
+      { id: 2, ts: 2_100, playerId: 'p:12', action: 'investigate', source: 'rule', accepted: true },
       { id: 1, ts: 2_000, playerId: 'p:12', action: 'heal', source: 'model', accepted: true },
       { id: 3, ts: 2_200, playerId: 'p:12', action: 'fallback', source: 'rule', accepted: true },
       { id: 4, ts: 2_300, playerId: 'p:12', action: 'attack', source: 'model', accepted: false },
@@ -332,21 +338,46 @@ describe('battle royale host intervention rules', () => {
       id: player.id, x: 17, y: 5, hp: 73, areaId: 'A12', inventory: ['军用口粮'],
     }));
     expect(checkpoint?.frame?.openAreas).toEqual(game.world.battle.openAreas);
+    expect(checkpoint?.actionId).toBeGreaterThan(0);
   });
 
   it('records the concrete rule action without null optional fields', () => {
     const first = createPlayer('p:1', 'C01', 'A01');
     const second = createPlayer('p:2', 'C02', 'A02');
+    first.battle.nextLocomotionAt = 100_000;
+    second.battle.nextLocomotionAt = 100_000;
+    first.battle.interventionKind = 'SUP_01';
+    first.battle.interventionUntil = 10_000;
+    second.battle.interventionKind = 'SUP_01';
+    second.battle.interventionUntil = 10_000;
     const game = createGame([first, second]);
 
     tickBattleRoyale(game, 7_000);
 
     expect(game.world.battle.actionLog.length).toBeGreaterThan(0);
-    for (const entry of game.world.battle.actionLog) {
+    for (const entry of game.world.battle.actionLog.filter((candidate: any) => candidate.action !== 'worldTick')) {
       expect(entry.action).not.toBe('fallback');
       expect(entry.targetPlayerId).not.toBeNull();
       expect(entry.targetAreaId).not.toBeNull();
+      expect(entry.patch?.players.length).toBeGreaterThan(0);
     }
+  });
+
+  it('runs rule healing through the shared executor and records its resulting patch', () => {
+    const wounded = createPlayer('p:1', 'C01', 'A01');
+    wounded.battle.hp = 30;
+    wounded.battle.medkits = 1;
+    const observer = createPlayer('p:2', 'C02', 'A02');
+    observer.position = { x: 60, y: 45 };
+    const game = createGame([wounded, observer]);
+
+    tickBattleRoyale(game, 7_000);
+
+    const action = game.world.battle.actionLog.find((entry: any) => entry.playerId === wounded.id);
+    expect(wounded.battle.hp).toBe(52);
+    expect(wounded.battle.medkits).toBe(0);
+    expect(action).toMatchObject({ action: 'heal', source: 'rule', accepted: true });
+    expect(action.patch.players).toContainEqual(expect.objectContaining({ id: wounded.id, hp: 52, medkits: 0 }));
   });
 
   it('requires the terminal card before permission-gated replay stories can trigger', () => {
