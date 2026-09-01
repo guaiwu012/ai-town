@@ -101,15 +101,16 @@ export const Character = ({
       )}
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
-      {battleCharacterId && <BattleIdentityMarker characterId={battleCharacterId} eliminated={isEliminated} />}
-      <AnimatedSprite
-        ref={ref}
-        isPlaying={isMoving}
-        textures={spriteSheet.animations[direction]}
-        animationSpeed={speed}
-        anchor={{ x: 0.5, y: 0.5 }}
-        alpha={isEliminated ? 0.38 : 1}
-      />
+      {battleCharacterId
+        ? <BattleIdentityMarker characterId={battleCharacterId} eliminated={isEliminated} isMoving={isMoving} />
+        : <AnimatedSprite
+            ref={ref}
+            isPlaying={isMoving}
+            textures={spriteSheet.animations[direction]}
+            animationSpeed={speed}
+            anchor={{ x: 0.5, y: 0.5 }}
+            alpha={isEliminated ? 0.38 : 1}
+          />}
       {isEliminated && (
         <Text
           x={0}
@@ -168,16 +169,16 @@ function HealthBar({ ratio }: { ratio: number }) {
   return <Graphics draw={draw} />;
 }
 
-function BattleIdentityMarker({ characterId, eliminated }: { characterId: string; eliminated: boolean }) {
+function BattleIdentityMarker({ characterId, eliminated, isMoving }: { characterId: string; eliminated: boolean; isMoving: boolean }) {
   const index = Math.max(0, Number(characterId.slice(1)) - 1) % 12;
   const baseTexture = BaseTexture.from('/ai-town/assets/battle/contestant-portraits.png');
   const col = index % 4;
   const row = Math.floor(index / 4);
   const portrait = new Texture(baseTexture, new Rectangle(col * 362, row * 362, 362, 362));
   return <>
-    <Graphics draw={(g) => { g.clear(); g.beginFill(eliminated ? 0x442c42 : 0x0c1d2b, 0.96); g.lineStyle(1.5, eliminated ? 0x92566b : 0x70e6ca, 0.95); g.drawCircle(0, -41, 13); g.endFill(); }} />
-    <Sprite texture={portrait} x={0} y={-41} width={23} height={23} anchor={{ x: 0.5, y: 0.5 }} alpha={eliminated ? 0.38 : 1} />
-    <Text x={0} y={-58} scale={0.28} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 3 })} />
+    <Graphics draw={(g) => { g.clear(); g.beginFill(eliminated ? 0x442c42 : 0x0c1d2b, 0.98); g.lineStyle(isMoving ? 2.5 : 1.5, eliminated ? 0x92566b : isMoving ? 0x8ffff0 : 0x70e6ca, 0.98); g.drawCircle(0, 0, 15); g.endFill(); }} />
+    <Sprite texture={portrait} x={0} y={0} width={27} height={27} anchor={{ x: 0.5, y: 0.5 }} alpha={eliminated ? 0.38 : 1} />
+    <Text x={0} y={-22} scale={0.3} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 3 })} />
   </>;
 }
 

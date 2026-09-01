@@ -1,4 +1,4 @@
-import { selectDirectorTarget } from './battleDirector';
+import { selectDirectorShot, selectDirectorTarget } from './battleDirector';
 
 describe('battle director', () => {
   const candidates = [
@@ -20,5 +20,20 @@ describe('battle director', () => {
       { id: 'C02', alive: true, heat: 10 },
       { id: 'C01', alive: true, heat: 10 },
     ], [])).toBe('C01');
+  });
+
+  test('ignores stale events and rotates among leading live candidates', () => {
+    const shot = selectDirectorShot(
+      [{ id: 'C01', alive: true, heat: 20, moving: true }, { id: 'C02', alive: true, heat: 18 }],
+      [{ id: 1, kind: 'attack', actor: 'C02', ts: 1_000 }],
+      16_000,
+    );
+    expect(shot.urgent).toBe(false);
+    expect(shot.caption).toContain('巡场跟拍');
+  });
+
+  test('packages a recent battle event as an urgent live shot', () => {
+    expect(selectDirectorShot(candidates, [{ id: 9, kind: 'attack', actor: 'C01', ts: 9_000 }], 10_000))
+      .toMatchObject({ targetId: 'C01', eventId: 9, urgent: true, caption: '交火现场 · 战斗追踪' });
   });
 });

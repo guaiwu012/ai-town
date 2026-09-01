@@ -162,10 +162,29 @@ export function findRoute(game: Game, now: number, player: Player, destination: 
 }
 
 export function blocked(game: Game, now: number, pos: Point, playerId?: GameId<'players'>) {
+  const movingPlayer = playerId ? game.world.players.get(playerId) : undefined;
   const otherPositions = [...game.world.players.values()]
-    .filter((p) => p.id !== playerId)
+    .filter((p) => p.id !== playerId && (!movingPlayer?.battle || !p.battle?.eliminated))
     .map((p) => p.position);
+  if (movingPlayer?.battle) {
+    return blockedWithBattlePositions(pos, otherPositions, game.worldMap);
+  }
   return blockedWithPositions(pos, otherPositions, game.worldMap);
+}
+
+function blockedWithBattlePositions(position: Point, otherPositions: Point[], map: WorldMap) {
+  if (isNaN(position.x) || isNaN(position.y)) {
+    throw new Error(`NaN position in ${JSON.stringify(position)}`);
+  }
+  if (position.x < 0 || position.y < 0 || position.x >= map.width || position.y >= map.height) {
+    return 'out of bounds';
+  }
+  for (const otherPosition of otherPositions) {
+    if (distance(otherPosition, position) < COLLISION_THRESHOLD) {
+      return 'player';
+    }
+  }
+  return null;
 }
 
 export function blockedWithPositions(position: Point, otherPositions: Point[], map: WorldMap) {

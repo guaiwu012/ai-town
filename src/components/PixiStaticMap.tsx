@@ -24,7 +24,7 @@ const animations = {
 };
 
 export const PixiStaticMap = PixiComponent('StaticMap', {
-  create: (props: { map: WorldMap; [k: string]: any }) => {
+  create: (props: { map: WorldMap; showLegacyAnimations?: boolean; [k: string]: any }) => {
     const map = props.map;
     const numxtiles = Math.floor(map.tileSetDimX / map.tileDim);
     const numytiles = Math.floor(map.tileSetDimY / map.tileDim);
@@ -71,47 +71,51 @@ export const PixiStaticMap = PixiComponent('StaticMap', {
     const arenaBackdrop = PIXI.Sprite.from(BATTLE_ARENA_ART);
     arenaBackdrop.width = screenxtiles * map.tileDim;
     arenaBackdrop.height = screenytiles * map.tileDim;
-    arenaBackdrop.alpha = 0.72;
+    // The illustrated arena is the visual ground plane. Keeping the legacy
+    // tiles visible beneath it produced a muddy double-exposure effect.
+    arenaBackdrop.alpha = 1;
     container.addChild(arenaBackdrop);
 
     // TODO: Add layers.
-    const spritesBySheet = new Map<string, AnimatedSprite[]>();
-    for (const sprite of map.animatedSprites) {
-      const sheet = sprite.sheet;
-      if (!spritesBySheet.has(sheet)) {
-        spritesBySheet.set(sheet, []);
-      }
-      spritesBySheet.get(sheet)!.push(sprite);
-    }
-    for (const [sheet, sprites] of spritesBySheet.entries()) {
-      const animation = (animations as any)[sheet];
-      if (!animation) {
-        console.error('Could not find animation', sheet);
-        continue;
-      }
-      const { spritesheet, url } = animation;
-      const texture = PIXI.BaseTexture.from(url, {
-        scaleMode: PIXI.SCALE_MODES.NEAREST,
-      });
-      const spriteSheet = new PIXI.Spritesheet(texture, spritesheet);
-      spriteSheet.parse().then(() => {
-        for (const sprite of sprites) {
-          const pixiAnimation = spriteSheet.animations[sprite.animation];
-          if (!pixiAnimation) {
-            console.error('Failed to load animation', sprite);
-            continue;
-          }
-          const pixiSprite = new PIXI.AnimatedSprite(pixiAnimation);
-          pixiSprite.animationSpeed = 0.1;
-          pixiSprite.autoUpdate = true;
-          pixiSprite.x = sprite.x;
-          pixiSprite.y = sprite.y;
-          pixiSprite.width = sprite.w;
-          pixiSprite.height = sprite.h;
-          container.addChild(pixiSprite);
-          pixiSprite.play();
+    if (props.showLegacyAnimations !== false) {
+      const spritesBySheet = new Map<string, AnimatedSprite[]>();
+      for (const sprite of map.animatedSprites) {
+        const sheet = sprite.sheet;
+        if (!spritesBySheet.has(sheet)) {
+          spritesBySheet.set(sheet, []);
         }
-      });
+        spritesBySheet.get(sheet)!.push(sprite);
+      }
+      for (const [sheet, sprites] of spritesBySheet.entries()) {
+        const animation = (animations as any)[sheet];
+        if (!animation) {
+          console.error('Could not find animation', sheet);
+          continue;
+        }
+        const { spritesheet, url } = animation;
+        const texture = PIXI.BaseTexture.from(url, {
+          scaleMode: PIXI.SCALE_MODES.NEAREST,
+        });
+        const spriteSheet = new PIXI.Spritesheet(texture, spritesheet);
+        spriteSheet.parse().then(() => {
+          for (const sprite of sprites) {
+            const pixiAnimation = spriteSheet.animations[sprite.animation];
+            if (!pixiAnimation) {
+              console.error('Failed to load animation', sprite);
+              continue;
+            }
+            const pixiSprite = new PIXI.AnimatedSprite(pixiAnimation);
+            pixiSprite.animationSpeed = 0.1;
+            pixiSprite.autoUpdate = true;
+            pixiSprite.x = sprite.x;
+            pixiSprite.y = sprite.y;
+            pixiSprite.width = sprite.w;
+            pixiSprite.height = sprite.h;
+            container.addChild(pixiSprite);
+            pixiSprite.play();
+          }
+        });
+      }
     }
 
     container.x = 0;

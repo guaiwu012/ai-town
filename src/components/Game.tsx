@@ -16,7 +16,7 @@ import DecisionDriver from './DecisionDriver.tsx';
 import LiveBattleHud from './LiveBattleHud.tsx';
 import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
 import BattleReplayControls from './BattleReplayControls.tsx';
-import { selectDirectorTarget } from '../lib/battleDirector.ts';
+import { selectDirectorShot } from '../lib/battleDirector.ts';
 import { replayFrameAt } from '../lib/battleReplay.ts';
 import BattleStoryCard from './BattleStoryCard.tsx';
 import BattleDialogueBox from './BattleDialogueBox.tsx';
@@ -38,6 +38,8 @@ export default function Game() {
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [replayTime, setReplayTime] = useState<number>();
+  const [directorCaption, setDirectorCaption] = useState('直播准备 · 等待现场');
+  const directorSwitchRef = useRef({ at: 0, eventId: -1 });
   const [gameWrapperRef, { width, height }] = useElementSize();
 
   const worldStatus = useQuery(api.world.defaultWorldStatus);
@@ -56,15 +58,23 @@ export default function Game() {
 
   useEffect(() => {
     if (cameraMode !== 'auto' || !game) return;
-    const target = selectDirectorTarget(
+    const now = Date.now();
+    const shot = selectDirectorShot(
       [...game.world.players.values()]
         .filter((player) => player.battle)
-        .map((player) => ({ id: player.id, alive: !player.battle!.eliminated, heat: player.battle!.heat ?? 0 })),
+        .map((player) => ({ id: player.id, alive: !player.battle!.eliminated, heat: player.battle!.heat ?? 0, hpRatio: player.battle!.hp / player.battle!.maxHp, moving: player.speed > 0 })),
       game.world.battle?.feed ?? [],
+      now,
     );
-    if (target) setFocusPlayerId(target as GameId<'players'>);
+    const isNewUrgentEvent = shot.urgent && shot.eventId !== undefined && shot.eventId !== directorSwitchRef.current.eventId;
+    const cadenceElapsed = now - directorSwitchRef.current.at >= 8000;
+    if (shot.targetId && (!focusPlayerId || isNewUrgentEvent || cadenceElapsed)) {
+      setFocusPlayerId(shot.targetId as GameId<'players'>);
+      setDirectorCaption(shot.caption);
+      directorSwitchRef.current = { at: now, eventId: shot.eventId ?? directorSwitchRef.current.eventId };
+    }
     setFocusAreaId(undefined);
-  }, [cameraMode, game]);
+  }, [cameraMode, game, focusPlayerId]);
 
   useEffect(() => {
     if (!replayActive || !game) return;
@@ -101,6 +111,8 @@ export default function Game() {
     setDrawerOpen(false);
     setReplayActive(false);
     setReplayTime(undefined);
+    setDirectorCaption('直播准备 · 等待现场');
+    directorSwitchRef.current = { at: 0, eventId: -1 };
   };
   const replayFrame = replayActive ? replayFrameAt(game.world.battle, replayTime) : undefined;
   return (
@@ -136,6 +148,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             game={game}
             focusPlayerId={focusPlayerId}
             cameraMode={cameraMode}
+            directorCaption={directorCaption}
             onOpenOverview={() => setViewMode('overview')}
             onOpenDetails={() => setDrawerOpen(true)}
             onOpenMine={() => { setLaunchModal('mine'); setViewMode('overview'); }}
@@ -146,7 +159,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           />
           <BattleStoryCard game={game} />
           <BattleDialogueBox game={game} />
-          <BattleReplayControls
+          {replayActive && <BattleReplayControls
             battle={game.world.battle}
             active={replayActive}
             speed={replaySpeed}
@@ -154,7 +167,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onToggle={() => { setReplayTime((time) => time ?? game.world.battle?.started); setReplayActive((active) => !active); }}
             onSpeed={setReplaySpeed}
             onJump={(time) => { setReplayTime(time); setReplayActive(true); }}
-          />
+          />}
           {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} onClose={() => setDrawerOpen(false)} />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel

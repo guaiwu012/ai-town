@@ -8,6 +8,7 @@ type LiveBattleHudProps = {
   game: ServerGame;
   focusPlayerId?: GameId<'players'>;
   cameraMode: 'auto' | 'locked';
+  directorCaption: string;
   onOpenOverview: () => void;
   onOpenDetails: () => void;
   onOpenMine: () => void;
@@ -21,6 +22,7 @@ export default function LiveBattleHud({
   game,
   focusPlayerId,
   cameraMode,
+  directorCaption,
   onOpenOverview,
   onOpenDetails,
   onOpenMine,
@@ -43,7 +45,7 @@ export default function LiveBattleHud({
   return (
     <div className="live-hud pointer-events-none absolute inset-0 z-10">
       <div className="live-hud-top pointer-events-auto">
-        <div className="live-brand">AI 大逃杀 <span>直播跟随</span></div>
+        <div className="live-brand"><b className="live-badge">LIVE</b> AI 大逃杀 <span>直播跟随</span></div>
         <div className="live-match-meta">第 {battle?.day ?? 1} 天 · {battle?.timeOfDay === 'night' ? '夜间' : '白天'} · {alive} 人存活</div>
         <div className="live-top-actions">
           <button className="live-hud-button" onClick={onOpenOverview}>战略总览</button>
@@ -62,9 +64,9 @@ export default function LiveBattleHud({
 
       <div className="live-hud-bottom pointer-events-auto">
         <section className="focus-card">
-          <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? '自动导播' : '手动锁定'}</div><div className="focus-card-title">{name}</div></div></div>
+          <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? directorCaption : '手动锁定 · 选手跟拍'}</div><div className="focus-card-title">{name}</div></div></div>
           {stats && <div className="focus-card-stats flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} /><span>{Math.ceil(stats.hp)}/{stats.maxHp} · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</span></div>}
-          {focus?.activity && <div className="focus-card-action">{focus.activity.description}</div>}
+          {focus?.activity && focus.activity.until > now && <div className="focus-card-action">{focus.activity.emoji === 'MOVE' && focus.speed <= 0 ? `${name} 正在观察路线` : focus.activity.description}</div>}
           <div className="focus-card-actions">
             <button className="live-hud-button" onClick={onOpenDetails}>角色详情</button>
             {cameraMode === 'locked' && <button className="live-hud-button" onClick={onResumeDirector}>恢复自动导播</button>}

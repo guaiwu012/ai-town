@@ -358,6 +358,8 @@ p[contenteditable='true']:empty::before {
 .live-hud { color: #ecf3ef; }
 .live-hud-top { position: absolute; top: 0.75rem; left: 0.75rem; right: 0.75rem; display: flex; align-items: center; gap: 0.8rem; border-bottom: 1px solid rgba(122, 162, 169, 0.55); background: rgba(3, 14, 23, 0.66); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22); padding: 0.45rem 0.6rem; backdrop-filter: blur(7px); }
 .live-brand { color: #f4e6cf; font-family: var(--font-display); font-size: 1.15rem; white-space: nowrap; }
+.live-badge { display: inline-flex; align-items: center; height: 1.2rem; margin-right: 0.45rem; border: 1px solid rgba(255, 116, 104, 0.8); background: #a8252c; padding: 0 0.35rem; color: #fff6e9; font-family: var(--font-body); font-size: 0.58rem; letter-spacing: 0.08em; box-shadow: 0 0 12px rgba(225, 58, 64, 0.38); animation: live-badge 1.8s ease-in-out infinite; }
+@keyframes live-badge { 50% { border-color: #ffd0c9; box-shadow: 0 0 18px rgba(225, 58, 64, 0.62); } }
 .live-brand span, .live-match-meta { color: #78d8bf; font-size: 0.72rem; letter-spacing: 0.06em; }
 .live-top-actions { display: flex; gap: 0.45rem; margin-left: auto; }
 .live-hud-button {

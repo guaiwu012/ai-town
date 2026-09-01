@@ -14,6 +14,12 @@ export default function BattleStoryCard({ game }: { game: ServerGame }) {
     }
   }, [story, seenId]);
 
+  useEffect(() => {
+    if (!story || !open) return;
+    const timer = window.setTimeout(() => setOpen(false), 7_500);
+    return () => window.clearTimeout(timer);
+  }, [story?.id, open]);
+
   if (!story) return null;
   const actor = game.playerDescriptions.get(story.actorId as GameId<'players'>)?.name ?? story.actorId;
   return (

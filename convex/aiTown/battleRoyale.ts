@@ -437,7 +437,10 @@ export function resetBattleMatch(game: Game, now: number) {
     const index = [...game.world.players.keys()].indexOf(player.id);
     const profile = profileForIndex(index);
     player.battle = defaultBattleStats(profile);
-    const spawn = battleAreaSpawnPoints(profile.areaId, game.worldMap.width, game.worldMap.height)[0];
+    const spawn = [
+      ...battleAreaSpawnPoints(profile.areaId, game.worldMap.width, game.worldMap.height),
+      ...battleAreaNavigationPoints(profile.areaId, game.worldMap.width, game.worldMap.height),
+    ].find((candidate) => !blocked(game, now, candidate, player.id));
     if (spawn) player.position = spawn;
     player.facing = { dx: 1, dy: 0 };
     delete player.activity;
@@ -491,11 +494,35 @@ export function tickBattleRoyale(game: Game, now: number) {
 export function tickBattleLocomotion(game: Game, now: number, player: Player) {
   const stats = player.battle;
   if (!stats || stats.eliminated) return false;
+  const standingBlock = blocked(game, now, player.position, player.id);
+  if (standingBlock === 'world blocked' || standingBlock === 'out of bounds') {
+    const origin = { x: Math.floor(player.position.x), y: Math.floor(player.position.y) };
+    const rescue = openTilesNear(game, player, origin, 10, now)
+      .sort((a, b) => distance(a, origin) - distance(b, origin))[0];
+    if (rescue) {
+      player.position = rescue;
+      player.speed = 0;
+      delete player.pathfinding;
+      stats.locomotionX = rescue.x;
+      stats.locomotionY = rescue.y;
+      stats.locomotionProgressAt = now;
+      stats.locomotionRecoveries = (stats.locomotionRecoveries ?? 0) + 1;
+      stats.nextLocomotionAt = now;
+      player.activity = { description: `${playerName(game, player)} 已脱离无效地形，正在重新定位`, emoji: 'ROUTE', until: now + 1200 };
+    }
+  }
   const previousPosition = { x: stats.locomotionX ?? player.position.x, y: stats.locomotionY ?? player.position.y };
   if (distance(previousPosition, player.position) >= 0.2) {
     stats.locomotionX = player.position.x;
     stats.locomotionY = player.position.y;
     stats.locomotionProgressAt = now;
+  }
+  if (player.pathfinding?.state.kind === 'moving' && player.speed > 0) {
+    if (!player.activity || player.activity.until <= now || ['MOVE', 'ROUTE'].includes(player.activity.emoji ?? '')) {
+      player.activity = { description: `${playerName(game, player)} 正在穿越${areaName(stats.areaId ?? 'A01')}`, emoji: 'MOVE', until: now + 700 };
+    }
+  } else if (player.activity?.emoji === 'MOVE' && player.activity.until > now) {
+    player.activity = { description: `${playerName(game, player)} 正在观察路线`, emoji: 'ROUTE', until: now + 700 };
   }
   if (player.pathfinding) {
     const stalledFor = now - (stats.locomotionProgressAt ?? now);
@@ -506,7 +533,7 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
     stats.locomotionRecoveries = (stats.locomotionRecoveries ?? 0) + 1;
     stats.nextLocomotionAt = now;
     stats.locomotionProgressAt = now;
-    player.activity = { description: `${playerName(game, player)} 遇到阻挡，正在重新规划路线`, emoji: 'MOVE', until: now + 1400 };
+    player.activity = { description: `${playerName(game, player)} 遇到阻挡，正在重新规划路线`, emoji: 'ROUTE', until: now + 1400 };
   }
   if (now < (stats.nextLocomotionAt ?? 0)) return false;
   const activeActivity = player.activity && player.activity.until > now ? player.activity : undefined;
@@ -516,7 +543,11 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
   }
   stats.nextLocomotionAt = now + 900 + Math.floor(battleRandom(game) * 900);
   const areaId = stats.areaId ?? 'A01';
-  const points = battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
+  const origin = { x: Math.floor(player.position.x), y: Math.floor(player.position.y) };
+  const nearbyPoints = openTilesNear(game, player, origin, 6, now);
+  const points = nearbyPoints.length >= 4
+    ? nearbyPoints
+    : battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
   const start = Math.floor(battleRandom(game) * Math.max(1, points.length));
   for (let offset = 0; offset < points.length; offset += 1) {
     const destination = points[(start + offset) % points.length];
@@ -527,7 +558,7 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
     stats.locomotionY = player.position.y;
     stats.locomotionProgressAt = now;
     if (!activeActivity || activeActivity.emoji === 'MOVE') {
-      player.activity = { description: `${playerName(game, player)} 正在巡查${areaName(areaId)}`, emoji: 'MOVE', until: now + 1800 };
+      player.activity = { description: `${playerName(game, player)} 正在规划巡查路线`, emoji: 'ROUTE', until: now + 900 };
     }
     return true;
   }
@@ -1825,7 +1856,7 @@ function randomOpenTile(game: Game, player: Player) {
   return undefined;
 }
 
-function openTilesNear(game: Game, player: Player, origin: { x: number; y: number }, radius: number) {
+function openTilesNear(game: Game, player: Player, origin: { x: number; y: number }, radius: number, now = Date.now()) {
   const candidates: Array<{ x: number; y: number }> = [];
   for (let dx = -radius; dx <= radius; dx++) {
     for (let dy = -radius; dy <= radius; dy++) {
@@ -1836,7 +1867,7 @@ function openTilesNear(game: Game, player: Player, origin: { x: number; y: numbe
         x: Math.max(1, Math.min(game.worldMap.width - 2, origin.x + dx)),
         y: Math.max(1, Math.min(game.worldMap.height - 2, origin.y + dy)),
       };
-      if (isInPlayerBattleArea(game, player, candidate) && !blocked(game, Date.now(), candidate, player.id)) {
+      if (isInPlayerBattleArea(game, player, candidate) && !blocked(game, now, candidate, player.id)) {
         candidates.push(candidate);
       }
     }

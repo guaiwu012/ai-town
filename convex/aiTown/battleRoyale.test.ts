@@ -1,6 +1,7 @@
 import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { isBattleArenaWalkable } from '../../data/battleArena';
+import { blocked } from './movement';
 
 type TestPlayer = ReturnType<typeof createPlayer>;
 
@@ -72,7 +73,23 @@ describe('battle royale host intervention rules', () => {
     expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
     expect(player.pathfinding?.destination).toBeDefined();
     expect(player.battle.nextLocomotionAt).toBeGreaterThan(2_000);
-    expect(player.activity?.description).toContain('正在巡查');
+    expect(player.activity?.description).toContain('巡查');
+    expect(player.activity?.emoji).toBe('ROUTE');
+  });
+
+  it('only reports MOVE while coordinates are actively advancing', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    player.pathfinding = { destination: { x: 20, y: 8 }, started: 1_900, state: { kind: 'moving', path: [] } };
+    player.activity = { description: '错误的移动状态', emoji: 'MOVE', until: 5_000 };
+    player.battle.locomotionProgressAt = 1_900;
+    tickBattleLocomotion(game, 2_000, player);
+    expect(player.activity?.emoji).toBe('ROUTE');
+
+    player.speed = 0.00075;
+    tickBattleLocomotion(game, 2_100, player);
+    expect(player.activity?.emoji).toBe('MOVE');
+    expect(player.activity?.description).toContain('正在穿越');
   });
 
   it('abandons a stalled collision wait and immediately replans', () => {
@@ -91,6 +108,26 @@ describe('battle royale host intervention rules', () => {
     expect(player.battle.locomotionRecoveries).toBe(1);
     expect(player.pathfinding?.started).toBe(5_000);
     expect(player.pathfinding?.state.kind).toBe('needsPath');
+  });
+
+  it('uses the logical battle layer instead of legacy AI Town object tiles', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    game.worldMap.objectTiles[0][10][10] = 1;
+
+    expect(blocked(game, 2_000, player.position, player.id)).toBeNull();
+    expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
+    expect(player.pathfinding?.destination).toBeDefined();
+  });
+
+  it('does not let eliminated contestants block living battle paths', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const eliminated = createPlayer('p:2', 'C02', 'A01');
+    eliminated.battle.eliminated = true;
+    eliminated.position = { x: 11, y: 10 };
+    const game = createGame([player, eliminated]);
+
+    expect(blocked(game, 2_000, eliminated.position, player.id)).toBeNull();
   });
 
   it('records model alliance speech and the partner response', () => {

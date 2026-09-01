@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
-import { useApp } from '@pixi/react';
+import { useApp, useTick } from '@pixi/react';
 import { Player, SelectElement } from './Player.tsx';
-import { useEffect, useRef, useState } from 'react';
+import { MutableRefObject, useEffect, useRef, useState } from 'react';
 import { PixiStaticMap } from './PixiStaticMap.tsx';
 import PixiViewport from './PixiViewport.tsx';
 import { Viewport } from 'pixi-viewport';
@@ -20,6 +20,10 @@ import { BATTLE_ARENA_ZONES } from '../../data/battleArena.ts';
 import { GameId } from '../../convex/aiTown/ids.ts';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale.ts';
 import PixiBattleSpeech from './PixiBattleSpeech.tsx';
+import { Player as ServerPlayer } from '../../convex/aiTown/player.ts';
+import { Location, locationFields, playerLocation } from '../../convex/aiTown/location.ts';
+import { useHistoricalValue } from '../hooks/useHistoricalValue.ts';
+import { dampCameraPosition } from '../lib/cameraMotion.ts';
 
 export const PixiGame = (props: {
   worldId: Id<'worlds'>;
@@ -103,30 +107,15 @@ export const PixiGame = (props: {
     });
   }, [humanPlayerId]);
 
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    const selected = props.selectedPlayerId && props.game.world.players.get(props.selectedPlayerId);
-    const replayPlayer = props.replayFrame?.players.find((player) => player.id === props.selectedPlayerId);
-    const focusedArea = props.focusAreaId
-      ? BATTLE_ARENA_ZONES.find((area) => area.id === props.focusAreaId)
-      : undefined;
-    if (!viewport || (!selected && !focusedArea)) {
-      return;
-    }
-    const selectedPosition = selected
-      ? { x: selected.position.x, y: selected.position.y }
-      : undefined;
-    const position = replayPlayer
-      ? { x: replayPlayer.x, y: replayPlayer.y }
-      : selectedPosition ?? {
-      x: focusedArea!.anchor.x * width,
-      y: focusedArea!.anchor.y * height,
-      };
-    viewport.moveCenter(
-      position.x * tileDim + tileDim / 2,
-      position.y * tileDim + tileDim / 2,
-    );
-  }, [props.selectedPlayerId, props.focusAreaId, props.replayFrame, props.game, tileDim, width, height]);
+  const selectedPlayer = props.selectedPlayerId
+    ? props.game.world.players.get(props.selectedPlayerId)
+    : undefined;
+  const replayPlayer = props.replayFrame?.players.find(
+    (player) => player.id === props.selectedPlayerId,
+  );
+  const focusedArea = props.focusAreaId
+    ? BATTLE_ARENA_ZONES.find((area) => area.id === props.focusAreaId)
+    : undefined;
 
   return (
     <PixiViewport
@@ -139,10 +128,24 @@ export const PixiGame = (props: {
     >
       <PixiStaticMap
         map={props.game.worldMap}
+        showLegacyAnimations={false}
         onpointerup={onMapPointerUp}
         onpointerdown={onMapPointerDown}
       />
       <PixiArenaZones game={props.game} />
+      <SmoothCameraFollow
+        key={props.selectedPlayerId ?? props.focusAreaId ?? 'free-camera'}
+        viewportRef={viewportRef}
+        player={selectedPlayer}
+        locationBuffer={selectedPlayer ? props.game.world.historicalLocations?.get(selectedPlayer.id) : undefined}
+        replayPlayer={replayPlayer}
+        focusedArea={focusedArea}
+        historicalTime={props.historicalTime}
+        replayMode={props.replayMode}
+        tileDim={tileDim}
+        mapWidth={width}
+        mapHeight={height}
+      />
       {players.map(
         (p) =>
           // Only show the path for the human player in non-debug mode.
@@ -168,4 +171,64 @@ export const PixiGame = (props: {
     </PixiViewport>
   );
 };
+
+function SmoothCameraFollow({
+  viewportRef,
+  player,
+  locationBuffer,
+  replayPlayer,
+  focusedArea,
+  historicalTime,
+  replayMode = false,
+  tileDim,
+  mapWidth,
+  mapHeight,
+}: {
+  viewportRef: MutableRefObject<Viewport | undefined>;
+  player?: ServerPlayer;
+  locationBuffer?: ArrayBuffer;
+  replayPlayer?: BattleReplayFrame['players'][number];
+  focusedArea?: (typeof BATTLE_ARENA_ZONES)[number];
+  historicalTime?: number;
+  replayMode?: boolean;
+  tileDim: number;
+  mapWidth: number;
+  mapHeight: number;
+}) {
+  const historicalLocation = useHistoricalValue<Location>(
+    locationFields,
+    historicalTime,
+    player ? playerLocation(player) : undefined,
+    locationBuffer,
+    replayMode,
+  );
+  const position = replayPlayer
+    ? { x: replayPlayer.x, y: replayPlayer.y }
+    : historicalLocation ?? (focusedArea
+      ? { x: focusedArea.anchor.x * mapWidth, y: focusedArea.anchor.y * mapHeight }
+      : undefined);
+  const targetRef = useRef<PIXI.Point>();
+  targetRef.current = position
+    ? new PIXI.Point(position.x * tileDim + tileDim / 2, position.y * tileDim + tileDim / 2)
+    : undefined;
+
+  useTick((delta) => {
+    const viewport = viewportRef.current;
+    const target = targetRef.current;
+    if (!viewport || !target) return;
+
+    const center = viewport.center;
+    const dx = target.x - center.x;
+    const dy = target.y - center.y;
+    if (dx * dx + dy * dy < 0.04) return;
+
+    // Frame-rate independent damping keeps following smooth even though Convex
+    // publishes positions less frequently than Pixi renders frames.
+    const next = dampCameraPosition(center, target, delta);
+    viewport.moveCenter(next.x, next.y);
+  });
+
+  return null;
+}
+
 export default PixiGame;

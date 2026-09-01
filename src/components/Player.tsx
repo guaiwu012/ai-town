@@ -65,6 +65,10 @@ export const Player = ({
     player.activity && player.activity.until > (historicalTime ?? Date.now())
       ? player.activity
       : undefined;
+  const actuallyMoving = displayedLocation.speed > 0;
+  const activityEmoji = activeActivity?.emoji === 'MOVE'
+    ? (actuallyMoving ? '↗' : '')
+    : activeActivity?.emoji === 'ROUTE' ? '' : activeActivity?.emoji;
   const isSpeaking =
     activeActivity?.emoji === 'TALK' ||
     activeActivity?.emoji === 'ALLY' ||
@@ -88,7 +92,7 @@ export const Player = ({
         isMoving={displayedLocation.speed > 0}
         isThinking={isThinking}
         isSpeaking={isSpeaking}
-        emoji={activeActivity?.emoji}
+        emoji={activityEmoji}
         isViewer={isViewer}
         hpRatio={displayedBattle ? displayedBattle.hp / displayedBattle.maxHp : undefined}
         isEliminated={displayedBattle?.eliminated}
