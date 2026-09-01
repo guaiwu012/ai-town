@@ -6,7 +6,9 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import { SelectElement } from './Player';
-import { BATTLE_CONFIG, INTERVENTION_OPERATIONS } from '../../data/battleRoyaleConfig';
+import { AREA_ANCHORS, BATTLE_CONFIG, INTERVENTION_OPERATIONS } from '../../data/battleRoyaleConfig';
+import BattleEventIcon from './BattleEventIcon';
+import BattleVitalBattery from './BattleVitalBattery';
 
 const MINE_ROWS = 8;
 const MINE_COLS = 8;
@@ -194,17 +196,23 @@ export default function BattleRoyalePanel({
 
   return (
     <>
-    <section className="overview-console pointer-events-auto grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_350px] grid-rows-[minmax(0,1fr)_148px] gap-2 p-2">
-      <div className="overview-map arena-panel relative min-h-0 p-2">
-        <div className="overview-map-heading absolute left-5 top-4 z-10">
-          <div className="flex items-center gap-2"><div className="arena-kicker">战略总览</div><button className="live-hud-button" onClick={onBackToLive}>返回直播跟随</button><button className="live-hud-button live-hud-danger" onClick={() => setResetConfirmOpen(true)}>新开一局</button></div>
-          <h2 className="arena-heading mt-1 font-display text-4xl leading-none">AI 大逃杀</h2>
-          <div className="mt-2 flex flex-wrap gap-2 text-[10px] uppercase tracking-widest text-slate-300">
+    <section className="overview-console pointer-events-auto grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_332px] grid-rows-[minmax(0,1fr)_148px] gap-2 p-2">
+      <div className="overview-map arena-panel relative flex min-h-0 flex-col p-2">
+        <div className="overview-map-toolbar">
+          <div className="min-w-0">
+            <div className="arena-kicker">战略总览</div>
+            <h2 className="arena-heading font-display text-2xl leading-none">AI 大逃杀</h2>
+          </div>
+          <div className="overview-match-state">
             <span>第 {battle?.day ?? 1} 天</span>
             <span>{battle?.timeOfDay === 'night' ? '夜间' : '白天'}</span>
             <span>{displayPhase(battle?.phase)}</span>
             <span>{openAreas.length} 个区域开放</span>
             <span>禁区收缩 {formatCountdown(zoneCountdownSeconds)}</span>
+          </div>
+          <div className="overview-toolbar-actions">
+            <button className="live-hud-button" onClick={onBackToLive}>返回直播</button>
+            <button className="live-hud-button live-hud-danger" onClick={() => setResetConfirmOpen(true)}>新开一局</button>
           </div>
         </div>
         <div className="overview-map-frame">
@@ -236,7 +244,7 @@ export default function BattleRoyalePanel({
                         title={`${name} · ${displayWeapon(stats.weapon)} · ${Math.ceil(stats.hp)} 生命`}
                         onClick={() => { setTargetPlayerId(player.id); onFollowPlayer(player.id); }}
                       >
-                        <span>{area.owner === stats.characterId ? '◆' : '●'}</span>
+                        <span className="contestant-portrait contestant-portrait-map" style={portraitPosition(stats.characterId)} />
                         <small>{name}</small>
                       </button>
                     );
@@ -265,7 +273,7 @@ export default function BattleRoyalePanel({
         </div>
       </div>
 
-      <aside className="overview-rail min-h-0 space-y-2 overflow-y-auto pr-0.5">
+      <aside className="overview-rail row-span-2 min-h-0 space-y-2 overflow-y-auto pr-0.5">
         <div className="arena-panel p-3">
           <div className="arena-panel-title">直播热度</div>
           <div className="mt-2 flex items-end justify-between gap-3">
@@ -340,10 +348,8 @@ export default function BattleRoyalePanel({
                 onClick={() => { setTargetPlayerId(player.id); onFollowPlayer(player.id); }}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-base text-[#f0dfc7]">{name}</span>
-                  <span className="text-xs text-[#87a0b2]">
-                    {stats.eliminated ? '已淘汰' : `${Math.ceil(stats.hp)} 生命`}
-                  </span>
+                  <span className="flex min-w-0 items-center gap-2"><span className="contestant-portrait contestant-portrait-list" style={portraitPosition(stats.characterId)} /><span className="truncate text-base text-[#f0dfc7]">{name}</span></span>
+                  {stats.eliminated ? <span className="text-xs text-[#de7666]">已淘汰</span> : <BattleVitalBattery value={stats.hp} max={stats.maxHp} compact />}
                 </div>
                 <div className="arena-progress mt-1">
                   <div
@@ -379,21 +385,6 @@ export default function BattleRoyalePanel({
         </div>
         </div>
 
-      <div className="arena-panel p-3">
-        <h3 className="arena-panel-title">观众干预台</h3>
-        <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
-          <Stat label="可用干预点" value={`${battle?.interventionPoints ?? 0}/${battle?.interventionPointsMax ?? 30}`} />
-          <Stat label="扫雷棋盘" value={`${MINE_ROWS}×${MINE_COLS}`} />
-        </div>
-        <button
-          className="arena-action arena-action-primary mt-3 h-14 w-full text-xl disabled:opacity-50"
-          onClick={openMineGame}
-          disabled={pending}
-        >
-          开始扫雷
-        </button>
-        <div className="mt-2 text-center text-xs text-slate-300">扫雷得分会直接兑换为主办方干预点</div>
-      </div>
       </aside>
 
       <div className="overview-feed arena-panel min-h-0 overflow-hidden p-3">
@@ -405,6 +396,7 @@ export default function BattleRoyalePanel({
           {eventFeed.length === 0 && <div className="py-2 text-xs text-slate-500">等待第一条直播事件...</div>}
           {eventFeed.map((event) => (
             <div key={event.id} className="arena-feed-row flex items-center gap-3 truncate py-1 text-xs">
+              <BattleEventIcon kind={event.kind} />
               <span className="arena-feed-tag shrink-0">[{displayEventKind(event.kind)}]</span>
               <span className="truncate text-slate-200">{displayEventText(event.text)}</span>
             </div>
@@ -531,21 +523,13 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 }
 
 function mapPositionForArea(areaId: string) {
-  const positions: Record<string, { left: string; top: string }> = {
-    A01: { left: '17%', top: '19%' },
-    A02: { left: '8%', top: '49%' },
-    A03: { left: '36%', top: '86%' },
-    A04: { left: '70%', top: '45%' },
-    A05: { left: '79%', top: '79%' },
-    A06: { left: '79%', top: '16%' },
-    A07: { left: '77%', top: '39%' },
-    A08: { left: '47%', top: '45%' },
-    A09: { left: '26%', top: '58%' },
-    A10: { left: '52%', top: '18%' },
-    A11: { left: '60%', top: '77%' },
-    A12: { left: '21%', top: '8%' },
-  };
-  return positions[areaId] ?? { left: '50%', top: '50%' };
+  const anchor = AREA_ANCHORS[areaId];
+  return anchor ? { left: `${anchor.x * 100}%`, top: `${anchor.y * 100}%` } : { left: '50%', top: '50%' };
+}
+
+function portraitPosition(characterId?: string) {
+  const index = Math.max(0, Number(characterId?.slice(1) ?? '1') - 1);
+  return { backgroundPosition: `${((index % 4) / 3) * 100}% ${(Math.floor(index / 4) / 2) * 100}%` };
 }
 
 function displayAreaName(areaId: string) {

@@ -2,6 +2,7 @@ import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
 import { AREA_SPECIAL_EVENTS } from '../../data/battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
+import BattleVitalBattery from './BattleVitalBattery';
 
 export default function BattleCharacterDrawer({ game, playerId, onClose }: {
   game: ServerGame;
@@ -24,7 +25,7 @@ export default function BattleCharacterDrawer({ game, playerId, onClose }: {
         <button className="live-hud-button" onClick={onClose}>关闭</button>
       </div>
       <div className="drawer-stat-grid">
-        <Stat label="生命" value={`${Math.ceil(stats.hp)}/${stats.maxHp}`} />
+        <div><small>生命</small><strong className="flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} compact />{Math.ceil(stats.hp)}/{stats.maxHp}</strong></div>
         <Stat label="体力" value={Math.ceil(stats.stamina ?? 0)} />
         <Stat label="武器" value={displayWeapon(stats.weapon)} />
         <Stat label="物资" value={stats.coins} />

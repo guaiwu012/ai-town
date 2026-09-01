@@ -112,11 +112,11 @@ export const BATTLE_CONFIG = {
 // Normalized anchors preserve the existing Pixi tile map while making the
 // reference area's graph authoritative for battle movement and encounters.
 export const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
-  A01: { x: 0.17, y: 0.19 }, A02: { x: 0.08, y: 0.49 }, A03: { x: 0.36, y: 0.86 },
-  A04: { x: 0.70, y: 0.45 }, A05: { x: 0.79, y: 0.79 }, A06: { x: 0.79, y: 0.16 },
-  A07: { x: 0.77, y: 0.39 }, A08: { x: 0.47, y: 0.45 }, A09: { x: 0.26, y: 0.58 },
-  A10: { x: 0.52, y: 0.18 }, A11: { x: 0.60, y: 0.77 }, A12: { x: 0.21, y: 0.08 },
-  S01: { x: 0.05, y: 0.58 },
+  A01: { x: 0.30, y: 0.16 }, A02: { x: 0.20, y: 0.77 }, A03: { x: 0.40, y: 0.72 },
+  A04: { x: 0.86, y: 0.65 }, A05: { x: 0.72, y: 0.75 }, A06: { x: 0.74, y: 0.23 },
+  A07: { x: 0.83, y: 0.42 }, A08: { x: 0.51, y: 0.44 }, A09: { x: 0.22, y: 0.48 },
+  A10: { x: 0.54, y: 0.14 }, A11: { x: 0.57, y: 0.78 }, A12: { x: 0.11, y: 0.24 },
+  S01: { x: 0.08, y: 0.59 },
 };
 
 export const BATTLE_ACTIONS = ['move', 'search', 'buy', 'trade', 'ally', 'attack', 'flee', 'heal', 'investigate'] as const;

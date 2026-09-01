@@ -16,8 +16,9 @@
 
 ## 视觉资产
 
-- `public/assets/battle/arena-live-map.png`：原创 13 区俯视战场视觉层。
+- `public/assets/battle/arena-live-map.png`：使用参考仓库纯地图的 13 区俯视战场视觉层，与战略总览保持一致。
 - `public/assets/battle/contestant-portraits.png`：12 名原创参赛者识别图集，用于直播焦点、角色档案和场内头顶识别徽记。
+- `public/assets/reference/ui/`：接入参考仓库的事件图标、生命电池和按钮状态资源；来源及授权注意事项见 [美术资产来源与接入记录](./asset-provenance.md)。
 - 所有区域 ID、锚点、邻接、出生点、区域多边形、导航节点和地标碰撞都由 `data/battleRoyaleConfig.ts` 与 `data/battleArena.ts` 统一定义；跨区落点及 AI 搜索游走从同一份可走导航节点取点。
 
 ## P2 验收清单

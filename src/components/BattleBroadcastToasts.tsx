@@ -1,4 +1,5 @@
 import type { BattleEvent } from '../../convex/aiTown/battleRoyale';
+import BattleEventIcon from './BattleEventIcon';
 
 type BattleBroadcastToastsProps = {
   feed?: BattleEvent[];
@@ -10,7 +11,7 @@ export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToas
     return null;
   }
   return (
-    <div className="pointer-events-none absolute left-1/2 top-4 z-20 flex w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-2">
+    <div className="battle-toast-stack pointer-events-none absolute left-1/2 z-20 flex w-[min(680px,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-2">
       {visibleFeed.map((event, index) => (
         <div
           key={event.id}
@@ -19,6 +20,7 @@ export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToas
           }`}
         >
           <div className="flex items-center gap-3">
+            <BattleEventIcon kind={event.kind} />
             <span className="arena-feed-tag shrink-0">
               {displayEventKind(event.kind)}
             </span>

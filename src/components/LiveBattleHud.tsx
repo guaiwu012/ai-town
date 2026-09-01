@@ -1,5 +1,6 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
+import BattleVitalBattery from './BattleVitalBattery';
 
 type LiveBattleHudProps = {
   game: ServerGame;
@@ -47,7 +48,7 @@ export default function LiveBattleHud({
       <div className="live-hud-bottom pointer-events-auto">
         <section className="focus-card">
           <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? '自动导播' : '手动锁定'}</div><div className="focus-card-title">{name}</div></div></div>
-          {stats && <div className="focus-card-stats">{Math.ceil(stats.hp)}/{stats.maxHp} 生命 · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</div>}
+          {stats && <div className="focus-card-stats flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} /><span>{Math.ceil(stats.hp)}/{stats.maxHp} · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</span></div>}
           {focus?.activity && <div className="focus-card-action">{focus.activity.description}</div>}
           <div className="focus-card-actions">
             <button className="live-hud-button" onClick={onOpenDetails}>角色详情</button>
