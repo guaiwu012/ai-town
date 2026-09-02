@@ -311,18 +311,19 @@ export default function BattleRoyalePanel({
         <div className="arena-panel p-3">
           <div className="arena-panel-title">主办方干预</div>
           <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-            <label className="text-slate-300">角色目标
+            <label className="text-slate-300">第一角色（执行者）
               <select className="mt-1 w-full border border-slate-500 bg-[#0b2032] p-1 text-xs text-slate-100" value={interventionTarget?.id ?? ''} onChange={(event) => setTargetPlayerId(event.target.value || undefined)}>
                 {players.filter((player) => !player.battle?.eliminated).map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name}</option>)}
               </select>
             </label>
-            <label className="text-slate-300">第二角色
+            <label className="text-slate-300">第二角色（目标）
               <select className="mt-1 w-full border border-slate-500 bg-[#0b2032] p-1 text-xs text-slate-100" value={secondTargetPlayerId ?? ''} onChange={(event) => setSecondTargetPlayerId(event.target.value || undefined)}>
-                <option value="">选择结盟对象</option>
+                <option value="">选择目标角色</option>
                 {players.filter((player) => !player.battle?.eliminated && player.id !== interventionTarget?.id).map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name}</option>)}
               </select>
             </label>
           </div>
+          <div className="mt-2 text-xs text-amber-100">悬赏追杀：第一角色接受任务，追杀第二角色。</div>
           <div className="mt-2 text-xs text-cyan-200">地图目标：{displayAreaName(targetAreaId)}（点击地图区域名称切换）</div>
           <div className="mt-2 grid grid-cols-2 gap-2">
             {INTERVENTION_OPERATIONS.filter((operation) => operation.id !== 'TRU_01').map((operation) => {

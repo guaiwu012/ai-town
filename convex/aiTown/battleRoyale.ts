@@ -208,6 +208,7 @@ export const battleState = v.object({
   operationCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
   encounterCooldowns: v.optional(v.array(v.object({ pairId: v.string(), until: v.number() }))),
   disabledWeaponsUntil: v.optional(v.number()),
+  bountyHunterId: v.optional(playerId),
   bountyPlayerId: v.optional(playerId),
   temporaryAllianceUntil: v.optional(v.number()),
   areaEventCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
@@ -1107,7 +1108,13 @@ export function applyIntervention(
       break;
     case 'RUL_01': target!.battle!.alliance = second!.id; second!.battle!.alliance = target!.id; battle.temporaryAllianceUntil = now + 45000; announce(`${playerName(game, target!)}与${playerName(game, second!)}被规则强制结盟。`); awardPopularity(game, now, 20, [target!, second!]); break;
     case 'RUL_02': battle.disabledWeaponsUntil = now + 30000; announce('武器规则已冻结，全场进入徒手阶段。'); break;
-    case 'RUL_04': battle.bountyPlayerId = target!.id; announce(`${playerName(game, target!)}成为悬赏目标。`); break;
+    case 'RUL_04':
+      battle.bountyHunterId = target!.id;
+      battle.bountyPlayerId = second!.id;
+      updateRelationship(game, target!, second!, -8, '接受悬赏追杀任务');
+      announce(`向${playerName(game, target!)}发布追杀任务，目标为${playerName(game, second!)}。`);
+      awardPopularity(game, now, 12, [target!, second!]);
+      break;
     case 'INF_01': collectTruthClue(game, now, `情报-${target!.battle!.characterId}`, target!); announce(`${playerName(game, target!)}收到了一条真实情报。`); break;
     case 'INF_02': target!.battle!.stress = (target!.battle!.stress ?? 0) + 20; announce(`${playerName(game, target!)}被虚假情报扰乱。`); break;
     case 'INF_03': target!.battle!.alliance = undefined; second!.battle!.alliance = undefined; updateRelationship(game, target!, second!, -25, '匿名挑拨'); announce(`匿名消息挑拨了${playerName(game, target!)}与${playerName(game, second!)}。`); awardPopularity(game, now, 25, [target!, second!]); break;
@@ -1160,7 +1167,7 @@ export function applyIntervention(
   battle.interventionEffect = {
     kind: operation.id,
     areaId: operation.target === 'area' ? areaId : target?.battle?.areaId,
-    playerId: target?.id,
+    playerId: operation.id === 'RUL_04' ? second?.id : target?.id,
     until: now + 7000,
   };
   const responders = operation.target === 'global'
@@ -1177,7 +1184,11 @@ function markInterventionReaction(game: Game, now: number, player: Player, opera
   const stats = player.battle!;
   stats.interventionKind = operationId;
   stats.interventionUntil = now + 10000;
-  const reaction = interventionReaction(operationId);
+  const reaction = operationId === 'RUL_04'
+    ? player.id === game.world.battle?.bountyHunterId
+      ? { description: `接到追杀任务，正在锁定${playerNameById(game, game.world.battle?.bountyPlayerId)}`, emoji: 'TARGET' }
+      : { description: '收到悬赏警报，正在提防追杀者', emoji: 'ALERT' }
+    : interventionReaction(operationId);
   player.activity = {
     description: `${playerName(game, player)} ${reaction.description}`,
     emoji: reaction.emoji,
@@ -1400,6 +1411,24 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     }
   }
 
+  const bountyTarget = bountyTargetFor(game, player);
+  if (bountyTarget && bountyTarget.battle?.areaId !== stats.areaId) {
+    const destination = nextOpenAreaToward(
+      game,
+      stats.areaId ?? 'A01',
+      bountyTarget.battle?.areaId ?? 'A01',
+    );
+    if (destination && performRuleAction('move', undefined, destination)) {
+      player.activity = {
+        description: `${playerName(game, player)} 正在追踪 ${playerName(game, bountyTarget)}`,
+        emoji: 'TARGET',
+        until: now + 2000,
+      };
+      pushEvent(game, now, 'bounty', `【悬赏】${playerName(game, player)} 正沿区域路线追踪 ${playerName(game, bountyTarget)}。`, player, bountyTarget);
+      return;
+    }
+  }
+
   if (enemy && stats.hp <= 45 && distance(player.position, enemy.position) <= BATTLE_CONFIG.match.dangerRange) {
     if (performRuleAction('flee', enemy)) {
       player.activity = {
@@ -1517,9 +1546,14 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   }
 
   if (defend.hp <= 0) {
+    const battle = game.world.battle!;
+    const completedBounty = battle.bountyHunterId === attacker.id && battle.bountyPlayerId === target.id;
+    const bountyTargetEliminated = battle.bountyPlayerId === target.id;
+    const bountyHunterEliminated = battle.bountyHunterId === target.id;
     defend.eliminated = true;
     attack.kills += 1;
     attack.coins += 45 + Math.floor(defend.coins / 2);
+    if (completedBounty) attack.coins += 35;
     defend.coins = Math.floor(defend.coins / 2);
     delete target.pathfinding;
     target.speed = 0;
@@ -1535,7 +1569,18 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
         to: target.position,
       },
     );
-    awardPopularity(game, now, 25 + (game.world.battle?.bountyPlayerId === target.id ? 15 : 0), [attacker]);
+    if (completedBounty) {
+      pushEvent(game, now + 1, 'bounty', `【悬赏完成】${playerName(game, attacker)} 完成追杀任务，获得 35 物资币奖励。`, attacker, target);
+    } else if (bountyTargetEliminated) {
+      pushEvent(game, now + 1, 'bounty', `【悬赏失效】目标${playerName(game, target)}被第三方淘汰，${playerNameById(game, battle.bountyHunterId)}的任务终止。`, attacker, target);
+    } else if (bountyHunterEliminated) {
+      pushEvent(game, now + 1, 'bounty', `【悬赏失败】执行者${playerName(game, target)}被淘汰，追杀任务终止。`, attacker, target);
+    }
+    if (completedBounty || bountyTargetEliminated || bountyHunterEliminated) {
+      battle.bountyHunterId = undefined;
+      battle.bountyPlayerId = undefined;
+    }
+    awardPopularity(game, now, 25 + (completedBounty ? 15 : 0), [attacker]);
   } else if (battleRandom(game) < 0.72) {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
@@ -1930,9 +1975,42 @@ function nearestEnemy(game: Game, player: Player) {
       candidate.id !== player.battle?.alliance &&
       candidate.battle?.areaId === player.battle?.areaId,
   );
+  const bountyTarget = bountyTargetFor(game, player);
+  if (bountyTarget && candidates.some((candidate) => candidate.id === bountyTarget.id)) return bountyTarget;
   return candidates.sort(
     (a, b) => distance(player.position, a.position) - distance(player.position, b.position),
   )[0];
+}
+
+function bountyTargetFor(game: Game, player: Player) {
+  const battle = game.world.battle;
+  if (!battle?.bountyHunterId || battle.bountyHunterId !== player.id || !battle.bountyPlayerId) return undefined;
+  const target = game.world.players.get(battle.bountyPlayerId as any);
+  return target?.battle?.eliminated ? undefined : target;
+}
+
+function playerNameById(game: Game, playerId?: string) {
+  if (!playerId) return '未知角色';
+  const player = game.world.players.get(playerId as any);
+  return player ? playerName(game, player) : '未知角色';
+}
+
+function nextOpenAreaToward(game: Game, startAreaId: string, targetAreaId: string) {
+  if (startAreaId === targetAreaId) return undefined;
+  const openAreas = new Set(game.world.battle?.openAreas ?? []);
+  const queue: Array<{ areaId: string; firstStep?: string }> = [{ areaId: startAreaId }];
+  const visited = new Set([startAreaId]);
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neighbor of adjacentAreaIds(current.areaId).map(String)) {
+      if (visited.has(neighbor) || !openAreas.has(neighbor)) continue;
+      const firstStep = current.firstStep ?? neighbor;
+      if (neighbor === targetAreaId) return firstStep;
+      visited.add(neighbor);
+      queue.push({ areaId: neighbor, firstStep });
+    }
+  }
+  return undefined;
 }
 
 export function encounterDisposition(game: Game, player: Player, target: Player): 'attack' | 'ally' | 'flee' | 'observe' {

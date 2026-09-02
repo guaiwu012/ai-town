@@ -36,7 +36,7 @@
 | --- | --- | --- | --- |
 | `系统/配表_游戏全局配置` | `BATTLE_CONFIG.match`、`runtime`、`zone`、`weapons` | 部分抽象 | 角色行为频率、完整资源/淘汰/结算参数和所有数值公式未逐列同步；部分当前数值为 Demo 节奏调优值。 |
 | `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`；`AREA_STORY_NARRATIVES`；`storyOptionsFor()`；`areaEventEligible()`；`triggerAreaSpecialEvent()` | 运行中 | 24 条均具备三种事件专属处置、D20 检定和差异化后果；校园广播磁带、监控权限卡、暗巷 60 秒、药品 30% 概率、远程武器殉爆等参考条件已执行。后续继续增加人物特有后果。 |
-| `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx`；`SupportFactionPanel.tsx` | 部分抽象 | 17 个参考操作和 1 个本项目应援空投可选择目标并执行基础效果；次数上限、双胜规则、资源移除/隐藏和部分操作专属视觉没有完全按表覆盖。 |
+| `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`BattleRoyalePanel.tsx`；`SupportFactionPanel.tsx` | 部分抽象 | 17 个参考操作和 1 个本项目应援空投可选择目标并执行基础效果；`RUL_04` 已抽象为“第一角色接单、第二角色被追杀”的双角色任务，包含寻路、关系、完成与失效结算。次数上限、双胜规则、资源移除/隐藏和部分操作专属视觉仍未完全按表覆盖。 |
 | `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
 | `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |
 | `系统/配表_评分规则` | `awardPopularity()`；`updateMissionProgress()`；关系剧情规则 | 部分抽象 | 已实现攻击、淘汰、结盟、背叛、重逢、守护、逆转、剧情、真相、连击和热度换干预点；伏击、无事件惩罚的精确触发和完整评分明细仍待补齐。 |

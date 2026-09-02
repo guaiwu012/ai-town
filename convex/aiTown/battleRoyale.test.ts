@@ -224,6 +224,84 @@ describe('battle royale host intervention rules', () => {
     expect(supported.battle.nextLocomotionAt).toBe(2_900);
   });
 
+  it('assigns a bounty from the first contestant to the second contestant', () => {
+    const hunter = createPlayer('p:1', 'C01', 'A01');
+    const target = createPlayer('p:2', 'C02', 'A06');
+    const game = createGame([hunter, target]);
+
+    expect(() => applyIntervention(game, 2_000, { opId: 'RUL_04', targetPlayerId: hunter.id }))
+      .toThrow('请选择两名不同角色。');
+
+    const result = applyIntervention(game, 2_000, {
+      opId: 'RUL_04',
+      targetPlayerId: hunter.id,
+      secondPlayerId: target.id,
+    });
+
+    expect(result).toMatchObject({ remainingPoints: 11, operation: '悬赏追杀' });
+    expect(game.world.battle).toMatchObject({ bountyHunterId: hunter.id, bountyPlayerId: target.id });
+    expect(hunter.activity?.description).toContain('接到追杀任务');
+    expect(target.activity?.description).toContain('悬赏警报');
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('向C01发布追杀任务，目标为C02'))).toBe(true);
+  });
+
+  it('makes the assigned hunter pursue across areas and awards only a completed contract', () => {
+    const hunter = createPlayer('p:1', 'C01', 'A01');
+    const target = createPlayer('p:2', 'C02', 'A06');
+    const game = createGame([hunter, target]);
+    applyIntervention(game, 2_000, {
+      opId: 'RUL_04',
+      targetPlayerId: hunter.id,
+      secondPlayerId: target.id,
+    });
+
+    tickBattleRoyale(game, 7_000);
+    expect(hunter.battle.areaId).toBe('A06');
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('沿区域路线追踪'))).toBe(true);
+
+    hunter.position = { ...target.position };
+    target.battle.hp = 1;
+    target.battle.coins = 20;
+    const coinsBefore = hunter.battle.coins;
+    expect(replayRecordedAction(game, 8_000, {
+      playerId: hunter.id,
+      action: 'attack',
+      targetPlayerId: target.id,
+    })).toMatchObject({ accepted: true });
+
+    expect(hunter.battle.coins - coinsBefore).toBe(90);
+    expect(game.world.battle.bountyHunterId).toBeUndefined();
+    expect(game.world.battle.bountyPlayerId).toBeUndefined();
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏完成】'))).toBe(true);
+  });
+
+  it('invalidates a bounty without paying its reward when a third party eliminates the target', () => {
+    const hunter = createPlayer('p:1', 'C01', 'A01');
+    const target = createPlayer('p:2', 'C02', 'A01');
+    const thirdParty = createPlayer('p:3', 'C03', 'A01');
+    const game = createGame([hunter, target, thirdParty]);
+    applyIntervention(game, 2_000, {
+      opId: 'RUL_04',
+      targetPlayerId: hunter.id,
+      secondPlayerId: target.id,
+    });
+    thirdParty.position = { ...target.position };
+    target.battle.hp = 1;
+    target.battle.coins = 20;
+    const coinsBefore = thirdParty.battle.coins;
+
+    replayRecordedAction(game, 3_000, {
+      playerId: thirdParty.id,
+      action: 'attack',
+      targetPlayerId: target.id,
+    });
+
+    expect(thirdParty.battle.coins - coinsBefore).toBe(55);
+    expect(game.world.battle.bountyHunterId).toBeUndefined();
+    expect(game.world.battle.bountyPlayerId).toBeUndefined();
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏失效】'))).toBe(true);
+  });
+
   it('records a validated model-selected investigation approach', () => {
     const player = createPlayer('p:3', 'C03', 'A03');
     const game = createGame([player]);
