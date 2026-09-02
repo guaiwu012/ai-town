@@ -12,7 +12,7 @@ export default function BattleDialogueBox({ game, focusPlayerId, focusAreaId }: 
 
   const exchange = useMemo(() => {
     const latest = game.world.battle?.dialogueLog?.[0];
-    if (!latest || !latest.listenerId || latest.kind === 'support' || now - latest.ts > 9000) return [];
+    if (!latest || !latest.listenerId || latest.kind === 'support' || now - latest.ts > 5500) return [];
     const currentExchange = (game.world.battle?.dialogueLog ?? [])
       .filter((entry) => Math.abs(entry.ts - latest.ts) < 1500 && (
         entry.speakerId === latest.speakerId ||

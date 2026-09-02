@@ -81,22 +81,23 @@ export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, o
       const dangerText = !isOpen ? '永久禁区' : lock ? `剧情封锁 ${Math.ceil((lock.until - displayedNow) / 1000)}秒` : '';
       const resource = (replayFrame?.resources ?? battle?.areaResources)?.find((entry) => entry.areaId === zone.id);
       const selected = focusedAreaId === zone.id;
+      const emphasized = selected || !isOpen || !!lock;
       const x = zone.anchor.x * map.width * map.tileDim;
       const y = zone.anchor.y * map.height * map.tileDim;
       return <Container key={zone.id} x={x} y={y} eventMode="static" cursor="pointer" pointertap={() => onFocusArea?.(zone.id)}>
         <Graphics draw={(g) => {
           g.clear();
-          g.beginFill(isOpen ? 0x071622 : 0x3d0c14, 0.88);
+          g.beginFill(isOpen ? 0x071622 : 0x3d0c14, emphasized ? 0.88 : 0.58);
           g.lineStyle(selected ? 3 : 1.5, selected ? 0xffd166 : isOpen ? 0x65d9bd : 0xff6e68, selected ? 1 : 0.78);
-          g.drawCircle(0, 0, selected ? 21 : 18);
+          g.drawCircle(0, 0, selected ? 20 : emphasized ? 17 : 12);
           g.endFill();
           if (selected) {
             g.lineStyle(1.5, 0xffd166, 0.72);
             g.drawCircle(0, 0, 26 + Math.sin(now / 180) * 2);
           }
         }} />
-        <Sprite texture={landmarkTexture(zoneIndex)} width={selected ? 38 : 32} height={selected ? 38 : 32} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen ? 1 : 0.78} />
-        <Text y={dangerText ? 33 : 25} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.88 : 0.98} text={`${zone.label}${selected && resource ? ` · 资源 ${resource.remaining}/${resource.max}` : ''}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.64 : selected ? 0.58 : 0.5} style={new TextStyle({ align: 'center', fill: selected ? '#ffe7a6' : isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: dangerText || selected ? '700' : '400', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />
+        <Sprite texture={landmarkTexture(zoneIndex)} width={selected ? 36 : emphasized ? 30 : 20} height={selected ? 36 : emphasized ? 30 : 20} anchor={{ x: 0.5, y: 0.5 }} alpha={emphasized ? (isOpen ? 1 : 0.78) : 0.58} />
+        <Text visible={emphasized} y={dangerText ? 31 : 24} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.92 : 0.98} text={`${zone.label}${selected && resource ? ` · 资源 ${resource.remaining}/${resource.max}` : ''}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.58 : 0.54} style={new TextStyle({ align: 'center', fill: selected ? '#ffe7a6' : isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: '700', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />
       </Container>;
     })}
   </Container>;

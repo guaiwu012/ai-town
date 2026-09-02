@@ -22,6 +22,7 @@ import BattleStoryCard from './BattleStoryCard.tsx';
 import BattleDialogueBox from './BattleDialogueBox.tsx';
 import SupportFactionPanel from './SupportFactionPanel.tsx';
 import GameLoadingScreen from './GameLoadingScreen.tsx';
+import { useBattleAudio } from '../hooks/useBattleAudio.ts';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -50,6 +51,7 @@ export default function Game() {
   const engineId = worldStatus?.engineId;
 
   const game = useServerGame(worldId);
+  const { audioEnabled, toggleAudio } = useBattleAudio(game);
 
   // Send a periodic heartbeat to our world to keep it alive.
   useWorldHeartbeat();
@@ -174,6 +176,8 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onRestart={() => { setLaunchModal('reset'); setViewMode('overview'); }}
             onToggleReplay={() => { setReplayTime((time) => availableReplayStart === undefined ? time : Math.max(time ?? availableReplayStart, availableReplayStart)); setReplayActive((active) => !active); }}
             replayActive={replayActive}
+            audioEnabled={audioEnabled}
+            onToggleAudio={toggleAudio}
           />
           {!replayActive && <BattleStoryCard game={game} />}
           {!replayActive && <BattleDialogueBox game={game} focusPlayerId={focusPlayerId} focusAreaId={focusAreaId} />}

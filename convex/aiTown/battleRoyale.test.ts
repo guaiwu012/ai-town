@@ -160,6 +160,19 @@ describe('battle royale host intervention rules', () => {
     expect(attacks).toBeGreaterThan(38);
   });
 
+  it('makes an untrusted stranger more likely to be attacked than befriended or observed', () => {
+    const outcomes = { attack: 0, ally: 0, flee: 0, observe: 0 };
+    for (let seed = 1; seed <= 80; seed++) {
+      const cautious = createPlayer('p:5', 'C05', 'A05');
+      const stranger = createPlayer('p:6', 'C06', 'A05');
+      const game = createGame([cautious, stranger]);
+      game.world.battle = defaultBattleState(1_000, seed);
+      outcomes[encounterDisposition(game, cautious, stranger)] += 1;
+    }
+    expect(outcomes.attack).toBeGreaterThan(outcomes.flee);
+    expect(outcomes.attack).toBeGreaterThan(outcomes.ally + outcomes.observe);
+  });
+
   it('uses persona combat dialogue when an attack is executed', () => {
     const fighter = createPlayer('p:4', 'C04', 'A04');
     const rival = createPlayer('p:9', 'C09', 'A04');

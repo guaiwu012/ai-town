@@ -3,7 +3,7 @@ import { ToastContainer } from 'react-toastify';
 import Game from './components/Game.tsx';
 import GameIntro from './components/GameIntro.tsx';
 
-const INTRO_KEY = 'ai-battle-intro-seen-v1';
+const INTRO_KEY = 'ai-battle-intro-seen-v2';
 
 export default function Home() {
   const [introOpen, setIntroOpen] = useState(() => localStorage.getItem(INTRO_KEY) !== '1');

@@ -1516,7 +1516,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   };
   const persona = personaForCharacter(attack.characterId);
   const recentCombatLine = game.world.battle?.dialogueLog?.find(
-    (entry) => entry.speakerId === attacker.id && entry.kind === 'combat' && entry.ts > now - 8000,
+    (entry) => entry.speakerId === attacker.id && entry.kind === 'combat' && entry.ts > now - 18000,
   );
   if (!recentCombatLine) {
     const line = persona.attackLines[(game.world.battle?.nextDialogueId ?? 1) % persona.attackLines.length];
@@ -2023,11 +2023,15 @@ export function encounterDisposition(game: Game, player: Player, target: Player)
   const trustBoost = relationStrength > 0 ? Math.min(0.35, relationStrength / 220) : 0;
   const hostilityBoost = relationStrength < 0 ? Math.min(0.35, Math.abs(relationStrength) / 180) : 0;
   const weakness = Math.max(0, targetHpRatio - hpRatio);
+  const trusted = relationStrength >= 25 && relation?.type !== 'rival';
   const scores = [
-    { action: 'attack' as const, score: persona.attackBias + rivalBoost + hostilityBoost + Math.max(0, hpRatio - targetHpRatio) * 0.25 },
-    { action: 'ally' as const, score: persona.allianceBias + trustBoost - rivalBoost },
+    {
+      action: 'attack' as const,
+      score: (trusted ? persona.attackBias * 0.32 : 0.95 + persona.attackBias * 1.2) + rivalBoost + hostilityBoost + Math.max(0, hpRatio - targetHpRatio) * 0.3,
+    },
+    { action: 'ally' as const, score: trusted ? persona.allianceBias + trustBoost : persona.allianceBias * 0.16 },
     { action: 'flee' as const, score: persona.retreatBias + weakness * 0.7 + (hpRatio < 0.4 ? 0.45 : 0) },
-    { action: 'observe' as const, score: 0.16 },
+    { action: 'observe' as const, score: trusted ? 0.12 : 0.04 },
   ];
   const total = scores.reduce((sum, entry) => sum + Math.max(0, entry.score), 0);
   let cursor = battleRandom(game) * total;

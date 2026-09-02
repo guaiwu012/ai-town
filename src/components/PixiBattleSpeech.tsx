@@ -30,10 +30,10 @@ export default function PixiBattleSpeech({
   const visible = useMemo(() => {
     const latestBySpeaker = new Map<string, BattleDialogue>();
     for (const entry of game.world.battle?.dialogueLog ?? []) {
-      if (now - entry.ts > 6000 || latestBySpeaker.has(entry.speakerId)) continue;
+      if (now - entry.ts > 4000 || latestBySpeaker.has(entry.speakerId)) continue;
       latestBySpeaker.set(entry.speakerId, entry);
     }
-    return [...latestBySpeaker.values()].slice(0, 5);
+    return [...latestBySpeaker.values()].slice(0, 2);
   }, [game.world.battle?.dialogueLog, now]);
 
   if (!enabled) return null;

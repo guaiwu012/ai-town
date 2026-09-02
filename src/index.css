@@ -379,6 +379,7 @@ p[contenteditable='true']:empty::before {
 }
 .live-hud-button:active { transform: translateY(1px); }
 .live-hud-button.is-active { border-color: #e3bc5b; color: #fff0bf; background: rgba(100, 65, 17, 0.92); }
+.live-hud-button.is-audio-on { border-color: #67c8b4; color: #caffef; }
 .live-hud-primary { border-color: #dfb452; color: #fff0be; background: rgba(100, 65, 17, 0.9); }
 .live-hud-danger { border-color: #de7666; color: #ffd5cf; background: rgba(88, 27, 29, 0.9); }
 .live-hud-bottom { position: absolute; right: 1rem; bottom: 1rem; left: 1rem; display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; }
@@ -414,9 +415,9 @@ p[contenteditable='true']:empty::before {
 .story-card-toggle { display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.55rem; border: 0; border-bottom: 1px solid rgba(203, 171, 101, 0.38); background: rgba(35, 42, 44, 0.7); padding: 0.55rem 0.65rem; color: inherit; text-align: left; }.story-card-toggle span { color: #e0b85f; font-size: 0.6rem; letter-spacing: 0.08em; }.story-card-toggle strong { overflow: hidden; color: #f3e4c8; font-size: 0.78rem; text-overflow: ellipsis; white-space: nowrap; }.story-card-toggle i { color: #89a6a8; font-size: 0.58rem; font-style: normal; }
 .story-card-body { padding: 0.7rem; }.story-card-location { color: #6ed8bc; font-size: 0.62rem; letter-spacing: 0.08em; }.story-card-scene { margin: 0.45rem 0 0; color: #d8ddd8; font-family: serif; font-size: 0.82rem; line-height: 1.65; }.story-card-choice { margin-top: 0.55rem; border-left: 2px solid #6da9b6; background: rgba(25, 57, 68, 0.44); padding: 0.42rem 0.55rem; }.story-card-choice small { color: #7fb9c2; font-size: 0.58rem; }.story-card-choice p { margin: 0.15rem 0 0; color: #c9d7d6; font-size: 0.7rem; line-height: 1.45; }
 .story-card-check { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 0.6rem; margin-top: 0.55rem; border: 1px solid rgba(116, 153, 157, 0.42); padding: 0.45rem 0.55rem; }.story-card-check div { display: grid; }.story-card-check small { color: #91a9aa; font-size: 0.57rem; }.story-card-check strong { color: #e8ede8; font-size: 0.68rem; }.story-card-check span { color: #aec2c0; font-family: var(--font-display); font-size: 0.78rem; }.story-card-check b { min-width: 2.5rem; color: #73dfb7; font-size: 0.7rem; text-align: right; }.story-card-check.is-failure b { color: #ff7569; }.story-card-outcome { margin: 0.55rem 0 0; color: #e4c77f; font-size: 0.72rem; line-height: 1.5; }.story-card.is-collapsed { width: min(280px, calc(100vw - 2rem)); }
-.battle-dialogue-box { position: absolute; z-index: 22; bottom: 8.25rem; left: 50%; width: min(620px, calc(100vw - 25rem)); transform: translateX(-50%); border: 1px solid rgba(108, 208, 190, 0.76); background: rgba(4, 15, 24, 0.94); box-shadow: 0 14px 38px rgba(0, 0, 0, 0.42), inset 0 0 0 2px rgba(57, 116, 122, 0.22); color: #e4eeea; }
+.battle-dialogue-box { position: absolute; z-index: 22; right: 50%; bottom: 9rem; width: min(660px, calc(100vw - 2rem)); max-height: 8rem; overflow: hidden; transform: translateX(50%); box-sizing: border-box; border: 1px solid rgba(108, 208, 190, 0.76); background: rgba(4, 15, 24, 0.94); box-shadow: 0 14px 38px rgba(0, 0, 0, 0.42), inset 0 0 0 2px rgba(57, 116, 122, 0.22); color: #e4eeea; }
 .battle-dialogue-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(84, 145, 147, 0.42); padding: 0.35rem 0.65rem; }.battle-dialogue-header span { color: #70dec1; font-size: 0.58rem; letter-spacing: 0.12em; }.battle-dialogue-header strong { color: #d8b967; font-size: 0.62rem; }
-.battle-dialogue-lines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.battle-dialogue-line { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.55rem; padding: 0.55rem 0.65rem; }.battle-dialogue-line + .battle-dialogue-line { border-left: 1px solid rgba(84, 145, 147, 0.32); }.battle-dialogue-line strong { color: #f0d9ad; font-size: 0.68rem; }.battle-dialogue-line p { margin: 0.12rem 0 0; color: #d9e3df; font-family: serif; font-size: 0.78rem; line-height: 1.45; }.battle-dialogue-portrait { width: 2.25rem; height: 2.25rem; }
+.battle-dialogue-lines { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }.battle-dialogue-line { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem; }.battle-dialogue-line + .battle-dialogue-line { border-left: 1px solid rgba(84, 145, 147, 0.32); }.battle-dialogue-line strong { color: #f0d9ad; font-size: 0.66rem; }.battle-dialogue-line p { display: -webkit-box; overflow: hidden; margin: 0.08rem 0 0; color: #d9e3df; font-family: serif; font-size: 0.74rem; line-height: 1.4; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }.battle-dialogue-portrait { width: 2rem; height: 2rem; }
 .battle-vital-battery { display: inline-block; width: 3.94rem; height: 1.5rem; flex: 0 0 auto; background-position: center; background-repeat: no-repeat; background-size: 100% 100%; image-rendering: auto; }
 .battle-vital-battery.is-compact { width: 3.15rem; height: 1.2rem; }
 .battle-vital-battery[data-tone='green'] { background-image: url('/ai-town/assets/reference/ui/vitals/health-green.png'); }
@@ -735,6 +736,17 @@ p[contenteditable='true']:empty::before {
 .game-intro-dots { display: flex; gap: 0.4rem; margin-top: 1.2rem; }
 .game-intro-dots i { width: 22px; height: 3px; background: #40505a; }
 .game-intro-dots i.is-active { background: #e6bb59; }
+.game-intro-sound { position: absolute; top: 1.25rem; right: 1.25rem; z-index: 3; border: 1px solid rgba(117, 211, 195, 0.7); background: rgba(3, 16, 25, 0.76); padding: 0.48rem 0.7rem; color: #d8eee8; font-size: 0.72rem; backdrop-filter: blur(6px); }
+.game-intro-transition { position: absolute; inset: 0; z-index: 8; pointer-events: none; opacity: 0; }
+.game-intro-transition i { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(113, 255, 231, 0.12) 0 1px, transparent 1px 5px); transform: translateY(-100%); }
+.game-intro-transition b { position: absolute; inset: 0; background: #dffff8; opacity: 0; }
+.game-intro.is-transitioning .game-intro-content, .game-intro.is-transitioning .game-intro-sound { opacity: 0; transition: opacity 180ms ease; }
+.game-intro.is-transitioning .game-intro-media { transform: scale(1.045); filter: saturate(0.55) contrast(1.35); transition: transform 900ms ease, filter 450ms ease; }
+.game-intro.is-transitioning .game-intro-transition { opacity: 1; }
+.game-intro.is-transitioning .game-intro-transition i { animation: intro-scan 420ms linear 2; }
+.game-intro.is-transitioning .game-intro-transition b { animation: intro-flash 900ms ease-out forwards; }
+@keyframes intro-scan { to { transform: translateY(100%); } }
+@keyframes intro-flash { 0%, 42% { opacity: 0; } 52% { opacity: 0.9; } 72% { opacity: 0.08; } 100% { opacity: 0; } }
 
 /* Spectator support faction */
 .support-overlay { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 1.25rem; background: rgba(1, 7, 12, 0.72); backdrop-filter: blur(5px); }

@@ -56,8 +56,8 @@ export const BATTLE_CONFIG = {
     decisionDriverLeaseMs: 20000,
     attackRange: 3.2,
     dangerRange: 4.8,
-    closeEncounterRange: 2.2,
-    closeEncounterCooldownMs: 18000,
+    closeEncounterRange: 1.8,
+    closeEncounterCooldownMs: 36000,
     maxFeed: 24,
   },
   characters: [
