@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
+import { acceptSupportCounter, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -235,6 +235,67 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.feed.some((event: any) => event.text.includes('专属空投'))).toBe(true);
     expect(game.world.battle.dialogueLog[0]).toMatchObject({ kind: 'support', text: '是给我的吗？谢谢……我会努力活下去。' });
     expect(supported.battle.nextLocomotionAt).toBe(2_900);
+  });
+
+  it('charges an authoritative support order and enforces its 60-second cooldown', () => {
+    const supported = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A09');
+    const game = createGame([supported, target]);
+    game.world.battle = defaultBattleState(1_000, 1);
+    const before = game.world.battle.interventionPoints;
+
+    const result = submitSupportOrder(game, 2_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3 });
+
+    expect(result).toMatchObject({ status: 'active' });
+    expect(game.world.battle.interventionPoints).toBe(before - 3);
+    expect(game.world.battle.supportOrders[0]).toMatchObject({ playerId: supported.id, targetPlayerId: target.id, expiresAt: 62_000 });
+    expect(() => submitSupportOrder(game, 3_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 1 })).toThrow('冷却中');
+  });
+
+  it('settles a completed hunt and returns the doctrine bonus', () => {
+    const supported = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    const game = createGame([supported, target]);
+    game.world.battle = defaultBattleState(1_000, 1);
+    const initialPoints = game.world.battle.interventionPoints;
+    submitSupportOrder(game, 2_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3 });
+    target.battle.eliminated = true;
+    game.world.battle.feed.unshift({ id: 99, ts: 2_500, kind: 'eliminate', actor: supported.id, target: target.id, text: '淘汰' });
+
+    updateSupportOrders(game, 3_000);
+
+    expect(game.world.battle.supportOrders[0]).toMatchObject({ status: 'success' });
+    expect(game.world.battle.interventionPoints).toBe(initialPoints + 2);
+    expect(game.world.battle.feed[0].text).toContain('应援成功');
+  });
+
+  it('lets the faction accept a contestant counteroffer for one extra point', () => {
+    const supported = createPlayer('p:3', 'C03', 'A03');
+    const target = createPlayer('p:9', 'C09', 'A09');
+    const game = createGame([supported, target]);
+    game.world.battle.supportOrders = [{ id: 7, playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'intel', stake: 1, status: 'countered', createdAt: 2_000, expiresAt: 22_000, response: '加码', baselineKills: 0, baselineCoins: 20, baselineInventory: 0, baselineSearches: 0 }];
+    const before = game.world.battle.interventionPoints;
+
+    const result = acceptSupportCounter(game, 3_000, { orderId: 7 });
+
+    expect(result).toMatchObject({ status: 'active', expiresAt: 63_000 });
+    expect(game.world.battle.supportOrders[0].stake).toBe(2);
+    expect(game.world.battle.interventionPoints).toBe(before - 1);
+  });
+
+  it('makes rule AI pursue an accepted support target across the area graph', () => {
+    const supported = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A09');
+    supported.battle.nextLocomotionAt = 100_000;
+    target.battle.nextLocomotionAt = 100_000;
+    const game = createGame([supported, target]);
+    game.world.battle = defaultBattleState(1_000, 1);
+    submitSupportOrder(game, 2_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3 });
+
+    tickBattleRoyale(game, 7_000);
+
+    expect(game.world.battle.actionLog.find((entry: any) => entry.playerId === supported.id)).toMatchObject({ action: 'move', source: 'rule', accepted: true });
+    expect(supported.battle.areaId).not.toBe('A04');
   });
 
   it('assigns a bounty from the first contestant to the second contestant', () => {

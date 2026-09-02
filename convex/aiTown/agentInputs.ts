@@ -8,7 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
-import { applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, submitAIDecision } from './battleRoyale';
+import { acceptSupportCounter, applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, submitAIDecision, submitSupportOrder } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -172,6 +172,20 @@ export const agentInputs = {
       secondPlayerId: v.optional(playerId),
     },
     handler: (game, now, args) => applyIntervention(game, now, args),
+  }),
+  submitSupportOrder: inputHandler({
+    args: {
+      playerId,
+      kind: v.string(),
+      doctrine: v.string(),
+      stake: v.number(),
+      targetPlayerId: v.optional(playerId),
+    },
+    handler: (game, now, args) => submitSupportOrder(game, now, args),
+  }),
+  acceptSupportCounter: inputHandler({
+    args: { orderId: v.number() },
+    handler: (game, now, args) => acceptSupportCounter(game, now, args),
   }),
   claimDecisionDriver: inputHandler({
     args: { driverId: v.string() },

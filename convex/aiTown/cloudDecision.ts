@@ -102,6 +102,14 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
       requiredItem: 'requiredItem' in event ? event.requiredItem : undefined,
       options: storyOptionsFor(event.id).map(({ id, label, description, difficultyModifier }) => ({ id, label, description, difficultyModifier })),
     }));
+  const activeSupportOrder = snapshot.world.battle?.supportOrders?.find((order) => order.playerId === playerId && order.status === 'active');
+  const supportOrder = activeSupportOrder ? {
+    kind: activeSupportOrder.kind,
+    targetPlayerId: activeSupportOrder.targetPlayerId,
+    targetName: activeSupportOrder.targetPlayerId ? nameFor(activeSupportOrder.targetPlayerId) : undefined,
+    secondsRemaining: Math.max(0, Math.ceil((activeSupportOrder.expiresAt - Date.now()) / 1000)),
+    priority: '这是观众阵营已经付费且角色已接受的任务。除非濒死或路径非法，优先完成。hunt 要追踪并攻击目标；scavenge 要连续搜索物资；ally 要接近目标并结盟。',
+  } : undefined;
   const prompt = {
     role: `${nameFor(playerId)} (${stats.characterId})`,
     persona: {
@@ -125,6 +133,7 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
     availableStories,
+    supportOrder,
     instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟、交易或交战时的第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。遇到同区角色时必须根据 persona 的攻击、结盟、撤退倾向和关系做出选择；台词必须符合 speechStyle，不得使用通用模板。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；所有行动需符合 persona。',
   };
   const controller = new AbortController();

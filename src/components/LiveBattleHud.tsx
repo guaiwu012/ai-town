@@ -4,6 +4,7 @@ import BattleVitalBattery from './BattleVitalBattery';
 import { useEffect, useState } from 'react';
 import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
+import { supportOrderKinds, supportOrderProgress } from '../lib/supportFaction';
 
 type LiveBattleHudProps = {
   game: ServerGame;
@@ -73,6 +74,11 @@ export default function LiveBattleHud({
     ? (replayFrame?.players ?? [...game.world.players.values()].map((player) => ({ areaId: player.battle?.areaId, eliminated: player.battle?.eliminated })))
       .filter((player) => player.areaId === focusAreaId && !player.eliminated).length
     : 0;
+  const supportOrder = !replayActive ? battle?.supportOrders?.find((order) => order.status === 'active' || order.status === 'countered') : undefined;
+  const supportPlayer = supportOrder ? game.world.players.get(supportOrder.playerId as GameId<'players'>) : undefined;
+  const supportTargetName = supportOrder?.targetPlayerId ? game.playerDescriptions.get(supportOrder.targetPlayerId as GameId<'players'>)?.name : undefined;
+  const supportProgress = supportOrder ? supportOrderProgress(supportOrder, supportPlayer) : undefined;
+  const supportTitle = supportOrderKinds.find((kind) => kind.id === supportOrder?.kind)?.name;
 
   return (
     <div className="live-hud pointer-events-none absolute inset-0 z-10">
@@ -94,6 +100,13 @@ export default function LiveBattleHud({
         <div><small>封锁区域</small><strong className={areaLocks.some((lock) => lock.until > displayedNow) ? 'is-alert' : ''}>{areaLocks.filter((lock) => lock.until > displayedNow).length}</strong></div>
         <div><small>镜头区域</small><strong>{areaName(focusAreaId ?? stats?.areaId)}</strong></div>
       </section>
+
+      {supportOrder && <section className={`live-support-mission pointer-events-auto is-${supportOrder.status}`}>
+        <div className="live-support-mission-head"><span>阵营任务 · {supportTitle}</span><b>{Math.max(0, Math.ceil((supportOrder.expiresAt - displayedNow) / 1000))}s</b></div>
+        <strong>{game.playerDescriptions.get(supportOrder.playerId as GameId<'players'>)?.name ?? '应援角色'}{supportTargetName ? ` → ${supportTargetName}` : ''}</strong>
+        <div className="live-support-mission-meter"><i style={{ width: `${(supportProgress?.value ?? 0) * 100}%` }} /></div>
+        <small>{supportOrder.status === 'countered' ? '角色正在等待阵营加码' : supportProgress?.label}</small>
+      </section>}
 
       <div className="live-hud-bottom pointer-events-auto">
         {focusArea ? <section className="focus-card focus-area-card">

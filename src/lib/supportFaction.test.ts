@@ -1,4 +1,4 @@
-import { supportLevel, supportTasks } from './supportFaction';
+import { supportDoctrines, supportLevel, supportOrderProgress, supportTasks } from './supportFaction';
 
 describe('spectator support faction', () => {
   test('derives claimable tasks from the supported contestant match state', () => {
@@ -14,5 +14,13 @@ describe('spectator support faction', () => {
     expect(supportLevel(0)).toMatchObject({ level: 1, next: 30 });
     expect(supportLevel(30)).toMatchObject({ level: 2, next: 120 });
     expect(supportLevel(120)).toMatchObject({ level: 3, next: undefined });
+  });
+
+  test('keeps three distinct doctrines and measures scavenging progress', () => {
+    expect(supportDoctrines.map((doctrine) => doctrine.specialty)).toEqual(['hunt', 'scavenge', 'ally']);
+    expect(supportOrderProgress(
+      { kind: 'scavenge', baselineSearches: 1, baselineInventory: 0, baselineCoins: 20 },
+      { battle: { areaSearches: 2, inventory: [], coins: 20 } },
+    )).toEqual({ value: 0.5, label: '搜索进度 1/2' });
   });
 });
