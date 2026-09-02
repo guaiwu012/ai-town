@@ -39,11 +39,11 @@ export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, o
       const y = zone.anchor.y * map.height * map.tileDim;
       const points = zone.polygon.map((point) => ({ x: point.x * map.width * map.tileDim, y: point.y * map.height * map.tileDim }));
       const pulse = 0.5 + Math.sin(now / 180) * 0.22;
-      graphics.lineStyle(isDanger ? 3 : 2, isDanger ? 0xff5e66 : zone.color, isDanger ? 0.62 + pulse * 0.18 : 0.18);
-      graphics.beginFill(isDanger ? 0x7d101d : zone.color, isDanger ? (!isOpen ? 0.2 : 0.16 + pulse * 0.05) : 0.025);
-      graphics.drawPolygon(points.flatMap((point) => [point.x, point.y]));
-      graphics.endFill();
       if (isDanger) {
+        graphics.lineStyle(3, 0xff5e66, 0.62 + pulse * 0.18);
+        graphics.beginFill(0x7d101d, !isOpen ? 0.22 : 0.16 + pulse * 0.05);
+        graphics.drawPolygon(points.flatMap((point) => [point.x, point.y]));
+        graphics.endFill();
         graphics.lineStyle(2, 0xffc0a8, pulse);
         graphics.drawCircle(x, y, 20 + pulse * 6);
         graphics.lineStyle(4, 0xff4f58, 0.82);
@@ -55,21 +55,10 @@ export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, o
         }
       }
       if (focusedAreaId === zone.id) {
-        for (const obstacle of zone.obstacles) {
-          const obstacleX = obstacle.x * map.width * map.tileDim;
-          const obstacleY = obstacle.y * map.height * map.tileDim;
-          const obstacleWidth = obstacle.width * map.width * map.tileDim;
-          const obstacleHeight = obstacle.height * map.height * map.tileDim;
-          graphics.lineStyle(1.5, 0xffd166, 0.8);
-          graphics.beginFill(0x071622, 0.66);
-          graphics.drawRoundedRect(obstacleX, obstacleY, obstacleWidth, obstacleHeight, 3);
-          graphics.endFill();
-          graphics.lineStyle(1, 0xffd166, 0.32);
-          graphics.moveTo(obstacleX, obstacleY);
-          graphics.lineTo(obstacleX + obstacleWidth, obstacleY + obstacleHeight);
-          graphics.moveTo(obstacleX + obstacleWidth, obstacleY);
-          graphics.lineTo(obstacleX, obstacleY + obstacleHeight);
-        }
+        graphics.lineStyle(2, 0xffd166, 0.72);
+        graphics.drawCircle(x, y, 28 + pulse * 3);
+        graphics.lineStyle(1, 0x72dec5, 0.28);
+        graphics.drawCircle(x, y, 38 + pulse * 4);
       }
     }
   };
@@ -87,16 +76,16 @@ export function PixiArenaZones({ game, replayFrame, replayTime, focusedAreaId, o
       return <Container key={zone.id} x={x} y={y} eventMode="static" cursor="pointer" pointertap={() => onFocusArea?.(zone.id)}>
         <Graphics draw={(g) => {
           g.clear();
-          g.beginFill(isOpen ? 0x071622 : 0x3d0c14, emphasized ? 0.88 : 0.58);
-          g.lineStyle(selected ? 3 : 1.5, selected ? 0xffd166 : isOpen ? 0x65d9bd : 0xff6e68, selected ? 1 : 0.78);
-          g.drawCircle(0, 0, selected ? 20 : emphasized ? 17 : 12);
+          g.beginFill(isOpen ? 0x071622 : 0x3d0c14, emphasized ? 0.88 : 0.26);
+          g.lineStyle(selected ? 3 : emphasized ? 1.5 : 1, selected ? 0xffd166 : isOpen ? 0x65d9bd : 0xff6e68, selected ? 1 : emphasized ? 0.78 : 0.32);
+          g.drawCircle(0, 0, selected ? 20 : emphasized ? 17 : 9);
           g.endFill();
           if (selected) {
             g.lineStyle(1.5, 0xffd166, 0.72);
             g.drawCircle(0, 0, 26 + Math.sin(now / 180) * 2);
           }
         }} />
-        <Sprite texture={landmarkTexture(zoneIndex)} width={selected ? 36 : emphasized ? 30 : 20} height={selected ? 36 : emphasized ? 30 : 20} anchor={{ x: 0.5, y: 0.5 }} alpha={emphasized ? (isOpen ? 1 : 0.78) : 0.58} />
+        <Sprite texture={landmarkTexture(zoneIndex)} width={selected ? 36 : emphasized ? 30 : 16} height={selected ? 36 : emphasized ? 30 : 16} anchor={{ x: 0.5, y: 0.5 }} alpha={emphasized ? (isOpen ? 1 : 0.78) : 0.34} />
         <Text visible={emphasized} y={dangerText ? 31 : 24} anchor={{ x: 0.5, y: 0.5 }} alpha={isOpen && !lock ? 0.92 : 0.98} text={`${zone.label}${selected && resource ? ` · 资源 ${resource.remaining}/${resource.max}` : ''}${dangerText ? `\n${dangerText}` : ''}`} scale={dangerText ? 0.58 : 0.54} style={new TextStyle({ align: 'center', fill: selected ? '#ffe7a6' : isOpen && !lock ? '#d5efe5' : '#fff0d1', fontFamily: 'VCR OSD Mono', fontSize: 14, fontWeight: '700', stroke: dangerText ? '#6b0712' : '#06101d', strokeThickness: dangerText ? 7 : 5 })} />
       </Container>;
     })}

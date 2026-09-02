@@ -13,7 +13,7 @@ describe('battle royale P0/P1 configuration', () => {
   test('gives every logical zone a polygon, landmark collision and authoritative spawn points', () => {
     expect(BATTLE_ARENA_ZONES).toHaveLength(13);
     for (const zone of BATTLE_ARENA_ZONES) {
-      expect(zone.polygon).toHaveLength(6);
+      expect(zone.polygon.length).toBeGreaterThanOrEqual(6);
       expect(battleAreaSpawnPoints(zone.id, 80, 60).length).toBeGreaterThanOrEqual(4);
       const navigationPoints = battleAreaNavigationPoints(zone.id, 80, 60);
       expect(navigationPoints.length).toBeGreaterThanOrEqual(8);

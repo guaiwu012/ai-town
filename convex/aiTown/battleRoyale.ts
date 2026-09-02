@@ -534,6 +534,7 @@ export function tickBattleRoyale(game: Game, now: number) {
   for (const player of alive) {
     if (player.battle?.eliminated) continue;
     const stats = player.battle!;
+    if (runSupportOrderAction(game, now, player)) continue;
     const llmActive = (battle.decisionDriverUntil ?? 0) > now && (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0);
     if (llmActive && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
       continue;
@@ -1143,7 +1144,10 @@ export function submitSupportOrder(
   recordBattleDialogue(game, now, player, undefined, 'support', response);
   const statusText = status === 'active' ? '接受' : status === 'countered' ? '提出加码' : '拒绝';
   pushEvent(game, now, 'supportOrder', `【应援任务】${playerName(game, player)}${statusText}了阵营的${supportOrderName(args.kind)}。`, player, target);
-  if (status === 'active') markInterventionReaction(game, now, player, 'FAN_ORDER');
+  if (status === 'active') {
+    player.battle.decisionDueAt = order.expiresAt;
+    markInterventionReaction(game, now, player, 'FAN_ORDER');
+  }
   return { id: order.id, status, response, expiresAt: order.expiresAt, remainingPoints: battle.interventionPoints };
 }
 
@@ -1160,6 +1164,7 @@ export function acceptSupportCounter(game: Game, now: number, args: { orderId: n
   order.stake += 1;
   order.status = 'active';
   order.expiresAt = now + 60000;
+  player.battle.decisionDueAt = order.expiresAt;
   order.response = supportOrderResponse(game, player, order.targetPlayerId ? game.world.players.get(order.targetPlayerId as any) : undefined, order.kind, 'active', order.stake);
   recordBattleDialogue(game, now, player, undefined, 'support', order.response);
   pushEvent(game, now, 'supportOrder', `【应援任务】阵营接受加码，${playerName(game, player)}开始执行${supportOrderName(order.kind)}。`, player);
@@ -1182,6 +1187,79 @@ function supportOrderName(kind: string) {
 
 function activeSupportOrderFor(game: Game, player: Player) {
   return game.world.battle?.supportOrders?.find((order) => order.playerId === player.id && order.status === 'active');
+}
+
+export function runSupportOrderAction(game: Game, now: number, player: Player) {
+  const order = activeSupportOrderFor(game, player);
+  if (!order || !player.battle || player.battle.eliminated) return false;
+  const stats = player.battle;
+  const target = order.targetPlayerId ? game.world.players.get(order.targetPlayerId as any) : undefined;
+  if (player.pathfinding) {
+    if (player.activity?.emoji === 'TARGET') return true;
+    delete player.pathfinding;
+    player.speed = 0;
+  }
+  if ((stats.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) return true;
+  const execute = (action: string, actionTarget?: Player, targetAreaId?: string) => {
+    const baseline = captureReplayPatchBaseline(game);
+    const result = executeBattleAction(game, now, player, action, actionTarget, targetAreaId, '执行已接受的观众阵营任务');
+    if (!result.accepted) return false;
+    stats.lastBattleAction = now;
+    stats.lastDecisionStatus = '阵营任务执行中';
+    stats.lastDecisionAction = action;
+    stats.lastDecisionReason = `${supportOrderName(order.kind)}优先执行`;
+    stats.lastDecisionFallback = undefined;
+    recordReplayAction(game, now, player, action, 'rule', true, `应援任务 #${order.id}`, actionTarget?.id, targetAreaId, baseline);
+    return true;
+  };
+
+  if (order.kind === 'hunt' && target?.battle && !target.battle.eliminated) {
+    if (target.battle.areaId !== stats.areaId) {
+      const destination = nextOpenAreaToward(game, stats.areaId ?? 'A01', target.battle.areaId ?? 'A01');
+      if (destination && execute('move', undefined, destination)) {
+        player.activity = { description: `${playerName(game, player)} 正在追踪 ${playerName(game, target)}`, emoji: 'TARGET', until: now + ACTION_COOLDOWN_MS };
+        pushEvent(game, now, 'supportOrder', `【任务追踪】${playerName(game, player)} 正沿区域路线逼近 ${playerName(game, target)}。`, player, target);
+      }
+      return true;
+    }
+    const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+    if (distance(player.position, target.position) <= weapon.range) {
+      execute('attack', target);
+      return true;
+    }
+    if (execute('move', target)) {
+      player.activity = { description: `${playerName(game, player)} 正在进入对 ${playerName(game, target)} 的射击位置`, emoji: 'TARGET', until: now + ACTION_COOLDOWN_MS };
+    }
+    return true;
+  }
+
+  if (order.kind === 'ally' && target?.battle && !target.battle.eliminated) {
+    if (target.battle.areaId !== stats.areaId) {
+      const destination = nextOpenAreaToward(game, stats.areaId ?? 'A01', target.battle.areaId ?? 'A01');
+      if (destination && execute('move', undefined, destination)) player.activity = { description: `${playerName(game, player)} 正在接近谈判目标`, emoji: 'TARGET', until: now + ACTION_COOLDOWN_MS };
+      return true;
+    }
+    if (distance(player.position, target.position) > BATTLE_CONFIG.match.dangerRange) {
+      if (execute('move', target)) player.activity = { description: `${playerName(game, player)} 正在接近谈判目标`, emoji: 'TARGET', until: now + ACTION_COOLDOWN_MS };
+      return true;
+    }
+    execute('ally', target);
+    return true;
+  }
+
+  if (order.kind === 'scavenge') {
+    const resource = game.world.battle?.areaResources?.find((entry) => entry.areaId === stats.areaId);
+    if ((resource?.remaining ?? 0) > 0) {
+      execute('search');
+      return true;
+    }
+    const destination = adjacentAreaIds(stats.areaId ?? 'A01')
+      .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
+      .sort((a, b) => (game.world.battle?.areaResources?.find((entry) => entry.areaId === b)?.remaining ?? 0) - (game.world.battle?.areaResources?.find((entry) => entry.areaId === a)?.remaining ?? 0))[0];
+    if (destination && execute('move', undefined, destination)) player.activity = { description: `${playerName(game, player)} 正在前往高资源区域`, emoji: 'TARGET', until: now + ACTION_COOLDOWN_MS };
+    return true;
+  }
+  return true;
 }
 
 export function updateSupportOrders(game: Game, now: number) {
@@ -1228,6 +1306,7 @@ export function updateSupportOrders(game: Game, now: number) {
       order.result = failure;
       pushEvent(game, now, 'supportOrder', `【应援失败】${playerNameById(game, order.playerId)}未能完成${supportOrderName(order.kind)}：${failure}`);
     }
+    if (player?.battle) player.battle.decisionDueAt = now;
   }
 }
 
@@ -2300,6 +2379,13 @@ function tacticalDestination(
     x: Math.floor(target.position.x),
     y: Math.floor(target.position.y),
   };
+  if (mode === 'approach') {
+    const weapon = BATTLE_CONFIG.weapons[player.battle?.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+    const firingTiles = openTilesNear(game, player, targetTile, Math.max(3, Math.ceil(weapon.range) + 1))
+      .filter((candidate) => distance(candidate, target.position) <= Math.max(1.2, weapon.range * 0.82))
+      .sort((a, b) => distance(a, origin) - distance(b, origin));
+    if (firingTiles[0]) return firingTiles[0];
+  }
   const candidates = openTilesNear(game, player, origin, mode === 'approach' ? 6 : 4);
   if (candidates.length === 0) {
     return undefined;

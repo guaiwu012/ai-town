@@ -1,4 +1,4 @@
-import { acceptSupportCounter, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -296,6 +296,44 @@ describe('battle royale host intervention rules', () => {
 
     expect(game.world.battle.actionLog.find((entry: any) => entry.playerId === supported.id)).toMatchObject({ action: 'move', source: 'rule', accepted: true });
     expect(supported.battle.areaId).not.toBe('A04');
+  });
+
+  it('gives an accepted hunt priority even while the DeepSeek driver is online', () => {
+    const hunter = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A09');
+    hunter.battle.nextLocomotionAt = 100_000;
+    target.battle.nextLocomotionAt = 100_000;
+    const game = createGame([hunter, target]);
+    game.world.battle = defaultBattleState(1_000, 1);
+    claimDecisionDriver(game, 2_000, 'driver-support-priority');
+    submitSupportOrder(game, 2_100, { playerId: hunter.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3 });
+
+    tickBattleRoyale(game, 7_000);
+
+    expect(hunter.activity).toMatchObject({ emoji: 'TARGET' });
+    expect(game.world.battle.actionLog.find((entry: any) => entry.playerId === hunter.id)).toMatchObject({ action: 'move', source: 'rule', reason: '应援任务 #1' });
+  });
+
+  it('paths directly into weapon range and fires on the next support action', () => {
+    const hunter = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    const points = battleAreaNavigationPoints('A04', 80, 60);
+    hunter.position = points[0];
+    target.position = points.at(-1)!;
+    const game = createGame([hunter, target]);
+    game.world.battle = defaultBattleState(1_000, 1);
+    submitSupportOrder(game, 2_000, { playerId: hunter.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3 });
+
+    expect(runSupportOrderAction(game, 7_000, hunter)).toBe(true);
+    const firingPosition = hunter.pathfinding?.destination;
+    expect(firingPosition).toBeDefined();
+    expect(Math.hypot(firingPosition.x - target.position.x, firingPosition.y - target.position.y)).toBeLessThanOrEqual(3.2);
+
+    hunter.position = firingPosition;
+    delete hunter.pathfinding;
+    hunter.speed = 0;
+    expect(runSupportOrderAction(game, 14_000, hunter)).toBe(true);
+    expect(game.world.battle.feed.some((event: any) => event.kind === 'attack' && event.actor === hunter.id && event.target === target.id)).toBe(true);
   });
 
   it('assigns a bounty from the first contestant to the second contestant', () => {

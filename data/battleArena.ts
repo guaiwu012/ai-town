@@ -24,8 +24,24 @@ export type BattleArenaGrid = {
   cells: BattleArenaGridCell[][];
 };
 
-function zoneShape(anchor: { x: number; y: number }, radius: number) {
-  const vertices = Array.from({ length: 6 }, (_, index) => {
+const AREA_FOOTPRINTS: Record<string, Array<{ x: number; y: number }>> = {
+  A01: [{ x: 0.18, y: 0.08 }, { x: 0.28, y: 0.02 }, { x: 0.39, y: 0.08 }, { x: 0.43, y: 0.2 }, { x: 0.35, y: 0.33 }, { x: 0.22, y: 0.31 }, { x: 0.16, y: 0.2 }],
+  A02: [{ x: 0.08, y: 0.68 }, { x: 0.15, y: 0.57 }, { x: 0.29, y: 0.58 }, { x: 0.35, y: 0.74 }, { x: 0.31, y: 0.9 }, { x: 0.17, y: 0.95 }, { x: 0.08, y: 0.86 }],
+  A03: [{ x: 0.29, y: 0.63 }, { x: 0.35, y: 0.56 }, { x: 0.47, y: 0.57 }, { x: 0.53, y: 0.7 }, { x: 0.49, y: 0.86 }, { x: 0.36, y: 0.9 }, { x: 0.29, y: 0.8 }],
+  A04: [{ x: 0.77, y: 0.55 }, { x: 0.84, y: 0.49 }, { x: 0.94, y: 0.53 }, { x: 0.98, y: 0.66 }, { x: 0.92, y: 0.78 }, { x: 0.8, y: 0.76 }, { x: 0.76, y: 0.65 }],
+  A05: [{ x: 0.61, y: 0.65 }, { x: 0.69, y: 0.59 }, { x: 0.81, y: 0.64 }, { x: 0.85, y: 0.79 }, { x: 0.78, y: 0.91 }, { x: 0.65, y: 0.88 }, { x: 0.6, y: 0.77 }],
+  A06: [{ x: 0.63, y: 0.16 }, { x: 0.71, y: 0.1 }, { x: 0.83, y: 0.13 }, { x: 0.88, y: 0.25 }, { x: 0.82, y: 0.36 }, { x: 0.68, y: 0.35 }, { x: 0.62, y: 0.26 }],
+  A07: [{ x: 0.71, y: 0.34 }, { x: 0.8, y: 0.29 }, { x: 0.92, y: 0.34 }, { x: 0.97, y: 0.45 }, { x: 0.91, y: 0.55 }, { x: 0.78, y: 0.54 }, { x: 0.71, y: 0.46 }],
+  A08: [{ x: 0.36, y: 0.31 }, { x: 0.47, y: 0.27 }, { x: 0.61, y: 0.31 }, { x: 0.68, y: 0.43 }, { x: 0.63, y: 0.58 }, { x: 0.49, y: 0.63 }, { x: 0.37, y: 0.55 }, { x: 0.34, y: 0.42 }],
+  A09: [{ x: 0.12, y: 0.41 }, { x: 0.19, y: 0.34 }, { x: 0.31, y: 0.36 }, { x: 0.36, y: 0.48 }, { x: 0.31, y: 0.61 }, { x: 0.18, y: 0.63 }, { x: 0.12, y: 0.54 }],
+  A10: [{ x: 0.4, y: 0.08 }, { x: 0.48, y: 0.02 }, { x: 0.61, y: 0.04 }, { x: 0.68, y: 0.15 }, { x: 0.64, y: 0.28 }, { x: 0.52, y: 0.32 }, { x: 0.41, y: 0.24 }],
+  A11: [{ x: 0.47, y: 0.69 }, { x: 0.54, y: 0.62 }, { x: 0.64, y: 0.66 }, { x: 0.68, y: 0.8 }, { x: 0.63, y: 0.92 }, { x: 0.52, y: 0.94 }, { x: 0.46, y: 0.83 }],
+  A12: [{ x: 0.04, y: 0.18 }, { x: 0.08, y: 0.12 }, { x: 0.16, y: 0.14 }, { x: 0.2, y: 0.24 }, { x: 0.16, y: 0.34 }, { x: 0.08, y: 0.36 }, { x: 0.04, y: 0.29 }],
+  S01: [{ x: 0.02, y: 0.52 }, { x: 0.06, y: 0.45 }, { x: 0.13, y: 0.48 }, { x: 0.16, y: 0.59 }, { x: 0.12, y: 0.69 }, { x: 0.05, y: 0.7 }, { x: 0.02, y: 0.63 }],
+};
+
+function zoneShape(anchor: { x: number; y: number }, radius: number, footprint?: Array<{ x: number; y: number }>) {
+  const vertices = footprint ?? Array.from({ length: 6 }, (_, index) => {
     const angle = -Math.PI / 2 + index * Math.PI / 3;
     return { x: Math.max(0.02, Math.min(0.98, anchor.x + Math.cos(angle) * radius)), y: Math.max(0.02, Math.min(0.98, anchor.y + Math.sin(angle) * radius)) };
   });
@@ -71,7 +87,7 @@ export const BATTLE_ARENA_ZONES: BattleArenaZone[] = BATTLE_CONFIG.areas.map((ar
     anchor,
     radius,
     color: area.danger >= 4 ? 0xd45c5c : area.danger >= 3 ? 0xd99a43 : 0x52bca7,
-    ...zoneShape(anchor, radius),
+    ...zoneShape(anchor, radius, AREA_FOOTPRINTS[area.id]),
     obstacles: landmarkObstacles(anchor, radius, index),
   };
 });
