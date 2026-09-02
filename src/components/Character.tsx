@@ -17,6 +17,8 @@ export const Character = ({
   isThinking = false,
   isSpeaking = false,
   emoji = '',
+  showMovementIndicator = false,
+  showTargetIndicator = false,
   isViewer = false,
   hpRatio,
   isEliminated = false,
@@ -38,6 +40,8 @@ export const Character = ({
   // Shows a speech bubble if true.
   isSpeaking?: boolean;
   emoji?: string;
+  showMovementIndicator?: boolean;
+  showTargetIndicator?: boolean;
   // Highlights the player.
   isViewer?: boolean;
   hpRatio?: number;
@@ -101,6 +105,8 @@ export const Character = ({
       {isSpeaking && (
         <Text x={22} y={-58} scale={0.72} text={'💬'} anchor={{ x: 0.5, y: 0.5 }} />
       )}
+      {showMovementIndicator && <MovementIndicator />}
+      {showTargetIndicator && <TargetIndicator />}
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
       {battleCharacterId
@@ -152,6 +158,44 @@ export const Character = ({
     </Container>
   );
 };
+
+function MovementIndicator() {
+  const draw = useCallback((g: PIXI.Graphics) => {
+    g.clear();
+    [
+      { x: -8, y: 0, alpha: 0.35 },
+      { x: 0, y: -3, alpha: 0.62 },
+      { x: 8, y: 0, alpha: 0.95 },
+    ].forEach(({ x, y, alpha }) => {
+      g.beginFill(0x7de8dc, alpha);
+      g.drawEllipse(x, y, 2.2, 3.6);
+      g.endFill();
+    });
+  }, []);
+
+  return <Graphics x={0} y={-65} rotation={-0.45} draw={draw} />;
+}
+
+function TargetIndicator() {
+  const draw = useCallback((g: PIXI.Graphics) => {
+    g.clear();
+    g.lineStyle(1.8, 0xffd463, 1);
+    g.drawCircle(0, 0, 7);
+    g.moveTo(-11, 0);
+    g.lineTo(-5, 0);
+    g.moveTo(5, 0);
+    g.lineTo(11, 0);
+    g.moveTo(0, -11);
+    g.lineTo(0, -5);
+    g.moveTo(0, 5);
+    g.lineTo(0, 11);
+    g.beginFill(0xffd463, 1);
+    g.drawCircle(0, 0, 1.5);
+    g.endFill();
+  }, []);
+
+  return <Graphics x={0} y={-67} draw={draw} />;
+}
 
 function HealthBar({ ratio }: { ratio: number }) {
   const draw = useCallback(
