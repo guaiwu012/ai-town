@@ -23,6 +23,7 @@ import BattleDialogueBox from './BattleDialogueBox.tsx';
 import SupportFactionPanel from './SupportFactionPanel.tsx';
 import GameLoadingScreen from './GameLoadingScreen.tsx';
 import { useBattleAudio } from '../hooks/useBattleAudio.ts';
+import SupportOnboarding, { supportGuideSeen } from './SupportOnboarding.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -38,6 +39,7 @@ export default function Game() {
   const [focusAreaId, setFocusAreaId] = useState<string>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [supportGuideOpen, setSupportGuideOpen] = useState(() => !supportGuideSeen());
   const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
@@ -192,6 +194,10 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           />}
           {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} replayFrame={replayFrame} replayTime={replayActive ? replayTime : undefined} onClose={() => setDrawerOpen(false)} />}
           {supportOpen && <SupportFactionPanel worldId={worldId} game={game} onClose={() => setSupportOpen(false)} onFollow={(playerId) => { followPlayer(playerId, false); setSupportOpen(false); }} />}
+          {supportGuideOpen && !supportOpen && <SupportOnboarding
+            onDismiss={() => setSupportGuideOpen(false)}
+            onStart={() => { setSupportGuideOpen(false); setSupportOpen(true); }}
+          />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
             worldId={worldId}

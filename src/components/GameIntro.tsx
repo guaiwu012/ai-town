@@ -13,7 +13,7 @@ export default function GameIntro({ onEnter }: { onEnter: () => Promise<void> })
   const pages = [
     { eyebrow: '第七码头计划 · 第 17 场公开实验', title: '十二个人醒在一座被封锁的岛上', body: '他们的身份、旧债和秘密都被写进比赛。安全区域会逐步关闭，只有一个人能走到直播结束。' },
     { eyebrow: '实时 AI 生存真人秀', title: '他们会判断，也会记住', body: '每名 AI 都有自己的目标、攻击倾向、结盟偏好和说话方式。一次援手或背叛，会改变此后的关系与选择。' },
-    { eyebrow: '你的身份 · 观众阵营发起者', title: '选一个人，把他送进终局', body: '锁定应援角色，追随其剧情与高光。完成阵营任务获得声望，再用干预点把空投送进真实战场。' },
+    { eyebrow: '你的身份 · 观众阵营发起者', title: '选一个人，把他送进终局', body: '锁定应援角色，选择猎手、后勤或情报路线。用干预点发布 60 秒任务，AI 会按自己的性格回应并执行。' },
   ];
   const current = pages[page];
   const enterGame = () => {
