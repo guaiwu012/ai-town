@@ -33,6 +33,8 @@ flowchart LR
 | 剧情决策 | `STORY_APPROACHES`、`cloudDecision.ts`、`resolveAreaStoryCheck()` | DeepSeek 调查路线受服务端白名单约束，改变 D20 属性/难度及热度或关系后果，并进入审计与回放。 |
 | 观赛 UI | `Game.tsx`、`LiveBattleHud.tsx`、`BattleRoyalePanel.tsx` | 自动导播、手动锁镜头、可关闭角色抽屉、战略总览、居中扫雷、干预和单一新开局确认。 |
 | 角色人设与相遇 | `CHARACTER_PERSONAS`、`encounterDisposition()`、`cloudDecision.ts` | 角色目标、攻击/结盟/撤退权重和独立语气同时驱动规则 AI、DeepSeek 与可见对白；目标筛选以同区为前提。 |
+| 近距即时反射 | `resolveCloseEncounters()`、`encounterCooldowns` | 2.2 格内强制射击或双人交谈；交谈类型产生确定的关系增减，独立于模型请求节奏并进入行动审计。 |
+| 对话导播与弹道 | `battleDirector.ts`、`dialogueVisibility.ts`、`PixiBattleEffects.tsx` | 自动镜头跟随双人交谈，手动镜头过滤画外提示；武器事件驱动曳光、枪口和命中特效。 |
 | 观众应援阵营 | `SupportFactionPanel.tsx`、`supportFaction.ts`、`FAN_01` | 本地阵营声望和单局任务驱动观众成长；服务端定向空投消耗权威干预点并进入事件、回放和角色反馈。 |
 | 稳定回放 | `battleState.seed/rngState/actionLog/replayCheckpoints`、`src/lib/battleReplay.ts` | 检查点后按 `actionId` 应用模型/规则/周期/干预状态补丁；回放绝不请求模型或读取密钥。 |
 

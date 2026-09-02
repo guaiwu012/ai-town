@@ -176,7 +176,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             replayActive={replayActive}
           />
           {!replayActive && <BattleStoryCard game={game} />}
-          {!replayActive && <BattleDialogueBox game={game} />}
+          {!replayActive && <BattleDialogueBox game={game} focusPlayerId={focusPlayerId} focusAreaId={focusAreaId} />}
           {replayActive && <BattleReplayControls
             battle={game.world.battle}
             active={replayActive}

@@ -36,4 +36,13 @@ describe('battle director', () => {
     expect(selectDirectorShot(candidates, [{ id: 9, kind: 'attack', actor: 'C01', ts: 9_000 }], 10_000))
       .toMatchObject({ targetId: 'C01', eventId: 9, urgent: true, caption: '交火现场 · 战斗追踪' });
   });
+
+  test('cuts the automatic camera to a live conversation', () => {
+    expect(selectDirectorShot(candidates, [{ id: 12, kind: 'dialogue', actor: 'C02', target: 'C01', ts: 9_500 }], 10_000))
+      .toMatchObject({ targetId: 'C02', eventId: 12, urgent: true, caption: '现场交谈 · 双人镜头' });
+  });
+
+  test('does not cut to a solo support response as if it were a conversation', () => {
+    expect(selectDirectorShot(candidates, [{ id: 13, kind: 'dialogue', actor: 'C02', ts: 9_500 }], 10_000).urgent).toBe(false);
+  });
 });

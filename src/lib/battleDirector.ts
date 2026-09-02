@@ -9,6 +9,7 @@ export type DirectorCandidate = {
 export type DirectorEvent = {
   kind: string;
   actor?: string;
+  target?: string;
   id?: number;
   ts?: number;
 };
@@ -16,7 +17,7 @@ export type DirectorEvent = {
 export type DirectorShot = { targetId?: string; caption: string; eventId?: number; urgent: boolean };
 
 const FEATURED_EVENT_KINDS = new Set([
-  'eliminate', 'attack', 'intervention', 'areaStory', 'globalStory', 'story', 'alliance', 'betrayal',
+  'eliminate', 'attack', 'dialogue', 'intervention', 'areaStory', 'globalStory', 'story', 'alliance', 'betrayal',
 ]);
 
 /** Chooses a view target only; it must never affect match simulation state. */
@@ -26,7 +27,9 @@ export function selectDirectorTarget(
 ): string | undefined {
   const alive = candidates.filter((candidate) => candidate.alive);
   const featuredActor = events.find((event) =>
-    FEATURED_EVENT_KINDS.has(event.kind) && event.actor && alive.some((candidate) => candidate.id === event.actor),
+    FEATURED_EVENT_KINDS.has(event.kind) &&
+    (event.kind !== 'dialogue' || Boolean(event.target)) &&
+    event.actor && alive.some((candidate) => candidate.id === event.actor),
   )?.actor;
   if (featuredActor) return featuredActor;
   return alive.sort((a, b) => b.heat - a.heat || a.id.localeCompare(b.id))[0]?.id;
@@ -40,6 +43,7 @@ export function selectDirectorShot(
   const alive = candidates.filter((candidate) => candidate.alive);
   const featured = events.find((event) =>
     FEATURED_EVENT_KINDS.has(event.kind) &&
+    (event.kind !== 'dialogue' || Boolean(event.target)) &&
     (event.ts === undefined || now - event.ts <= 6500) &&
     event.actor && alive.some((candidate) => candidate.id === event.actor),
   );
@@ -55,5 +59,5 @@ export function selectDirectorShot(
 }
 
 function eventCaption(kind: string) {
-  return ({ eliminate: '淘汰瞬间 · 关键镜头', attack: '交火现场 · 战斗追踪', intervention: '主办方干预 · 现场直击', areaStory: '区域剧情 · 事件现场', globalStory: '全局异变 · 特别报道', story: '人物剧情 · 焦点跟拍', alliance: '关系进展 · 谈判现场', betrayal: '联盟破裂 · 冲突追踪' } as Record<string, string>)[kind] ?? '现场直击';
+  return ({ eliminate: '淘汰瞬间 · 关键镜头', attack: '交火现场 · 战斗追踪', dialogue: '现场交谈 · 双人镜头', intervention: '主办方干预 · 现场直击', areaStory: '区域剧情 · 事件现场', globalStory: '全局异变 · 特别报道', story: '人物剧情 · 焦点跟拍', alliance: '关系进展 · 谈判现场', betrayal: '联盟破裂 · 冲突追踪' } as Record<string, string>)[kind] ?? '现场直击';
 }

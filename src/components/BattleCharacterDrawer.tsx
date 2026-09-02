@@ -70,7 +70,7 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
 function DrawerSection({ title, children }: { title: string; children: React.ReactNode }) { return <section className="drawer-section"><h3>{title}</h3>{children}</section>; }
 function Stat({ label, value }: { label: string; value: string | number }) { return <div><small>{label}</small><strong>{value}</strong></div>; }
 function displayWeapon(weapon: string) { return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon; }
-function displayAction(action: string) { return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查' } as Record<string, string>)[action] ?? action; }
+function displayAction(action: string) { return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查', encounterTalk: '近距交谈' } as Record<string, string>)[action] ?? action; }
 function storyApproachLabel(approach: string) { return ({ cautious: '谨慎勘察', bold: '强行突破', social: '交涉取证' } as Record<string, string>)[approach] ?? approach; }
 function storyChoiceLabel(eventId?: string, approach?: string) {
   if (eventId) return `（${storyOptionFor(eventId, approach).label}）`;

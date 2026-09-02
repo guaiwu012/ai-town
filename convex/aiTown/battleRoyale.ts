@@ -83,6 +83,7 @@ export const battleEvent = v.object({
   from: v.optional(point),
   to: v.optional(point),
   damage: v.optional(v.number()),
+  weapon: v.optional(v.string()),
   text: v.string(),
 });
 export type BattleEvent = Infer<typeof battleEvent>;
@@ -205,6 +206,7 @@ export const battleState = v.object({
   truthClues: v.optional(v.array(v.string())),
   storyTriggers: v.optional(v.array(v.string())),
   operationCooldowns: v.optional(v.array(v.object({ id: v.string(), until: v.number() }))),
+  encounterCooldowns: v.optional(v.array(v.object({ pairId: v.string(), until: v.number() }))),
   disabledWeaponsUntil: v.optional(v.number()),
   bountyPlayerId: v.optional(playerId),
   temporaryAllianceUntil: v.optional(v.number()),
@@ -322,7 +324,8 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     truthRevealed: false,
     truthClues: [],
     storyTriggers: [],
-  operationCooldowns: [],
+    operationCooldowns: [],
+    encounterCooldowns: [],
     areaEventCooldowns: [],
     areaLocks: [],
     decisionCount: 0,
@@ -409,6 +412,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.truthClues ??= [];
   battle.storyTriggers ??= [];
   battle.operationCooldowns ??= [];
+  battle.encounterCooldowns ??= [];
   battle.areaEventCooldowns ??= [];
   battle.areaLocks ??= [];
   battle.decisionCount ??= 0;
@@ -501,7 +505,10 @@ export function tickBattleRoyale(game: Game, now: number) {
     return;
   }
 
+  resolveCloseEncounters(game, now, alive);
+
   for (const player of alive) {
+    if (player.battle?.eliminated) continue;
     const stats = player.battle!;
     const llmActive = (battle.decisionDriverUntil ?? 0) > now && (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0);
     if (llmActive && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
@@ -1497,6 +1504,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       from: attacker.position,
       to: target.position,
       damage,
+      weapon: weaponsDisabled ? 'Fists' : attack.weapon,
     },
   );
   awardPopularity(game, now, 10, [attacker, target]);
@@ -1852,6 +1860,68 @@ function completeMission(game: Game, now: number, missionId: string) {
 
 function alivePlayers(game: Game) {
   return [...game.world.players.values()].filter((player) => !player.battle?.eliminated);
+}
+
+export function resolveCloseEncounters(game: Game, now: number, players = alivePlayers(game)) {
+  const battle = game.world.battle!;
+  const busy = new Set<string>();
+  battle.encounterCooldowns = (battle.encounterCooldowns ?? []).filter((entry) => entry.until > now);
+  for (let firstIndex = 0; firstIndex < players.length; firstIndex++) {
+    for (let secondIndex = firstIndex + 1; secondIndex < players.length; secondIndex++) {
+      const first = players[firstIndex];
+      const second = players[secondIndex];
+      if (!first.battle || !second.battle || first.battle.eliminated || second.battle.eliminated) continue;
+      if (busy.has(first.id) || busy.has(second.id) || first.battle.areaId !== second.battle.areaId) continue;
+      if (distance(first.position, second.position) > BATTLE_CONFIG.match.closeEncounterRange) continue;
+      const pairId = [first.id, second.id].sort().join('|');
+      if (battle.encounterCooldowns.some((entry) => entry.pairId === pairId)) continue;
+
+      const speaker = battleRandom(game) < 0.5 ? first : second;
+      const listener = speaker.id === first.id ? second : first;
+      const disposition = speaker.battle!.alliance === listener.id ? 'ally' : encounterDisposition(game, speaker, listener);
+      const weapon = BATTLE_CONFIG.weapons[speaker.battle!.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+      const canShoot = disposition === 'attack' && distance(speaker.position, listener.position) <= weapon.range;
+      const baseline = captureReplayPatchBaseline(game);
+      if (canShoot) {
+        attack(game, now, speaker, listener);
+        recordReplayAction(game, now, speaker, 'attack', 'rule', true, '近距离遭遇：按人设立即开火', listener.id, undefined, baseline);
+      } else {
+        const result = socialEncounter(game, now, speaker, listener, disposition);
+        recordReplayAction(game, now, speaker, 'encounterTalk', 'rule', true, result.reason, listener.id, undefined, baseline);
+      }
+      speaker.battle!.lastBattleAction = now;
+      listener.battle!.lastBattleAction = now;
+      battle.encounterCooldowns.push({ pairId, until: now + BATTLE_CONFIG.match.closeEncounterCooldownMs });
+      busy.add(first.id);
+      busy.add(second.id);
+    }
+  }
+}
+
+function socialEncounter(game: Game, now: number, speaker: Player, listener: Player, disposition: 'attack' | 'ally' | 'flee' | 'observe') {
+  const speakerPersona = personaForCharacter(speaker.battle?.characterId);
+  const listenerPersona = personaForCharacter(listener.battle?.characterId);
+  const relation = relationshipBetween(game, speaker, listener);
+  const allied = speaker.battle?.alliance === listener.id;
+  let kind = 'probe';
+  let delta = 1;
+  let reason = '近距离试探';
+  let opening = speakerPersona.tradeLine;
+  if (allied) {
+    kind = 'rapport'; delta = 2; reason = '近距离并肩交流'; opening = speakerPersona.allianceLine;
+  } else if (disposition === 'ally') {
+    kind = 'truce'; delta = 4; reason = '近距离停火交涉'; opening = speakerPersona.allianceLine;
+  } else if (disposition === 'attack' || disposition === 'flee') {
+    kind = 'warning'; delta = -3; reason = '近距离警告'; opening = speakerPersona.attackLines[0];
+  } else if ((relation?.strength ?? 0) < 0) {
+    kind = 'warning'; delta = -2; reason = '敌意试探'; opening = speakerPersona.attackLines[0];
+  }
+  recordBattleDialogue(game, now, speaker, listener, kind, opening);
+  recordBattleDialogue(game, now + 1, listener, speaker, kind, listenerPersona.replyLine);
+  updateRelationship(game, speaker, listener, delta, reason);
+  pushEvent(game, now + 2, 'relationship', `【关系】${playerName(game, speaker)}与${playerName(game, listener)}${delta > 0 ? '关系升温' : '关系恶化'} ${Math.abs(delta)} 点。`, speaker, listener);
+  awardPopularity(game, now, kind === 'warning' ? 7 : 5, [speaker, listener]);
+  return { delta, reason, kind };
 }
 
 function nearestEnemy(game: Game, player: Player) {
@@ -2257,7 +2327,7 @@ function pushEvent(
   text: string,
   actor?: Player,
   target?: Player,
-  details?: { from?: { x: number; y: number }; to?: { x: number; y: number }; damage?: number },
+  details?: { from?: { x: number; y: number }; to?: { x: number; y: number }; damage?: number; weapon?: string },
 ) {
   const battle = game.world.battle!;
   battle.feed.unshift({
@@ -2269,6 +2339,7 @@ function pushEvent(
     from: details?.from,
     to: details?.to,
     damage: details?.damage,
+    weapon: details?.weapon,
     text,
   });
   battle.feed = battle.feed.slice(0, BATTLE_CONFIG.match.maxFeed);
@@ -2283,7 +2354,7 @@ function weaponName(weapon: string) {
 }
 
 function actionName(action: string) {
-  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查' } as Record<string, string>)[action] ?? action;
+  return ({ move: '移动', search: '搜索', buy: '购买', trade: '交易', ally: '结盟', attack: '攻击', flee: '撤离', heal: '治疗', investigate: '调查', encounterTalk: '近距交谈' } as Record<string, string>)[action] ?? action;
 }
 
 function nextWeapon(weapon: string) {

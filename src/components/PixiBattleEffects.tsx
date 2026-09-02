@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Graphics as PixiGraphics, TextStyle } from 'pixi.js';
 import { ServerGame } from '../hooks/serverGame';
 
-const BULLET_MS = 1100;
+const BULLET_MS = 520;
+const EFFECT_MS = 1650;
 const LABEL_MS = 2200;
 
 export function PixiBattleEffects({ game }: { game: ServerGame }) {
@@ -48,18 +49,66 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
         x: from.x + (to.x - from.x) * progress,
         y: from.y + (to.y - from.y) * progress,
       };
-      const alpha = Math.max(0, 1 - age / LABEL_MS);
+      const effectAlpha = Math.max(0, 1 - age / EFFECT_MS);
+      const projectile = event.weapon !== 'Fists';
+      const fromY = from.y - 10;
+      const toY = to.y - 10;
+      const dx = to.x - from.x;
+      const dy = toY - fromY;
+      const length = Math.max(1, Math.hypot(dx, dy));
+      const nx = dx / length;
+      const ny = dy / length;
+      const px = -ny;
+      const py = nx;
 
-      g.lineStyle(2, 0xfff1a8, alpha * 0.75);
-      g.moveTo(from.x, from.y - 10);
-      g.lineTo(bullet.x, bullet.y - 10);
-      g.beginFill(event.kind === 'eliminate' ? 0xff4f4f : 0xfff1a8, alpha);
-      g.drawCircle(bullet.x, bullet.y - 10, 4 + 2 * Math.sin(progress * Math.PI));
-      g.endFill();
+      if (projectile && age < 170) {
+        const muzzleAlpha = 1 - age / 170;
+        g.beginFill(0xfff5bf, muzzleAlpha);
+        g.drawCircle(from.x, fromY, 9 + muzzleAlpha * 5);
+        g.endFill();
+        g.lineStyle(4, 0xffc44d, muzzleAlpha);
+        g.moveTo(from.x - 18, fromY); g.lineTo(from.x + 18, fromY);
+        g.moveTo(from.x, fromY - 18); g.lineTo(from.x, fromY + 18);
+      }
 
-      if (progress >= 0.85) {
-        g.lineStyle(3, 0xff4f4f, alpha);
-        g.drawCircle(to.x, to.y - 14, 10 + 10 * (progress - 0.85));
+      if (projectile && progress < 1) {
+        const tailProgress = Math.max(0, progress - 0.3);
+        const tailX = from.x + dx * tailProgress;
+        const tailY = fromY + dy * tailProgress;
+        g.lineStyle(9, 0xff8a32, effectAlpha * 0.28);
+        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
+        g.lineStyle(4, 0xffd35a, effectAlpha * 0.95);
+        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
+        g.lineStyle(2, 0xffffff, effectAlpha);
+        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
+        const tipX = bullet.x;
+        const tipY = bullet.y - 10;
+        g.beginFill(0xffffff, effectAlpha);
+        g.drawPolygon([
+          tipX + nx * 12, tipY + ny * 12,
+          tipX - nx * 8 + px * 3, tipY - ny * 8 + py * 3,
+          tipX - nx * 8 - px * 3, tipY - ny * 8 - py * 3,
+        ]);
+        g.endFill();
+      }
+
+      const impactAge = projectile ? age - BULLET_MS : age;
+      if (impactAge >= 0 && impactAge < 900) {
+        const impactAlpha = 1 - impactAge / 900;
+        const radius = 8 + impactAge * 0.035;
+        const hitColor = event.kind === 'eliminate' ? 0xff4545 : 0xffc24d;
+        g.beginFill(0xffffff, impactAlpha * 0.9);
+        g.drawCircle(to.x, toY, Math.max(2, 8 - impactAge * 0.015));
+        g.endFill();
+        g.lineStyle(5, hitColor, impactAlpha);
+        g.drawCircle(to.x, toY, radius);
+        g.lineStyle(2, 0xfff0a6, impactAlpha * 0.8);
+        g.drawCircle(to.x, toY, radius * 1.55);
+        for (let ray = 0; ray < 8; ray++) {
+          const angle = ray * Math.PI / 4;
+          g.moveTo(to.x + Math.cos(angle) * 7, toY + Math.sin(angle) * 7);
+          g.lineTo(to.x + Math.cos(angle) * (radius + 13), toY + Math.sin(angle) * (radius + 13));
+        }
       }
     }
   };

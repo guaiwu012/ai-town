@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -169,6 +169,40 @@ describe('battle royale host intervention rules', () => {
     expect(replayRecordedAction(game, 2_000, { playerId: fighter.id, action: 'attack', targetPlayerId: rival.id })).toMatchObject({ accepted: true });
     expect(game.world.battle.dialogueLog[0]).toMatchObject({ speakerId: fighter.id, listenerId: rival.id, kind: 'combat' });
     expect(['别废话，来。', '站着挨打，还是跪着认输？']).toContain(game.world.battle.dialogueLog[0].text);
+    expect(game.world.battle.feed.find((entry: any) => entry.kind === 'attack')).toMatchObject({ weapon: fighter.battle.weapon });
+  });
+
+  it('forces a close pair to talk or shoot exactly once during its encounter cooldown', () => {
+    const first = createPlayer('p:1', 'C01', 'A01');
+    const second = createPlayer('p:5', 'C05', 'A01');
+    second.position = { ...first.position };
+    first.battle.alliance = second.id;
+    second.battle.alliance = first.id;
+    const game = createGame([first, second]);
+    const relation = game.world.battle.relationshipEdges.find((entry: any) => entry.id === 'REL_SEED_01');
+
+    resolveCloseEncounters(game, 2_000, [first, second]);
+
+    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'encounterTalk', accepted: true });
+    expect([first.id, second.id]).toContain(game.world.battle.actionLog.at(-1)?.targetPlayerId);
+    expect(game.world.battle.dialogueLog).toHaveLength(2);
+    expect(relation.strength).toBe(87);
+    expect(relation.lastReason).toBe('近距离并肩交流');
+    expect(game.world.battle.encounterCooldowns).toHaveLength(1);
+    resolveCloseEncounters(game, 3_000, [first, second]);
+    expect(game.world.battle.dialogueLog).toHaveLength(2);
+  });
+
+  it('does not announce a close encounter for contestants outside the proximity threshold', () => {
+    const first = createPlayer('p:1', 'C01', 'A01');
+    const second = createPlayer('p:5', 'C05', 'A01');
+    second.position = { x: first.position.x + 3, y: first.position.y };
+    const game = createGame([first, second]);
+
+    resolveCloseEncounters(game, 2_000, [first, second]);
+
+    expect(game.world.battle.dialogueLog).toHaveLength(0);
+    expect(game.world.battle.actionLog).toHaveLength(0);
   });
 
   it('applies a support-faction drop only to its selected contestant', () => {

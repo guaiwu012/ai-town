@@ -53,10 +53,13 @@ export default function PixiBattleSpeech({
               draw={(graphics) => {
                 graphics.clear();
                 graphics.lineStyle(2, 0x07131f, 0.9);
-                graphics.beginFill(entry.kind === 'alliance' ? 0x70e6ca : 0xf2c861, 0.96);
+                const friendly = ['alliance', 'rapport', 'truce'].includes(entry.kind);
+                const hostile = ['combat', 'warning'].includes(entry.kind);
+                const color = hostile ? 0xff7667 : friendly ? 0x70e6ca : 0xf2c861;
+                graphics.beginFill(color, 0.96);
                 graphics.drawCircle(0, -16, 14);
                 graphics.endFill();
-                graphics.beginFill(entry.kind === 'alliance' ? 0x70e6ca : 0xf2c861, 0.96);
+                graphics.beginFill(color, 0.96);
                 graphics.drawPolygon([-5, -5, 5, -5, 0, 3]);
                 graphics.endFill();
               }}
