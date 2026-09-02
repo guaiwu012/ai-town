@@ -16,6 +16,7 @@ type LiveBattleHudProps = {
   onOpenOverview: () => void;
   onOpenDetails: () => void;
   onOpenMine: () => void;
+  onOpenSupport: () => void;
   onResumeDirector: () => void;
   onRestart: () => void;
   onToggleReplay: () => void;
@@ -33,6 +34,7 @@ export default function LiveBattleHud({
   onOpenOverview,
   onOpenDetails,
   onOpenMine,
+  onOpenSupport,
   onResumeDirector,
   onRestart,
   onToggleReplay,
@@ -114,6 +116,7 @@ export default function LiveBattleHud({
         </section>}
         <section className="live-control-cluster">
           <div className="live-point-readout">干预点 <strong>{interventionPoints}</strong>/{interventionPointsMax}</div>
+          <button className="live-hud-button" disabled={replayActive} onClick={onOpenSupport}>角色应援</button>
           <button className="live-hud-button live-hud-primary" disabled={replayActive} onClick={onOpenMine}>{replayActive ? '回放中不可干预' : '扫雷赚取干预点'}</button>
         </section>
       </div>

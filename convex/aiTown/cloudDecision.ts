@@ -3,7 +3,7 @@ import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { Doc, Id } from '../_generated/dataModel';
 import { playerId } from './ids';
-import { AREA_SPECIAL_EVENTS, BATTLE_ACTIONS, BATTLE_CONFIG, adjacentAreaIds, profileForCharacterId, storyOptionsFor } from '../../data/battleRoyaleConfig';
+import { AREA_SPECIAL_EVENTS, BATTLE_ACTIONS, BATTLE_CONFIG, adjacentAreaIds, personaForCharacter, profileForCharacterId, storyOptionsFor } from '../../data/battleRoyaleConfig';
 
 type Decision = {
   action: string;
@@ -86,6 +86,7 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
   const stats = player.battle!;
   const nameFor = (id: string) => snapshot.descriptions.find((description) => description.playerId === id)?.name ?? id;
   const profile = profileForCharacterId(stats.characterId ?? 'C01');
+  const characterPersona = personaForCharacter(stats.characterId);
   const candidates = snapshot.world.players
     .filter((candidate) => candidate.id !== playerId && candidate.battle && !candidate.battle.eliminated)
     .map((candidate) => ({ id: candidate.id, name: nameFor(candidate.id), areaId: candidate.battle?.areaId, hp: Math.ceil(candidate.battle?.hp ?? 0), alliance: stats.alliance === candidate.id }));
@@ -103,7 +104,20 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     }));
   const prompt = {
     role: `${nameFor(playerId)} (${stats.characterId})`,
-    persona: { codename: profile.codename, strength: profile.strength, mind: profile.mind, psyche: profile.psyche, social: profile.social, aggression: profile.aggro, cooperation: profile.coop, riskPreference: profile.risk },
+    persona: {
+      codename: profile.codename,
+      title: characterPersona.title,
+      archetype: characterPersona.archetype,
+      goal: characterPersona.goal,
+      combatStyle: characterPersona.combatStyle,
+      speechStyle: characterPersona.speechStyle,
+      aggression: profile.aggro,
+      cooperation: profile.coop,
+      riskPreference: profile.risk,
+      attackBias: characterPersona.attackBias,
+      allianceBias: characterPersona.allianceBias,
+      retreatBias: characterPersona.retreatBias,
+    },
     self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), satiety: Math.ceil(stats.satiety ?? 0), zoneTime: Math.ceil(stats.zoneTime ?? 0), stress: Math.ceil(stats.stress ?? 0), stressThreshold: stats.stressThreshold, weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
     openAreas: snapshot.world.battle?.openAreas,
     zoneClosesAt: snapshot.world.battle?.zoneClosesAt,
@@ -111,7 +125,7 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
     candidates,
     availableStories,
-    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟或交易时必填，第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；行动需符合 persona。',
+    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟、交易或交战时的第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。遇到同区角色时必须根据 persona 的攻击、结盟、撤退倾向和关系做出选择；台词必须符合 speechStyle，不得使用通用模板。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；所有行动需符合 persona。',
   };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);

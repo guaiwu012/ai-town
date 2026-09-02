@@ -20,6 +20,8 @@ import { selectDirectorShot } from '../lib/battleDirector.ts';
 import { replayFrameAt, replayStartTime } from '../lib/battleReplay.ts';
 import BattleStoryCard from './BattleStoryCard.tsx';
 import BattleDialogueBox from './BattleDialogueBox.tsx';
+import SupportFactionPanel from './SupportFactionPanel.tsx';
+import GameLoadingScreen from './GameLoadingScreen.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 
@@ -34,6 +36,7 @@ export default function Game() {
   const [focusPlayerId, setFocusPlayerId] = useState<GameId<'players'>>();
   const [focusAreaId, setFocusAreaId] = useState<string>();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
@@ -86,7 +89,7 @@ export default function Game() {
   }, [replayActive, replaySpeed, game]);
 
   if (!worldId || !engineId || !game) {
-    return null;
+    return <GameLoadingScreen stage={!worldId ? '正在连接直播服务器' : !engineId ? '正在唤醒比赛引擎' : '正在同步 12 名 AI 状态'} />;
   }
 
   const followPlayer = (playerId: GameId<'players'>, openDrawer = true) => {
@@ -166,6 +169,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onOpenOverview={() => setViewMode('overview')}
             onOpenDetails={() => setDrawerOpen(true)}
             onOpenMine={() => { setLaunchModal('mine'); setViewMode('overview'); }}
+            onOpenSupport={() => setSupportOpen(true)}
             onResumeDirector={() => { setCameraMode('auto'); setFocusAreaId(undefined); setDrawerOpen(false); }}
             onRestart={() => { setLaunchModal('reset'); setViewMode('overview'); }}
             onToggleReplay={() => { setReplayTime((time) => availableReplayStart === undefined ? time : Math.max(time ?? availableReplayStart, availableReplayStart)); setReplayActive((active) => !active); }}
@@ -183,6 +187,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onJump={(time) => { setReplayTime(time); setReplayActive(true); }}
           />}
           {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} replayFrame={replayFrame} replayTime={replayActive ? replayTime : undefined} onClose={() => setDrawerOpen(false)} />}
+          {supportOpen && <SupportFactionPanel worldId={worldId} game={game} onClose={() => setSupportOpen(false)} onFollow={(playerId) => { followPlayer(playerId, false); setSupportOpen(false); }} />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
             worldId={worldId}

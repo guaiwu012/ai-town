@@ -23,6 +23,7 @@ import {
   INTERVENTION_OPERATIONS,
   profileForIndex,
   profileForCharacterId,
+  personaForCharacter,
 } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
@@ -1089,6 +1090,14 @@ export function applyIntervention(
     case 'SUP_01': affected.forEach((player) => { player.battle!.medkits += 1; player.battle!.coins += 20; }); announce(`补给已投放至${areaName(areaId)}。`); break;
     case 'SUP_02': affected.forEach((player) => { player.battle!.hp = Math.min(player.battle!.maxHp, player.battle!.hp + 20); player.battle!.stamina = player.battle!.maxStamina; }); announce(`${areaName(areaId)}开启盛宴补给。`); break;
     case 'SUP_05': target!.battle!.coins += 35; target!.battle!.armor += 4; announce(`${playerName(game, target!)}获得品牌赞助。`); break;
+    case 'FAN_01':
+      target!.battle!.stamina = Math.min(target!.battle!.maxStamina ?? 100, (target!.battle!.stamina ?? 0) + 18);
+      target!.battle!.armor += 2;
+      target!.battle!.coins += 12;
+      recordBattleDialogue(game, now, target!, undefined, 'support', personaForCharacter(target!.battle!.characterId).supportLine);
+      announce(`${playerName(game, target!)}收到应援阵营的专属空投。`);
+      awardPopularity(game, now, 12, [target!]);
+      break;
     case 'RUL_01': target!.battle!.alliance = second!.id; second!.battle!.alliance = target!.id; battle.temporaryAllianceUntil = now + 45000; announce(`${playerName(game, target!)}与${playerName(game, second!)}被规则强制结盟。`); awardPopularity(game, now, 20, [target!, second!]); break;
     case 'RUL_02': battle.disabledWeaponsUntil = now + 30000; announce('武器规则已冻结，全场进入徒手阶段。'); break;
     case 'RUL_04': battle.bountyPlayerId = target!.id; announce(`${playerName(game, target!)}成为悬赏目标。`); break;
@@ -1300,8 +1309,8 @@ function executeBattleAction(
       target.battle.coins = Math.max(0, target.battle.coins - balance);
       stats.coins += balance;
       updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
-      recordBattleDialogue(game, now, player, target, 'trade', speech || `我用${offered}${received ? `换你的${received}` : '换一些物资'}，成交吗？`);
-      recordBattleDialogue(game, now + 1, target, player, 'trade', received ? '成交，各取所需。' : '成交，我会记住这次帮助。');
+      recordBattleDialogue(game, now, player, target, 'trade', speech || personaForCharacter(stats.characterId).tradeLine);
+      recordBattleDialogue(game, now + 1, target, player, 'trade', personaForCharacter(target.battle.characterId).replyLine);
       pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 以${offered}${received ? `换得${received}` : '完成出售'}。`, player, target);
       return { accepted: true };
     }
@@ -1309,8 +1318,8 @@ function executeBattleAction(
     if (transfer < 1) return { accepted: false, reason: '物资不足以交易' };
     stats.coins -= transfer; target.battle.coins += transfer;
     updateRelationship(game, player, target, stats.areaId === 'A08' ? 8 : 6, '物资交易');
-    recordBattleDialogue(game, now, player, target, 'trade', speech || `我分你 ${transfer} 点物资，之后互相照应。`);
-    recordBattleDialogue(game, now + 1, target, player, 'trade', '收到，这份人情我会还。');
+    recordBattleDialogue(game, now, player, target, 'trade', speech || personaForCharacter(stats.characterId).tradeLine);
+    recordBattleDialogue(game, now + 1, target, player, 'trade', personaForCharacter(target.battle.characterId).replyLine);
     pushEvent(game, now, 'trade', `【交易】${playerName(game, player)} 与 ${playerName(game, target)} 交换物资。`, player, target);
     return { accepted: true };
   }
@@ -1397,19 +1406,23 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   }
 
   const weaponConfig = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
-  if (enemy && distance(player.position, enemy.position) <= weaponConfig.range) {
-    performRuleAction('attack', enemy);
-    return;
-  }
-
-  if (enemy && !player.pathfinding && battleRandom(game) < 0.48) {
-    if (performRuleAction('move', enemy)) {
-      player.activity = {
-        description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
-        emoji: 'MOVE',
-        until: now + 1500,
-      };
-      return;
+  if (enemy && distance(player.position, enemy.position) <= BATTLE_CONFIG.match.dangerRange) {
+    const disposition = encounterDisposition(game, player, enemy);
+    if (disposition === 'ally' && performRuleAction('ally', enemy)) return;
+    if (disposition === 'flee' && performRuleAction('flee', enemy)) return;
+    if (disposition === 'attack') {
+      if (distance(player.position, enemy.position) <= weaponConfig.range) {
+        performRuleAction('attack', enemy);
+        return;
+      }
+      if (performRuleAction('move', enemy)) {
+        player.activity = {
+          description: `${playerName(game, player)} 正在逼近 ${playerName(game, enemy)}`,
+          emoji: 'MOVE',
+          until: now + 1500,
+        };
+        return;
+      }
     }
   }
 
@@ -1465,6 +1478,14 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     emoji: 'HIT',
     until: now + 1600,
   };
+  const persona = personaForCharacter(attack.characterId);
+  const recentCombatLine = game.world.battle?.dialogueLog?.find(
+    (entry) => entry.speakerId === attacker.id && entry.kind === 'combat' && entry.ts > now - 8000,
+  );
+  if (!recentCombatLine) {
+    const line = persona.attackLines[(game.world.battle?.nextDialogueId ?? 1) % persona.attackLines.length];
+    recordBattleDialogue(game, now, attacker, target, 'combat', line);
+  }
   pushEvent(
     game,
     now,
@@ -1680,9 +1701,9 @@ function sanitizeDialogue(text?: string) {
 }
 
 function defaultAllianceProposal(game: Game, speaker: Player, listener: Player) {
-  if ((speaker.battle?.hp ?? 100) < 45) return `先停火。${playerName(game, listener)}，我们一起活过下一轮。`;
-  if ((speaker.battle?.stress ?? 0) > 55) return '这里不对劲。先结盟调查，真相出来前别互相开枪。';
-  return '两个人比一个人活得久。结盟，物资和情报共享。';
+  const line = personaForCharacter(speaker.battle?.characterId).allianceLine;
+  if ((speaker.battle?.hp ?? 100) < 45) return `先停火。${line}`;
+  return line;
 }
 
 function allianceReply(game: Game, speaker: Player, listener: Player) {
@@ -1690,9 +1711,9 @@ function allianceReply(game: Game, speaker: Player, listener: Player) {
     const a = speaker.battle?.characterId; const b = listener.battle?.characterId;
     return (candidate.a === a && candidate.b === b) || (candidate.a === b && candidate.b === a);
   });
-  if ((edge?.strength ?? 0) >= 35) return '我信你。背靠背行动，别掉队。';
-  if ((speaker.battle?.hp ?? 100) < 40) return '成交，但先找药，活下来再谈条件。';
-  return '可以。暂时停火，发现敌人马上报位置。';
+  const line = personaForCharacter(speaker.battle?.characterId).replyLine;
+  if ((edge?.strength ?? 0) >= 35) return `我信你。${line}`;
+  return line;
 }
 
 function recordBattleDialogue(game: Game, now: number, speaker: Player, listener: Player | undefined, kind: string, rawText: string) {
@@ -1701,8 +1722,9 @@ function recordBattleDialogue(game: Game, now: number, speaker: Player, listener
   const entry: BattleDialogue = { id: battle.nextDialogueId ?? 1, ts: now, speakerId: speaker.id, ...(listener ? { listenerId: listener.id } : {}), kind, text };
   battle.nextDialogueId = entry.id + 1;
   battle.dialogueLog = [entry, ...(battle.dialogueLog ?? [])].slice(0, 40);
-  speaker.activity = { description: `${playerName(game, speaker)}：“${text}”`, emoji: kind === 'alliance' ? 'TALK' : 'TRADE', until: now + 5500 };
-  speaker.battle!.nextLocomotionAt = now + 5750;
+  const movingDialogue = kind === 'combat' || kind === 'support';
+  speaker.activity = { description: `${playerName(game, speaker)}：“${text}”`, emoji: kind === 'combat' ? 'FIRE' : kind === 'trade' ? 'TRADE' : 'TALK', until: now + (movingDialogue ? 2200 : 5500) };
+  speaker.battle!.nextLocomotionAt = now + (movingDialogue ? 900 : 5750);
   pushEvent(game, now, 'dialogue', `【交谈】${playerName(game, speaker)}：${text}`, speaker, listener);
 }
 
@@ -1834,11 +1856,38 @@ function alivePlayers(game: Game) {
 
 function nearestEnemy(game: Game, player: Player) {
   const candidates = alivePlayers(game).filter(
-    (candidate) => candidate.id !== player.id && candidate.id !== player.battle?.alliance,
+    (candidate) => candidate.id !== player.id &&
+      candidate.id !== player.battle?.alliance &&
+      candidate.battle?.areaId === player.battle?.areaId,
   );
   return candidates.sort(
     (a, b) => distance(player.position, a.position) - distance(player.position, b.position),
   )[0];
+}
+
+export function encounterDisposition(game: Game, player: Player, target: Player): 'attack' | 'ally' | 'flee' | 'observe' {
+  const persona = personaForCharacter(player.battle?.characterId);
+  const relation = relationshipBetween(game, player, target);
+  const hpRatio = (player.battle?.hp ?? 0) / Math.max(1, player.battle?.maxHp ?? 100);
+  const targetHpRatio = (target.battle?.hp ?? 0) / Math.max(1, target.battle?.maxHp ?? 100);
+  const relationStrength = relation?.strength ?? 0;
+  const rivalBoost = relation?.type === 'rival' ? 0.34 : 0;
+  const trustBoost = relationStrength > 0 ? Math.min(0.35, relationStrength / 220) : 0;
+  const hostilityBoost = relationStrength < 0 ? Math.min(0.35, Math.abs(relationStrength) / 180) : 0;
+  const weakness = Math.max(0, targetHpRatio - hpRatio);
+  const scores = [
+    { action: 'attack' as const, score: persona.attackBias + rivalBoost + hostilityBoost + Math.max(0, hpRatio - targetHpRatio) * 0.25 },
+    { action: 'ally' as const, score: persona.allianceBias + trustBoost - rivalBoost },
+    { action: 'flee' as const, score: persona.retreatBias + weakness * 0.7 + (hpRatio < 0.4 ? 0.45 : 0) },
+    { action: 'observe' as const, score: 0.16 },
+  ];
+  const total = scores.reduce((sum, entry) => sum + Math.max(0, entry.score), 0);
+  let cursor = battleRandom(game) * total;
+  for (const entry of scores) {
+    cursor -= Math.max(0, entry.score);
+    if (cursor <= 0) return entry.action;
+  }
+  return 'observe';
 }
 
 function wander(game: Game, now: number, player: Player) {

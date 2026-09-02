@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, CHARACTER_PERSONAS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
@@ -105,6 +105,25 @@ describe('battle royale P0/P1 configuration', () => {
     expect(availableAreaItemsFor('C05', 'A05')).toContain('学生档案');
     expect(availableAreaItemsFor('C01', 'A05')).not.toContain('学生档案');
     expect(availableAreaItemsFor('C01', 'A05')).toContain('校园广播磁带');
+  });
+
+  test('gives all twelve contestants an executable and distinct persona card', () => {
+    expect(Object.keys(CHARACTER_PERSONAS)).toEqual(BATTLE_CONFIG.characters.map((character) => character.id));
+    const attackLines = new Set<string>();
+    const supportLines = new Set<string>();
+    Object.values(CHARACTER_PERSONAS).forEach((persona) => {
+      expect(persona.goal.length).toBeGreaterThan(12);
+      expect(persona.speechStyle.length).toBeGreaterThan(8);
+      expect(persona.attackBias).toBeGreaterThanOrEqual(0);
+      expect(persona.attackBias).toBeLessThanOrEqual(1);
+      expect(persona.allianceBias).toBeGreaterThanOrEqual(0);
+      expect(persona.retreatBias).toBeGreaterThanOrEqual(0);
+      persona.attackLines.forEach((line) => attackLines.add(line));
+      supportLines.add(persona.supportLine);
+    });
+    expect(attackLines.size).toBe(24);
+    expect(supportLines.size).toBe(12);
+    expect(INTERVENTION_OPERATIONS).toContainEqual(expect.objectContaining({ id: 'FAN_01', target: 'player', cost: 2 }));
   });
 });
 

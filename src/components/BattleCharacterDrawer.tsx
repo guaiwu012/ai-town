@@ -1,6 +1,6 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
-import { AREA_SPECIAL_EVENTS, storyOptionFor } from '../../data/battleRoyaleConfig';
+import { AREA_SPECIAL_EVENTS, personaForCharacter, storyOptionFor } from '../../data/battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
 import BattleVitalBattery from './BattleVitalBattery';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
@@ -27,6 +27,7 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
   const recentActions = (game.world.battle?.actionLog ?? []).filter((entry) => entry.playerId === player.id && (!replayTime || entry.ts <= replayTime)).slice(-3).reverse();
   const recentDialogue = (game.world.battle?.dialogueLog ?? []).filter((entry) => (!replayTime || entry.ts <= replayTime) && (entry.speakerId === player.id || entry.listenerId === player.id)).slice(0, 6);
   const auditedAction = recentActions[0];
+  const persona = personaForCharacter(stats.characterId);
   return (
     <aside className="character-drawer pointer-events-auto" aria-label={`${name}角色详情`}>
       <div className="character-drawer-header">
@@ -40,6 +41,7 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
         <Stat label="物资" value={stats.coins} />
       </div>
       <DrawerSection title="当前状态"><p>{replayTime ? '回放时刻状态' : player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{Math.ceil(stats.stress ?? 0)}/{stats.stressThreshold ?? '--'}</p><p>饱食：{Math.ceil(stats.satiety ?? 0)} · 区域停留：{Math.ceil(stats.zoneTime ?? 0)}/{stats.maxZoneTime ?? '--'}</p></DrawerSection>
+      <DrawerSection title={`角色卡 · ${persona.title}`}><p>{persona.archetype}</p><p>{persona.goal}</p><p>战斗：{persona.combatStyle}</p><p>说话：{persona.speechStyle}</p><div className="drawer-persona-bias"><span>攻击 {Math.round(persona.attackBias * 100)}%</span><span>结盟 {Math.round(persona.allianceBias * 100)}%</span><span>撤退 {Math.round(persona.retreatBias * 100)}%</span></div></DrawerSection>
       <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
       <DrawerSection title="背包"><p>{stats.inventory?.length ? stats.inventory.join('、') : '暂无额外物资'} · 医疗包 {stats.medkits}</p></DrawerSection>
       <DrawerSection title="决策审计">

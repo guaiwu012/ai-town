@@ -1,4 +1,4 @@
-import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
+import { applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, submitAIDecision, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -146,6 +146,48 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
     expect(game.world.battle.actionLog.at(-1)?.patch?.players.map((entry: any) => entry.id)).toEqual([first.id, second.id]);
     expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 14, lastReason: '结盟' }));
+  });
+
+  it('lets an aggressive persona choose combat in most same-area encounters', () => {
+    let attacks = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const fighter = createPlayer('p:4', 'C04', 'A04');
+      const rival = createPlayer('p:9', 'C09', 'A04');
+      const game = createGame([fighter, rival]);
+      game.world.battle = defaultBattleState(1_000, seed);
+      if (encounterDisposition(game, fighter, rival) === 'attack') attacks += 1;
+    }
+    expect(attacks).toBeGreaterThan(38);
+  });
+
+  it('uses persona combat dialogue when an attack is executed', () => {
+    const fighter = createPlayer('p:4', 'C04', 'A04');
+    const rival = createPlayer('p:9', 'C09', 'A04');
+    rival.position = { ...fighter.position };
+    const game = createGame([fighter, rival]);
+
+    expect(replayRecordedAction(game, 2_000, { playerId: fighter.id, action: 'attack', targetPlayerId: rival.id })).toMatchObject({ accepted: true });
+    expect(game.world.battle.dialogueLog[0]).toMatchObject({ speakerId: fighter.id, listenerId: rival.id, kind: 'combat' });
+    expect(['别废话，来。', '站着挨打，还是跪着认输？']).toContain(game.world.battle.dialogueLog[0].text);
+  });
+
+  it('applies a support-faction drop only to its selected contestant', () => {
+    const supported = createPlayer('p:5', 'C05', 'A05');
+    const bystander = createPlayer('p:6', 'C06', 'A05');
+    supported.battle.stamina = 40;
+    supported.battle.armor = 0;
+    supported.battle.coins = 0;
+    bystander.battle.stamina = 40;
+    const game = createGame([supported, bystander]);
+
+    const result = applyIntervention(game, 2_000, { opId: 'FAN_01', targetPlayerId: supported.id });
+
+    expect(result).toMatchObject({ remainingPoints: 13, operation: '阵营应援空投' });
+    expect(supported.battle).toMatchObject({ stamina: 58, armor: 2, coins: 12, interventionKind: 'FAN_01' });
+    expect(bystander.battle).toMatchObject({ stamina: 40, armor: 0, coins: 20 });
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('专属空投'))).toBe(true);
+    expect(game.world.battle.dialogueLog[0]).toMatchObject({ kind: 'support', text: '是给我的吗？谢谢……我会努力活下去。' });
+    expect(supported.battle.nextLocomotionAt).toBe(2_900);
   });
 
   it('records a validated model-selected investigation approach', () => {

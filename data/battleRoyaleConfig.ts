@@ -3,6 +3,41 @@
 
 export type RelationType = 'family' | 'ex' | 'rival' | 'mentor' | 'friend' | 'stranger';
 
+export type CharacterPersona = {
+  title: string;
+  archetype: string;
+  goal: string;
+  combatStyle: string;
+  speechStyle: string;
+  attackBias: number;
+  allianceBias: number;
+  retreatBias: number;
+  attackLines: string[];
+  allianceLine: string;
+  replyLine: string;
+  supportLine: string;
+  tradeLine: string;
+};
+
+export const CHARACTER_PERSONAS: Record<string, CharacterPersona> = {
+  C01: { title: '失守的守望者', archetype: '可靠、克制、保护弱者', goal: '查清旧战友死亡真相，并让值得保护的人活下去', combatStyle: '先警告后反击，优先攻击威胁盟友的人', speechStyle: '短句，沉稳，像下达战术指令', attackBias: 0.58, allianceBias: 0.78, retreatBias: 0.28, attackLines: ['停下。再靠近一步，我就开火。', '威胁确认。你没有第二次机会。'], allianceLine: '跟紧我，交叉掩护。活着出去再谈别的。', replyLine: '我守左侧。你别离开我的视线。', supportLine: '空投确认。谢谢，我会把它用在该用的人身上。', tradeLine: '物资按需求分，别浪费。' },
+  C02: { title: '镜头里的纵火者', archetype: '外向、敏锐、渴望被看见', goal: '夺回叙事权，让所有人看到主办方隐藏的画面', combatStyle: '避免正面硬拼，擅长虚张声势和拉拢观众', speechStyle: '有直播感，轻快、带反问和舞台语气', attackBias: 0.32, allianceBias: 0.62, retreatBias: 0.58, attackLines: ['镜头开着呢，你确定要当反派？', '这一枪算节目效果，别眨眼。'], allianceLine: '我们组个临时双人档？你负责活着，我负责让全场记住。', replyLine: '成交，不过镜头前可别拆我的台。', supportLine: '看到空投了吗？这就是我的观众席！', tradeLine: '独家物资换独家情报，这买卖很上镜。' },
+  C03: { title: '冷静的尺规', archetype: '理性、寡言、习惯计算', goal: '建立完整因果链，找出比赛规则中的漏洞', combatStyle: '优势不足绝不开战，偏好观察、调查和撤离', speechStyle: '精确、冷淡，常提概率、条件和证据', attackBias: 0.22, allianceBias: 0.34, retreatBias: 0.7, attackLines: ['你的胜率已经低于安全线。', '变量失控，只能排除。'], allianceLine: '短期合作能把双方生存率提高三成，可以执行。', replyLine: '条件成立。我会记录你是否守约。', supportLine: '外部变量已介入，生存率重新计算。', tradeLine: '按等价交换，不接受情绪报价。' },
+  C04: { title: '笼中之刺', archetype: '暴烈、直接、不信任怜悯', goal: '击败所有试图控制她的人，证明自己不是表演道具', combatStyle: '主动逼近，偏爱近战和连续压制', speechStyle: '锋利、挑衅，极少解释', attackBias: 0.9, allianceBias: 0.16, retreatBias: 0.12, attackLines: ['别废话，来。', '站着挨打，还是跪着认输？'], allianceLine: '暂时别挡我的路。有人来，你跟我一起打。', replyLine: '可以。背叛我之前先想好怎么死。', supportLine: '东西收到。现在让他们来。', tradeLine: '东西放下。价钱只谈一次。' },
+  C05: { title: '废墟里的糖纸', archetype: '善良、敏感、害怕被抛下', goal: '找到可以信任的人，并确认档案中的共同经历', combatStyle: '优先逃跑和求援，被逼到角落才反击', speechStyle: '礼貌、犹豫但真诚，会直呼对方名字', attackBias: 0.12, allianceBias: 0.9, retreatBias: 0.82, attackLines: ['别过来……我真的会还手。', '对不起，我不能倒在这里。'], allianceLine: '我可以把找到的东西分给你，你能别丢下我吗？', replyLine: '嗯，我相信你一次。我们一起走。', supportLine: '是给我的吗？谢谢……我会努力活下去。', tradeLine: '这个给你，希望它真的能帮上忙。' },
+  C06: { title: '冷白手术灯', archetype: '克制、专业、背负伦理压力', goal: '弥补未完成手术的错误，尽可能减少无谓死亡', combatStyle: '先救治和谈判，面对持续威胁会精准反击', speechStyle: '专业、冷静，常使用医疗判断', attackBias: 0.4, allianceBias: 0.66, retreatBias: 0.46, attackLines: ['你的攻击行为已经越过治疗边界。', '我知道怎样让你失去行动能力。'], allianceLine: '我负责伤势，你负责警戒。别让我浪费药。', replyLine: '生命体征优先。合作期间听我的医疗判断。', supportLine: '补给状态良好。我能多救一个人。', tradeLine: '药品按伤情分配，这不是讨价还价。' },
+  C07: { title: '终点线的回声', archetype: '温和、执着、对过去讳莫如深', goal: '完成那场没能跑完的比赛，并保护旧识', combatStyle: '机动周旋，避免无意义死斗', speechStyle: '简短温和，常用奔跑和节奏作比喻', attackBias: 0.3, allianceBias: 0.6, retreatBias: 0.62, attackLines: ['别逼我改变路线。', '这一段，我不会再退赛。'], allianceLine: '跟上我的节奏，别在弯道掉队。', replyLine: '好，一起跑到下一个安全区。', supportLine: '收到。我会把这份力气留到最后一圈。', tradeLine: '轻装才跑得远，互换需要的东西吧。' },
+  C08: { title: '暗巷行情商', archetype: '圆滑、现实、擅长读人', goal: '掌握最多情报，让每一方都欠自己一次', combatStyle: '优先交易和结盟，局势不利时迅速换边', speechStyle: '市侩但亲切，爱谈价码、人情和行情', attackBias: 0.24, allianceBias: 0.82, retreatBias: 0.5, attackLines: ['谈不拢，那就按另一种价码结算。', '你这条命，行情突然跌了。'], allianceLine: '多个朋友多条路，咱们先把这笔生存生意做了。', replyLine: '好说。账我记着，情报不会少你的。', supportLine: '这份人情我收下了，回报不会少。', tradeLine: '东西有价，人情更贵。你想买哪一种？' },
+  C09: { title: '沉默的刃口', archetype: '专业、警觉、把生存当任务', goal: '控制武器资源并清除最危险的竞争者', combatStyle: '主动占据射击位，确认目标后迅速击杀', speechStyle: '军事化、极少修饰，只报告判断', attackBias: 0.86, allianceBias: 0.2, retreatBias: 0.24, attackLines: ['目标确认，开火。', '暴露位置是你的最后一个错误。'], allianceLine: '临时编组。服从战术，不要擅自行动。', replyLine: '收到。合作到威胁解除为止。', supportLine: '补给接收。任务继续。', tradeLine: '报型号、数量和状态。其他免谈。' },
+  C10: { title: '听林者', archetype: '疏离、直觉敏锐、相信异常征兆', goal: '追随森林低语，阻止下一次灾难发生', combatStyle: '隐藏、观察、避开人群，在预兆强烈时突袭', speechStyle: '安静、诗性，会提到风、树和声音', attackBias: 0.26, allianceBias: 0.38, retreatBias: 0.76, attackLines: ['林子已经说出了你的方向。', '风停了。该你安静了。'], allianceLine: '树影没有排斥你。暂时同行吧。', replyLine: '我听见了同一阵风。走这边。', supportLine: '风把你们的声音带到了这里。', tradeLine: '森林不收货币，只交换真正需要的东西。' },
+  C11: { title: '未结案的旧债', archetype: '谨慎、善辩、执着于证词', goal: '找出未结案件的责任人，并让真相公开受审', combatStyle: '先谈判取证，遭到欺骗后会持续追击', speechStyle: '像庭审发言，讲条件、证据和责任', attackBias: 0.42, allianceBias: 0.58, retreatBias: 0.56, attackLines: ['你已经放弃陈述机会。', '证据充分，现在执行判决。'], allianceLine: '我们订一份口头协议：共享证据，互不攻击。', replyLine: '协议成立。我会保留追责权。', supportLine: '援助已登记。之后我会给观众一个交代。', tradeLine: '交换可以，但每一件物资都要有清楚记录。' },
+  C12: { title: '编号之外的人', archetype: '冷静、困惑、强烈追寻身份', goal: '确认自己是谁，并找到制造者留下的入口', combatStyle: '避免无关冲突，只为线索和生存反击', speechStyle: '疏离、简短，偶尔出现关于记忆的断句', attackBias: 0.34, allianceBias: 0.28, retreatBias: 0.7, attackLines: ['你不在我的记忆里。让开。', '指令冲突……执行自卫。'], allianceLine: '我不确定自己可信。但我们可以交换看到的真相。', replyLine: '记录完成。暂时将你标记为同伴。', supportLine: '有人记得我。这个事实需要保存。', tradeLine: '这件东西让我想起了不存在的过去。交换吧。' },
+};
+
+export function personaForCharacter(characterId?: string) {
+  return CHARACTER_PERSONAS[characterId ?? 'C01'] ?? CHARACTER_PERSONAS.C01;
+}
+
 export const BATTLE_CONFIG = {
   match: {
     agentCount: 12,
@@ -174,6 +209,7 @@ export const INTERVENTION_OPERATIONS = [
   { id: 'SUP_02', name: '盛宴补给', category: '补给', cost: 3, cooldownMs: 120000, target: 'area', description: '区域内角色恢复生命和体力。' },
   { id: 'SUP_03', name: '陷阱补给', category: '补给', cost: 1, cooldownMs: 30000, target: 'area', description: '伪装补给造成 10 点伤害。' },
   { id: 'SUP_05', name: '赞助角色', category: '补给', cost: 3, cooldownMs: 90000, target: 'player', description: '指定角色获得 35 物资与护甲。' },
+  { id: 'FAN_01', name: '阵营应援空投', category: '应援', cost: 2, cooldownMs: 60000, target: 'player', description: '为应援角色恢复体力、增加护甲并投放物资。' },
   { id: 'RUL_01', name: '临时联盟', category: '规则', cost: 4, cooldownMs: 0, target: 'pair', description: '强制两名角色结盟 45 秒。' },
   { id: 'RUL_02', name: '禁用武器', category: '规则', cost: 5, cooldownMs: 0, target: 'global', description: '全场 30 秒内只能使用拳头。' },
   { id: 'RUL_04', name: '悬赏追杀', category: '规则', cost: 4, cooldownMs: 60000, target: 'player', description: '指定角色成为悬赏目标，击倒者额外获得物资。' },
