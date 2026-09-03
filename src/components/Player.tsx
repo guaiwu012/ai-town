@@ -68,9 +68,9 @@ export const Player = ({
   const actuallyMoving = displayedLocation.speed > 0;
   const activityEmoji = activeActivity?.emoji === 'MOVE'
     ? ''
-    : ['ROUTE', 'TARGET'].includes(activeActivity?.emoji ?? '') ? '' : activeActivity?.emoji;
-  const showMovementIndicator = activeActivity?.emoji === 'MOVE' && actuallyMoving;
+    : ['ROUTE', 'TARGET', 'LOOT', 'FIRE', 'HIT'].includes(activeActivity?.emoji ?? '') ? '' : activeActivity?.emoji;
   const showTargetIndicator = activeActivity?.emoji === 'TARGET';
+  const actionLabel = battleActionLabel(activeActivity?.emoji, activeActivity?.description, actuallyMoving);
   const isSpeaking =
     activeActivity?.emoji === 'TALK' ||
     activeActivity?.emoji === 'ALLY' ||
@@ -95,8 +95,10 @@ export const Player = ({
         isThinking={isThinking}
         isSpeaking={isSpeaking}
         emoji={activityEmoji}
-        showMovementIndicator={showMovementIndicator}
         showTargetIndicator={showTargetIndicator}
+        actionLabel={actionLabel}
+        isFiring={activeActivity?.emoji === 'FIRE'}
+        isHit={activeActivity?.emoji === 'HIT'}
         isViewer={isViewer}
         hpRatio={displayedBattle ? displayedBattle.hp / displayedBattle.maxHp : undefined}
         isEliminated={displayedBattle?.eliminated}
@@ -112,3 +114,11 @@ export const Player = ({
     </>
   );
 };
+
+function battleActionLabel(emoji?: string, description?: string, actuallyMoving = false) {
+  if (emoji === 'TARGET') return description?.includes('悬赏') ? '悬赏追击' : '追击目标';
+  if (emoji === 'MOVE' && actuallyMoving) return description?.includes('撤离') ? '撤离' : 'MOVE';
+  if (emoji === 'ROUTE') return '规划路线';
+  if (emoji === 'LOOT') return '搜索补给';
+  return undefined;
+}

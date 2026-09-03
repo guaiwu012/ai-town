@@ -102,7 +102,25 @@ describe('battle royale host intervention rules', () => {
     expect(runCombatReflex(game, 5_000, attacker)).toBe(true);
     expect(target.battle.hp).toBeLessThan(beforeHp);
     expect(attacker.pathfinding?.destination).not.toEqual({ x: 60, y: 40 });
+    expect(attacker.battle).toMatchObject({ combatTargetId: target.id, combatUntil: 17_000 });
+    expect(target.battle).toMatchObject({ combatTargetId: attacker.id, combatUntil: 14_000 });
+    expect(game.world.battle.feed.find((event: any) => event.kind === 'attack')).toMatchObject({ burst: 2 });
     expect(game.world.battle.actionLog[0]).toMatchObject({ action: 'attack', source: 'rule', targetPlayerId: target.id });
+  });
+
+  it('keeps pursuing a locked combat target that briefly leaves weapon range', () => {
+    const attacker = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    target.position = { x: attacker.position.x + 2.4, y: attacker.position.y };
+    const game = createGame([attacker, target]);
+    expect(runCombatReflex(game, 5_000, attacker)).toBe(true);
+    target.position = { x: attacker.position.x + 4, y: attacker.position.y };
+
+    expect(runCombatReflex(game, 9_000, attacker)).toBe(true);
+    expect(attacker.activity).toMatchObject({ emoji: 'TARGET' });
+    expect(attacker.pathfinding?.destination).toBeDefined();
+    expect(attacker.battle).toMatchObject({ combatTargetId: target.id, combatUntil: 21_000, lastDecisionAction: 'move' });
+    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'move', reason: '持续交战：逼近射击位置' });
   });
 
   it('only reports MOVE while coordinates are actively advancing', () => {

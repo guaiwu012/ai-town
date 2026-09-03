@@ -75,6 +75,8 @@ export const battleStats = v.object({
   locomotionRecoveries: v.optional(v.number()),
   pendingStoryApproach: v.optional(v.string()),
   pendingStoryEventId: v.optional(v.string()),
+  combatTargetId: v.optional(playerId),
+  combatUntil: v.optional(v.number()),
 });
 export type BattleStats = Infer<typeof battleStats>;
 
@@ -88,6 +90,7 @@ export const battleEvent = v.object({
   to: v.optional(point),
   damage: v.optional(v.number()),
   weapon: v.optional(v.string()),
+  burst: v.optional(v.number()),
   text: v.string(),
 });
 export type BattleEvent = Infer<typeof battleEvent>;
@@ -308,6 +311,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     nextLocomotionAt: 0,
     locomotionProgressAt: 0,
     locomotionRecoveries: 0,
+    combatUntil: 0,
   };
 }
 
@@ -617,7 +621,7 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
     stats.nextLocomotionAt = activeActivity.until + 250;
     return false;
   }
-  const nearbyEnemy = nearestEnemy(game, player);
+  const nearbyEnemy = nearestEnemy(game, player, now);
   if (nearbyEnemy && distance(player.position, nearbyEnemy.position) <= BATTLE_CONFIG.match.dangerRange) {
     stats.nextLocomotionAt = now + 500;
     return false;
@@ -729,14 +733,33 @@ export function runCombatReflex(game: Game, now: number, player: Player) {
   const orderedTargetBattle = orderedTarget?.battle;
   const target = orderedTarget && orderedTargetBattle && orderedTargetBattle.areaId === stats.areaId && !orderedTargetBattle.eliminated
     ? orderedTarget
-    : nearestEnemy(game, player);
+    : nearestEnemy(game, player, now);
   if (!target?.battle || target.battle.eliminated) return false;
   if (activeOrder?.kind === 'ally' && activeOrder.targetPlayerId === target.id) return false;
   const relation = relationshipBetween(game, player, target);
   if ((relation?.strength ?? 0) >= 25 && relation?.type !== 'rival') return false;
   const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
-  if (distance(player.position, target.position) > weapon.range) return false;
   const replayBaseline = captureReplayPatchBaseline(game);
+  const targetDistance = distance(player.position, target.position);
+  const committedTarget = activeOrder?.kind === 'hunt' || stats.combatTargetId === target.id || bountyTargetFor(game, player)?.id === target.id;
+  if (targetDistance > weapon.range) {
+    if (!committedTarget || targetDistance > BATTLE_CONFIG.match.dangerRange * 1.5 || stats.hp / stats.maxHp < 0.28) return false;
+    if (player.pathfinding) {
+      delete player.pathfinding;
+      player.speed = 0;
+    }
+    const result = executeBattleAction(game, now, player, 'move', target, undefined, '持续交战目标仍在视野内，逼近射击位置');
+    if (!result.accepted) return false;
+    stats.lastBattleAction = now;
+    stats.combatTargetId = target.id;
+    stats.combatUntil = now + 12_000;
+    stats.lastDecisionAction = 'move';
+    stats.lastDecisionReason = `持续追击${playerName(game, target)}，正在进入武器射程`;
+    stats.lastDecisionStatus = '持续交战';
+    player.activity = { description: `${playerName(game, player)} 正在追击 ${playerName(game, target)}`, emoji: 'TARGET', until: now + 2500 };
+    recordReplayAction(game, now, player, 'move', 'rule', true, '持续交战：逼近射击位置', target.id, undefined, replayBaseline);
+    return true;
+  }
   const result = executeBattleAction(game, now, player, 'attack', target, undefined, '射程内敌对目标触发战斗反射');
   if (!result.accepted) return false;
   stats.lastBattleAction = now;
@@ -1690,7 +1713,7 @@ function executeBattleAction(
     attack(game, now, player, target); return { accepted: true };
   }
   if (action === 'flee') {
-    const enemy = target ?? nearestEnemy(game, player);
+    const enemy = target ?? nearestEnemy(game, player, now);
     const escaped = enemy
       ? tacticalMove(game, now, player, enemy, 'retreat')
       : tacticalLootMove(game, now, player);
@@ -1781,7 +1804,7 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     }
   }
 
-  const enemy = nearestEnemy(game, player);
+  const enemy = nearestEnemy(game, player, now);
   if ((stats.stress ?? 0) >= (stats.stressThreshold ?? 80)) {
     const destination = adjacentAreaIds(stats.areaId ?? 'A01')
       .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
@@ -1927,6 +1950,10 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   const defend = target.battle!;
   delete attacker.pathfinding;
   attacker.speed = 0;
+  attack.combatTargetId = target.id;
+  attack.combatUntil = now + 12_000;
+  defend.combatTargetId = attacker.id;
+  defend.combatUntil = now + 9_000;
   const relation = relationshipBetween(game, attacker, target);
   const betrayal = attack.alliance === target.id || (relation?.strength ?? 0) >= 70;
   const areaId = attacker.battle?.areaId;
@@ -1971,6 +1998,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       to: target.position,
       damage,
       weapon: weaponsDisabled ? 'Fists' : attack.weapon,
+      burst: weaponBurst(weaponsDisabled ? 'Fists' : attack.weapon),
     },
   );
   awardPopularity(game, now, 10, [attacker, target]);
@@ -1988,6 +2016,10 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     const bountyTargetEliminated = battle.bountyPlayerId === target.id;
     const bountyHunterEliminated = battle.bountyHunterId === target.id;
     defend.eliminated = true;
+    attack.combatTargetId = undefined;
+    attack.combatUntil = 0;
+    defend.combatTargetId = undefined;
+    defend.combatUntil = 0;
     attack.kills += 1;
     attack.coins += 45 + Math.floor(defend.coins / 2);
     if (completedBounty) attack.coins += 35;
@@ -2164,6 +2196,10 @@ function allyPlayers(game: Game, now: number, player: Player, partner: Player, p
   if (!player.battle || !partner.battle || player.id === partner.id) return false;
   player.battle.alliance = partner.id;
   partner.battle.alliance = player.id;
+  player.battle.combatTargetId = undefined;
+  player.battle.combatUntil = 0;
+  partner.battle.combatTargetId = undefined;
+  partner.battle.combatUntil = 0;
   delete player.pathfinding; delete partner.pathfinding;
   player.speed = 0; partner.speed = 0;
   recordBattleDialogue(game, now, player, partner, 'alliance', proposal || defaultAllianceProposal(game, player, partner));
@@ -2406,7 +2442,7 @@ function socialEncounter(game: Game, now: number, speaker: Player, listener: Pla
   return { delta, reason, kind };
 }
 
-function nearestEnemy(game: Game, player: Player) {
+function nearestEnemy(game: Game, player: Player, now: number) {
   const candidates = alivePlayers(game).filter(
     (candidate) => candidate.id !== player.id &&
       candidate.id !== player.battle?.alliance &&
@@ -2414,6 +2450,10 @@ function nearestEnemy(game: Game, player: Player) {
   );
   const bountyTarget = bountyTargetFor(game, player);
   if (bountyTarget && candidates.some((candidate) => candidate.id === bountyTarget.id)) return bountyTarget;
+  const lockedTarget = (player.battle?.combatUntil ?? 0) > now && player.battle?.combatTargetId
+    ? candidates.find((candidate) => candidate.id === player.battle?.combatTargetId)
+    : undefined;
+  if (lockedTarget) return lockedTarget;
   return candidates.sort(
     (a, b) => distance(player.position, a.position) - distance(player.position, b.position),
   )[0];
@@ -2853,7 +2893,7 @@ function pushEvent(
   text: string,
   actor?: Player,
   target?: Player,
-  details?: { from?: { x: number; y: number }; to?: { x: number; y: number }; damage?: number; weapon?: string },
+  details?: { from?: { x: number; y: number }; to?: { x: number; y: number }; damage?: number; weapon?: string; burst?: number },
 ) {
   const battle = game.world.battle!;
   battle.feed.unshift({
@@ -2866,6 +2906,7 @@ function pushEvent(
     to: details?.to,
     damage: details?.damage,
     weapon: details?.weapon,
+    burst: details?.burst,
     text,
   });
   battle.feed = battle.feed.slice(0, BATTLE_CONFIG.match.maxFeed);
@@ -2877,6 +2918,10 @@ function weaponPower(weapon: string) {
 
 function weaponName(weapon: string) {
   return ({ Fists: '拳头', Pistol: '手枪', Shotgun: '霰弹枪', Rifle: '步枪', Sniper: '狙击枪' } as Record<string, string>)[weapon] ?? weapon;
+}
+
+function weaponBurst(weapon: string) {
+  return ({ Fists: 1, Pistol: 2, Shotgun: 1, Rifle: 4, Sniper: 1 } as Record<string, number>)[weapon] ?? 1;
 }
 
 function actionName(action: string) {

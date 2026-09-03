@@ -36,7 +36,6 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
         continue;
       }
       const age = now - event.ts;
-      const progress = Math.min(1, Math.max(0, age / BULLET_MS));
       const from = {
         x: event.from.x * tileDim + tileDim / 2,
         y: event.from.y * tileDim + tileDim / 2,
@@ -45,11 +44,6 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
         x: event.to.x * tileDim + tileDim / 2,
         y: event.to.y * tileDim + tileDim / 2,
       };
-      const bullet = {
-        x: from.x + (to.x - from.x) * progress,
-        y: from.y + (to.y - from.y) * progress,
-      };
-      const effectAlpha = Math.max(0, 1 - age / EFFECT_MS);
       const projectile = event.weapon !== 'Fists';
       const fromY = from.y - 10;
       const toY = to.y - 10;
@@ -60,54 +54,65 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
       const ny = dy / length;
       const px = -ny;
       const py = nx;
+      const burst = projectile ? Math.max(1, Math.min(4, event.burst ?? 1)) : 1;
 
-      if (projectile && age < 170) {
-        const muzzleAlpha = 1 - age / 170;
-        g.beginFill(0xfff5bf, muzzleAlpha);
-        g.drawCircle(from.x, fromY, 9 + muzzleAlpha * 5);
-        g.endFill();
-        g.lineStyle(4, 0xffc44d, muzzleAlpha);
-        g.moveTo(from.x - 18, fromY); g.lineTo(from.x + 18, fromY);
-        g.moveTo(from.x, fromY - 18); g.lineTo(from.x, fromY + 18);
-      }
+      for (let shot = 0; shot < burst; shot += 1) {
+        const shotAge = age - shot * 95;
+        if (shotAge < 0) continue;
+        const progress = Math.min(1, Math.max(0, shotAge / BULLET_MS));
+        const spread = (shot - (burst - 1) / 2) * 2.2;
+        const bulletX = from.x + dx * progress + px * spread;
+        const bulletY = fromY + dy * progress + py * spread;
+        const shotAlpha = Math.max(0, 1 - shotAge / EFFECT_MS);
 
-      if (projectile && progress < 1) {
-        const tailProgress = Math.max(0, progress - 0.3);
-        const tailX = from.x + dx * tailProgress;
-        const tailY = fromY + dy * tailProgress;
-        g.lineStyle(9, 0xff8a32, effectAlpha * 0.28);
-        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
-        g.lineStyle(4, 0xffd35a, effectAlpha * 0.95);
-        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
-        g.lineStyle(2, 0xffffff, effectAlpha);
-        g.moveTo(tailX, tailY); g.lineTo(bullet.x, bullet.y - 10);
-        const tipX = bullet.x;
-        const tipY = bullet.y - 10;
-        g.beginFill(0xffffff, effectAlpha);
-        g.drawPolygon([
-          tipX + nx * 12, tipY + ny * 12,
-          tipX - nx * 8 + px * 3, tipY - ny * 8 + py * 3,
-          tipX - nx * 8 - px * 3, tipY - ny * 8 - py * 3,
-        ]);
-        g.endFill();
-      }
+        if (projectile && shotAge < 150) {
+          const muzzleAlpha = 1 - shotAge / 150;
+          g.beginFill(0xfff5bf, muzzleAlpha);
+          g.drawCircle(from.x, fromY, 8 + muzzleAlpha * 5);
+          g.endFill();
+          g.lineStyle(3, 0xffc44d, muzzleAlpha);
+          g.moveTo(from.x - 16, fromY); g.lineTo(from.x + 16, fromY);
+          g.moveTo(from.x, fromY - 16); g.lineTo(from.x, fromY + 16);
+        }
 
-      const impactAge = projectile ? age - BULLET_MS : age;
-      if (impactAge >= 0 && impactAge < 900) {
-        const impactAlpha = 1 - impactAge / 900;
-        const radius = 8 + impactAge * 0.035;
-        const hitColor = event.kind === 'eliminate' ? 0xff4545 : 0xffc24d;
-        g.beginFill(0xffffff, impactAlpha * 0.9);
-        g.drawCircle(to.x, toY, Math.max(2, 8 - impactAge * 0.015));
-        g.endFill();
-        g.lineStyle(5, hitColor, impactAlpha);
-        g.drawCircle(to.x, toY, radius);
-        g.lineStyle(2, 0xfff0a6, impactAlpha * 0.8);
-        g.drawCircle(to.x, toY, radius * 1.55);
-        for (let ray = 0; ray < 8; ray++) {
-          const angle = ray * Math.PI / 4;
-          g.moveTo(to.x + Math.cos(angle) * 7, toY + Math.sin(angle) * 7);
-          g.lineTo(to.x + Math.cos(angle) * (radius + 13), toY + Math.sin(angle) * (radius + 13));
+        if (projectile && progress < 1) {
+          const tailProgress = Math.max(0, progress - 0.28);
+          const tailX = from.x + dx * tailProgress + px * spread;
+          const tailY = fromY + dy * tailProgress + py * spread;
+          g.lineStyle(8, 0xff8a32, shotAlpha * 0.25);
+          g.moveTo(tailX, tailY); g.lineTo(bulletX, bulletY);
+          g.lineStyle(4, 0xffd35a, shotAlpha * 0.95);
+          g.moveTo(tailX, tailY); g.lineTo(bulletX, bulletY);
+          g.lineStyle(1.8, 0xffffff, shotAlpha);
+          g.moveTo(tailX, tailY); g.lineTo(bulletX, bulletY);
+          g.beginFill(0xffffff, shotAlpha);
+          g.drawPolygon([
+            bulletX + nx * 11, bulletY + ny * 11,
+            bulletX - nx * 7 + px * 3, bulletY - ny * 7 + py * 3,
+            bulletX - nx * 7 - px * 3, bulletY - ny * 7 - py * 3,
+          ]);
+          g.endFill();
+        }
+
+        const impactAge = projectile ? shotAge - BULLET_MS : shotAge;
+        if (impactAge >= 0 && impactAge < 900) {
+          const impactAlpha = 1 - impactAge / 900;
+          const radius = 7 + impactAge * 0.03 + shot * 2;
+          const impactX = to.x + px * spread;
+          const impactY = toY + py * spread;
+          const hitColor = event.kind === 'eliminate' ? 0xff4545 : 0xffc24d;
+          g.beginFill(0xffffff, impactAlpha * 0.9);
+          g.drawCircle(impactX, impactY, Math.max(2, 7 - impactAge * 0.014));
+          g.endFill();
+          g.lineStyle(4, hitColor, impactAlpha);
+          g.drawCircle(impactX, impactY, radius);
+          g.lineStyle(2, 0xfff0a6, impactAlpha * 0.75);
+          g.drawCircle(impactX, impactY, radius * 1.45);
+          for (let ray = 0; ray < 6; ray++) {
+            const angle = ray * Math.PI / 3;
+            g.moveTo(impactX + Math.cos(angle) * 6, impactY + Math.sin(angle) * 6);
+            g.lineTo(impactX + Math.cos(angle) * (radius + 10), impactY + Math.sin(angle) * (radius + 10));
+          }
         }
       }
     }

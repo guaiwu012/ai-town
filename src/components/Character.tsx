@@ -17,8 +17,10 @@ export const Character = ({
   isThinking = false,
   isSpeaking = false,
   emoji = '',
-  showMovementIndicator = false,
   showTargetIndicator = false,
+  actionLabel,
+  isFiring = false,
+  isHit = false,
   isViewer = false,
   hpRatio,
   isEliminated = false,
@@ -41,8 +43,10 @@ export const Character = ({
   // Shows a speech bubble if true.
   isSpeaking?: boolean;
   emoji?: string;
-  showMovementIndicator?: boolean;
   showTargetIndicator?: boolean;
+  actionLabel?: string;
+  isFiring?: boolean;
+  isHit?: boolean;
   // Highlights the player.
   isViewer?: boolean;
   hpRatio?: number;
@@ -107,12 +111,12 @@ export const Character = ({
       {isSpeaking && (
         <Text x={22} y={-58} scale={0.72} text={'💬'} anchor={{ x: 0.5, y: 0.5 }} />
       )}
-      {showMovementIndicator && <MovementIndicator />}
+      {actionLabel && <ActionLabel label={actionLabel} raised={showTargetIndicator} />}
       {showTargetIndicator && <TargetIndicator />}
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
       {battleCharacterId
-        ? <BattleCharacterSprite characterId={battleCharacterId} displayName={displayName} eliminated={isEliminated} isMoving={isMoving} direction={direction} />
+        ? <BattleCharacterSprite characterId={battleCharacterId} displayName={displayName} eliminated={isEliminated} isMoving={isMoving} isFiring={isFiring} isHit={isHit} direction={direction} />
         : <AnimatedSprite
             ref={ref}
             isPlaying={isMoving}
@@ -161,11 +165,11 @@ export const Character = ({
   );
 };
 
-function MovementIndicator() {
+function ActionLabel({ label, raised }: { label: string; raised: boolean }) {
   return <Text
     x={0}
-    y={-68}
-    text="MOVE"
+    y={raised ? -82 : -68}
+    text={label}
     anchor={{ x: 0.5, y: 0.5 }}
     style={new PIXI.TextStyle({
       fill: '#7de8dc',
@@ -234,15 +238,19 @@ function battleSpriteTexture(characterId: string) {
   return texture;
 }
 
-function BattleCharacterSprite({ characterId, displayName, eliminated, isMoving, direction }: { characterId: string; displayName?: string; eliminated: boolean; isMoving: boolean; direction: string }) {
+function BattleCharacterSprite({ characterId, displayName, eliminated, isMoving, isFiring, isHit, direction }: { characterId: string; displayName?: string; eliminated: boolean; isMoving: boolean; isFiring: boolean; isHit: boolean; direction: string }) {
   const bodyRef = useRef<PIXI.Container | null>(null);
   const phaseRef = useRef(Math.max(0, Number(characterId.slice(1)) - 1) * 0.67);
   useTick((delta) => {
     const body = bodyRef.current;
     if (!body) return;
     phaseRef.current += delta * (isMoving ? 0.22 : 0.035);
-    body.y = -3 + Math.sin(phaseRef.current) * (isMoving ? 1.35 : 0.2);
-    body.rotation = eliminated ? -0.12 : Math.sin(phaseRef.current * 0.5) * (isMoving ? 0.018 : 0.004);
+    const recoilX = isFiring ? (direction === 'left' ? 2.2 : direction === 'right' ? -2.2 : 0) : 0;
+    const recoilY = isFiring ? (direction === 'up' ? 2.2 : direction === 'down' ? -2.2 : 0) : 0;
+    const hitShake = isHit ? Math.sin(phaseRef.current * 18) * 1.8 : 0;
+    body.x = recoilX + hitShake;
+    body.y = -3 + recoilY + Math.sin(phaseRef.current) * (isMoving ? 1.35 : 0.2);
+    body.rotation = eliminated ? -0.12 : Math.sin(phaseRef.current * 0.5) * (isMoving ? 0.018 : 0.004) + (isHit ? 0.035 : 0);
   });
   const flip = direction === 'left' ? -1 : 1;
   return <>
@@ -263,7 +271,7 @@ function BattleCharacterSprite({ characterId, displayName, eliminated, isMoving,
         height={58}
         anchor={{ x: 0.5, y: 0.84 }}
         alpha={eliminated ? 0.34 : 1}
-        tint={eliminated ? 0x8c8991 : 0xffffff}
+        tint={eliminated ? 0x8c8991 : isHit ? 0xff8f8f : 0xffffff}
       />
     </Container>
     <Text
