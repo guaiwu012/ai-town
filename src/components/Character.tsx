@@ -160,20 +160,20 @@ export const Character = ({
 };
 
 function MovementIndicator() {
-  const draw = useCallback((g: PIXI.Graphics) => {
-    g.clear();
-    [
-      { x: -8, y: 0, alpha: 0.35 },
-      { x: 0, y: -3, alpha: 0.62 },
-      { x: 8, y: 0, alpha: 0.95 },
-    ].forEach(({ x, y, alpha }) => {
-      g.beginFill(0x7de8dc, alpha);
-      g.drawEllipse(x, y, 2.2, 3.6);
-      g.endFill();
-    });
-  }, []);
-
-  return <Graphics x={0} y={-65} rotation={-0.45} draw={draw} />;
+  return <Text
+    x={0}
+    y={-68}
+    text="MOVE"
+    anchor={{ x: 0.5, y: 0.5 }}
+    style={new PIXI.TextStyle({
+      fill: '#7de8dc',
+      fontFamily: 'VCR OSD Mono',
+      fontSize: 10,
+      fontWeight: '700',
+      stroke: '#031016',
+      strokeThickness: 3,
+    })}
+  />;
 }
 
 function TargetIndicator() {
