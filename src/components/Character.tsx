@@ -23,6 +23,7 @@ export const Character = ({
   hpRatio,
   isEliminated = false,
   battleCharacterId,
+  displayName,
   speed = 0.1,
   onClick,
 }: {
@@ -47,6 +48,7 @@ export const Character = ({
   hpRatio?: number;
   isEliminated?: boolean;
   battleCharacterId?: string;
+  displayName?: string;
   // The speed of the animation. Can be tuned depending on the side and speed of the NPC.
   speed?: number;
   onClick: () => void;
@@ -110,7 +112,7 @@ export const Character = ({
       {isViewer && <ViewerIndicator />}
       {hpRatio !== undefined && <HealthBar ratio={hpRatio} />}
       {battleCharacterId
-        ? <BattleCharacterSprite characterId={battleCharacterId} eliminated={isEliminated} isMoving={isMoving} direction={direction} />
+        ? <BattleCharacterSprite characterId={battleCharacterId} displayName={displayName} eliminated={isEliminated} isMoving={isMoving} direction={direction} />
         : <AnimatedSprite
             ref={ref}
             isPlaying={isMoving}
@@ -232,7 +234,7 @@ function battleSpriteTexture(characterId: string) {
   return texture;
 }
 
-function BattleCharacterSprite({ characterId, eliminated, isMoving, direction }: { characterId: string; eliminated: boolean; isMoving: boolean; direction: string }) {
+function BattleCharacterSprite({ characterId, displayName, eliminated, isMoving, direction }: { characterId: string; displayName?: string; eliminated: boolean; isMoving: boolean; direction: string }) {
   const bodyRef = useRef<PIXI.Container | null>(null);
   const phaseRef = useRef(Math.max(0, Number(characterId.slice(1)) - 1) * 0.67);
   useTick((delta) => {
@@ -264,7 +266,21 @@ function BattleCharacterSprite({ characterId, eliminated, isMoving, direction }:
         tint={eliminated ? 0x8c8991 : 0xffffff}
       />
     </Container>
-    <Text x={0} y={12} scale={0.27} text={characterId} anchor={{ x: 0.5, y: 0.5 }} style={new PIXI.TextStyle({ fill: eliminated ? '#a79da8' : '#d9fff1', fontFamily: 'VCR OSD Mono', fontSize: 12, stroke: '#071019', strokeThickness: 4 })} />
+    <Text
+      x={0}
+      y={13}
+      scale={0.3}
+      text={displayName ?? ''}
+      anchor={{ x: 0.5, y: 0.5 }}
+      style={new PIXI.TextStyle({
+        fill: eliminated ? '#a79da8' : '#f2fff9',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: 12,
+        fontWeight: '700',
+        stroke: '#071019',
+        strokeThickness: 4,
+      })}
+    />
   </>;
 }
 

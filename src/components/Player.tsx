@@ -101,6 +101,7 @@ export const Player = ({
         hpRatio={displayedBattle ? displayedBattle.hp / displayedBattle.maxHp : undefined}
         isEliminated={displayedBattle?.eliminated}
         battleCharacterId={displayedBattle?.characterId}
+        displayName={game.playerDescriptions.get(player.id)?.name}
         textureUrl={character.textureUrl}
         spritesheetData={character.spritesheetData}
         speed={character.speed}
