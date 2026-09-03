@@ -159,6 +159,25 @@ export const AREA_ANCHORS: Record<string, { x: number; y: number }> = {
 export const BATTLE_ACTIONS = ['move', 'search', 'buy', 'trade', 'ally', 'attack', 'flee', 'heal', 'investigate'] as const;
 export type BattleAction = (typeof BATTLE_ACTIONS)[number];
 
+export const SUPPORT_ORDER_DURATION_MS = 55_000;
+export const SUPPORT_ORDER_COOLDOWN_MS = 40_000;
+export const SUPPORT_CHAIN_SEQUENCE = ['ally', 'scavenge', 'hunt'] as const;
+
+export function supportOrderAcceptChance(
+  kind: string,
+  doctrine: string,
+  stake: number,
+  persona: { attackBias: number; allianceBias: number },
+  hpRatio: number,
+) {
+  const doctrineMatch = (kind === 'hunt' && doctrine === 'hunter') ||
+    (kind === 'scavenge' && doctrine === 'logistics') ||
+    (kind === 'ally' && doctrine === 'intel');
+  const base = kind === 'hunt' ? persona.attackBias : kind === 'ally' ? persona.allianceBias : 0.56;
+  const dangerPenalty = kind === 'hunt' && hpRatio < 0.45 ? 0.22 : 0;
+  return Math.max(0.15, Math.min(0.9, base * 0.62 + stake * 0.075 + (doctrineMatch ? 0.18 : 0) - dangerPenalty));
+}
+
 export function adjacentAreaIds(areaId: string) {
   return BATTLE_CONFIG.adjacency
     .flatMap(([a, b]) => a === areaId ? [b] : b === areaId ? [a] : []);

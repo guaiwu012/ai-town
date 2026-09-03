@@ -8,7 +8,7 @@ import { point } from '../util/types';
 import { Descriptions } from '../../data/characters';
 import { AgentDescription } from './agentDescription';
 import { Agent } from './agent';
-import { acceptSupportCounter, applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, submitAIDecision, submitSupportOrder } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyAudienceScore, applyIntervention, claimDecisionDriver, heartbeatDecisionDriver, reportAIDecisionFailure, submitAIDecision, submitSupportOrder } from './battleRoyale';
 
 export const agentInputs = {
   finishRememberConversation: inputHandler({
@@ -186,6 +186,10 @@ export const agentInputs = {
   acceptSupportCounter: inputHandler({
     args: { orderId: v.number() },
     handler: (game, now, args) => acceptSupportCounter(game, now, args),
+  }),
+  activateSupportFinisher: inputHandler({
+    args: { playerId, doctrine: v.string(), targetPlayerId: v.optional(playerId) },
+    handler: (game, now, args) => activateSupportFinisher(game, now, args),
   }),
   claimDecisionDriver: inputHandler({
     args: { driverId: v.string() },

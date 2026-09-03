@@ -1,4 +1,4 @@
-import { acceptSupportCounter, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -237,7 +237,7 @@ describe('battle royale host intervention rules', () => {
     expect(supported.battle.nextLocomotionAt).toBe(2_900);
   });
 
-  it('charges an authoritative support order and enforces its 60-second cooldown', () => {
+  it('charges an authoritative support order and enforces its 40-second decision window', () => {
     const supported = createPlayer('p:4', 'C04', 'A04');
     const target = createPlayer('p:9', 'C09', 'A09');
     const game = createGame([supported, target]);
@@ -248,8 +248,25 @@ describe('battle royale host intervention rules', () => {
 
     expect(result).toMatchObject({ status: 'active' });
     expect(game.world.battle.interventionPoints).toBe(before - 3);
-    expect(game.world.battle.supportOrders[0]).toMatchObject({ playerId: supported.id, targetPlayerId: target.id, expiresAt: 62_000 });
+    expect(game.world.battle.supportOrders[0]).toMatchObject({ playerId: supported.id, targetPlayerId: target.id, expiresAt: 57_000 });
+    expect(() => submitSupportOrder(game, 3_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 1 })).toThrow('正在执行');
+    game.world.battle.supportOrders[0].status = 'failed';
     expect(() => submitSupportOrder(game, 3_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 1 })).toThrow('冷却中');
+  });
+
+  it('refunds the full stake immediately when a contestant rejects an order', () => {
+    const supported = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A09');
+    const game = createGame([supported, target]);
+    game.world.battle = defaultBattleState(1_000, 2);
+    game.world.battle.interventionPoints = 12;
+    game.world.battle.rngState = 4_000_000_000;
+
+    const result = submitSupportOrder(game, 2_000, { playerId: supported.id, targetPlayerId: target.id, kind: 'ally', doctrine: 'hunter', stake: 1 });
+
+    expect(result).toMatchObject({ status: 'rejected', remainingPoints: 12 });
+    expect(game.world.battle.interventionSpentTotal).toBe(0);
+    expect(game.world.battle.supportOrders[0].result).toContain('已退回');
   });
 
   it('settles a completed hunt and returns the doctrine bonus', () => {
@@ -278,9 +295,34 @@ describe('battle royale host intervention rules', () => {
 
     const result = acceptSupportCounter(game, 3_000, { orderId: 7 });
 
-    expect(result).toMatchObject({ status: 'active', expiresAt: 63_000 });
+    expect(result).toMatchObject({ status: 'active', expiresAt: 58_000 });
     expect(game.world.battle.supportOrders[0].stake).toBe(2);
     expect(game.world.battle.interventionPoints).toBe(before - 1);
+  });
+
+  it('advances the three-part support chain and releases a doctrine finisher', () => {
+    const supported = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    const game = createGame([supported, target]);
+    game.world.battle = defaultBattleState(1_000, 7);
+    supported.battle.alliance = target.id;
+    supported.battle.inventory.push('情报地图');
+    target.battle.eliminated = true;
+    game.world.battle.feed.unshift({ id: 99, ts: 2_500, kind: 'eliminate', actor: supported.id, target: target.id, text: '淘汰' });
+    game.world.battle.supportOrders = [
+      { id: 1, playerId: supported.id, targetPlayerId: target.id, kind: 'ally', doctrine: 'intel', stake: 3, status: 'active', createdAt: 2_000, expiresAt: 57_000, response: '谈判', baselineKills: 0, baselineCoins: 20, baselineInventory: 0, baselineSearches: 0 },
+      { id: 2, playerId: supported.id, kind: 'scavenge', doctrine: 'logistics', stake: 3, status: 'active', createdAt: 2_100, expiresAt: 57_100, response: '搜集', baselineKills: 0, baselineCoins: 20, baselineInventory: 0, baselineSearches: 0 },
+      { id: 3, playerId: supported.id, targetPlayerId: target.id, kind: 'hunt', doctrine: 'hunter', stake: 3, status: 'active', createdAt: 2_200, expiresAt: 57_200, response: '追猎', baselineKills: 0, baselineCoins: 20, baselineInventory: 0, baselineSearches: 0 },
+    ];
+
+    updateSupportOrders(game, 3_000);
+
+    expect(game.world.battle.supportChains[0]).toMatchObject({ playerId: supported.id, stage: 3 });
+    const beforeArmor = supported.battle.armor;
+    const result = activateSupportFinisher(game, 4_000, { playerId: supported.id, doctrine: 'logistics' });
+    expect(result.label).toContain('全装空投');
+    expect(supported.battle.armor).toBe(beforeArmor + 10);
+    expect(game.world.battle.supportChains[0]).toMatchObject({ stage: 0, completed: 1 });
   });
 
   it('makes rule AI pursue an accepted support target across the area graph', () => {

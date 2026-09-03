@@ -76,8 +76,9 @@ export default function LiveBattleHud({
     : 0;
   const supportOrder = !replayActive ? battle?.supportOrders?.find((order) => order.status === 'active' || order.status === 'countered') : undefined;
   const supportPlayer = supportOrder ? game.world.players.get(supportOrder.playerId as GameId<'players'>) : undefined;
+  const supportTarget = supportOrder?.targetPlayerId ? game.world.players.get(supportOrder.targetPlayerId as GameId<'players'>) : undefined;
   const supportTargetName = supportOrder?.targetPlayerId ? game.playerDescriptions.get(supportOrder.targetPlayerId as GameId<'players'>)?.name : undefined;
-  const supportProgress = supportOrder ? supportOrderProgress(supportOrder, supportPlayer) : undefined;
+  const supportProgress = supportOrder ? supportOrderProgress(supportOrder, supportPlayer, supportTarget) : undefined;
   const supportTitle = supportOrderKinds.find((kind) => kind.id === supportOrder?.kind)?.name;
 
   return (

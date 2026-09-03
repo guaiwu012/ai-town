@@ -21,9 +21,13 @@ import {
   availableAreaItemsFor,
   HIDDEN_MISSIONS,
   INTERVENTION_OPERATIONS,
+  SUPPORT_CHAIN_SEQUENCE,
+  SUPPORT_ORDER_COOLDOWN_MS,
+  SUPPORT_ORDER_DURATION_MS,
   profileForIndex,
   profileForCharacterId,
   personaForCharacter,
+  supportOrderAcceptChance,
 } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
@@ -208,6 +212,12 @@ export const battleState = v.object({
     baselineInventory: v.number(),
     baselineSearches: v.number(),
   }))),
+  supportChains: v.optional(v.array(v.object({
+    playerId,
+    stage: v.number(),
+    completed: v.number(),
+    lastAdvancedAt: v.number(),
+  }))),
   heatMilestoneClaimed: v.optional(v.number()),
   hiddenMissions: v.optional(v.array(v.object({
     id: v.string(),
@@ -337,6 +347,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     interventionSpentTotal: 0,
     nextSupportOrderId: 1,
     supportOrders: [],
+    supportChains: [],
     heatMilestoneClaimed: 0,
     hiddenMissions: HIDDEN_MISSIONS.slice(0, 2).map((mission) => ({ ...mission, status: '进行中' })),
     completedMissionIds: [],
@@ -426,6 +437,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.interventionSpentTotal ??= 0;
   battle.nextSupportOrderId ??= 1;
   battle.supportOrders ??= [];
+  battle.supportChains ??= [];
   battle.heatMilestoneClaimed ??= 0;
   battle.hiddenMissions ??= HIDDEN_MISSIONS.slice(0, 2).map((mission) => ({ ...mission, status: '进行中' }));
   battle.completedMissionIds ??= [];
@@ -1102,8 +1114,10 @@ export function submitSupportOrder(
   if (!SUPPORT_DOCTRINES.includes(args.doctrine as any)) throw new Error('未知阵营路线。');
   const player = game.world.players.get(args.playerId as any);
   if (!player?.battle || player.battle.eliminated) throw new Error('应援角色已经离场。');
-  const recent = (battle.supportOrders ?? []).find((order) => order.playerId === player.id && now < order.createdAt + 60000);
-  if (recent) throw new Error(`应援指令冷却中，还需 ${Math.ceil((recent.createdAt + 60000 - now) / 1000)} 秒。`);
+  const active = (battle.supportOrders ?? []).find((order) => order.playerId === player.id && ['active', 'countered'].includes(order.status));
+  if (active) throw new Error('角色正在执行其他阵营任务。');
+  const recent = (battle.supportOrders ?? []).find((order) => order.playerId === player.id && now < order.createdAt + SUPPORT_ORDER_COOLDOWN_MS);
+  if (recent) throw new Error(`应援指令冷却中，还需 ${Math.ceil((recent.createdAt + SUPPORT_ORDER_COOLDOWN_MS - now) / 1000)} 秒。`);
   const stake = Math.max(1, Math.min(5, Math.floor(args.stake)));
   if ((battle.interventionPoints ?? 0) < stake) throw new Error('干预点不足。');
   const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
@@ -1112,12 +1126,7 @@ export function submitSupportOrder(
   }
 
   const persona = personaForCharacter(player.battle.characterId);
-  const doctrineMatch = (args.kind === 'hunt' && args.doctrine === 'hunter') ||
-    (args.kind === 'scavenge' && args.doctrine === 'logistics') ||
-    (args.kind === 'ally' && args.doctrine === 'intel');
-  const base = args.kind === 'hunt' ? persona.attackBias : args.kind === 'ally' ? persona.allianceBias : 0.56;
-  const dangerPenalty = args.kind === 'hunt' && player.battle.hp / player.battle.maxHp < 0.45 ? 0.22 : 0;
-  const acceptChance = Math.max(0.15, Math.min(0.9, base * 0.62 + stake * 0.075 + (doctrineMatch ? 0.18 : 0) - dangerPenalty));
+  const acceptChance = supportOrderAcceptChance(args.kind, args.doctrine, stake, persona, player.battle.hp / player.battle.maxHp);
   const roll = battleRandom(game);
   const status = roll < acceptChance ? 'active' : roll < Math.min(0.98, acceptChance + 0.18) ? 'countered' : 'rejected';
   const response = supportOrderResponse(game, player, target, args.kind, status, stake);
@@ -1129,21 +1138,31 @@ export function submitSupportOrder(
     stake,
     status,
     createdAt: now,
-    expiresAt: now + (status === 'countered' ? 20000 : 60000),
+    expiresAt: now + (status === 'countered' ? 15_000 : SUPPORT_ORDER_DURATION_MS),
     ...(target ? { targetPlayerId: target.id } : {}),
     response,
     baselineKills: player.battle.kills,
     baselineCoins: player.battle.coins,
     baselineInventory: player.battle.inventory?.length ?? 0,
     baselineSearches: player.battle.areaSearches ?? 0,
+    ...(status === 'rejected' ? { result: `角色拒绝任务，${stake} 点干预点已退回。` } : {}),
   };
   battle.nextSupportOrderId = order.id + 1;
   battle.supportOrders = [order, ...(battle.supportOrders ?? [])].slice(0, 24);
-  battle.interventionPoints = (battle.interventionPoints ?? 0) - stake;
-  battle.interventionSpentTotal = (battle.interventionSpentTotal ?? 0) + stake;
+  if (status !== 'rejected') {
+    battle.interventionPoints = (battle.interventionPoints ?? 0) - stake;
+    battle.interventionSpentTotal = (battle.interventionSpentTotal ?? 0) + stake;
+  }
   recordBattleDialogue(game, now, player, undefined, 'support', response);
   const statusText = status === 'active' ? '接受' : status === 'countered' ? '提出加码' : '拒绝';
-  pushEvent(game, now, 'supportOrder', `【应援任务】${playerName(game, player)}${statusText}了阵营的${supportOrderName(args.kind)}。`, player, target);
+  pushEvent(
+    game,
+    now,
+    'supportOrder',
+    `【应援任务】${playerName(game, player)}${statusText}了阵营的${supportOrderName(args.kind)}${status === 'rejected' ? `，${stake} 点已退回。` : '。'}`,
+    player,
+    target,
+  );
   if (status === 'active') {
     player.battle.decisionDueAt = order.expiresAt;
     markInterventionReaction(game, now, player, 'FAN_ORDER');
@@ -1163,7 +1182,7 @@ export function acceptSupportCounter(game: Game, now: number, args: { orderId: n
   battle.interventionSpentTotal = (battle.interventionSpentTotal ?? 0) + 1;
   order.stake += 1;
   order.status = 'active';
-  order.expiresAt = now + 60000;
+  order.expiresAt = now + SUPPORT_ORDER_DURATION_MS;
   player.battle.decisionDueAt = order.expiresAt;
   order.response = supportOrderResponse(game, player, order.targetPlayerId ? game.world.players.get(order.targetPlayerId as any) : undefined, order.kind, 'active', order.stake);
   recordBattleDialogue(game, now, player, undefined, 'support', order.response);
@@ -1288,7 +1307,7 @@ export function updateSupportOrders(game: Game, now: number) {
         (player!.battle!.inventory?.length ?? 0) > order.baselineInventory || player!.battle!.coins >= order.baselineCoins + 25;
     }
     if (!failure && order.kind === 'ally') success = player!.battle!.alliance === order.targetPlayerId;
-    if (!success && !failure && now >= order.expiresAt) failure = '60 秒任务时间结束。';
+    if (!success && !failure && now >= order.expiresAt) failure = '55 秒任务时间结束。';
     if (!success && !failure) continue;
     if (success) {
       const doctrineMatch = (order.kind === 'hunt' && order.doctrine === 'hunter') || (order.kind === 'scavenge' && order.doctrine === 'logistics') || (order.kind === 'ally' && order.doctrine === 'intel');
@@ -1300,6 +1319,7 @@ export function updateSupportOrders(game: Game, now: number) {
       order.status = 'success';
       order.result = `${supportOrderName(order.kind)}完成，返还 ${gained} 点干预点。`;
       pushEvent(game, now, 'supportOrder', `【应援成功】${playerName(game, player!)}完成${supportOrderName(order.kind)}，阵营获得 ${gained} 点干预点。`, player, target);
+      advanceSupportChain(game, now, player!, order.kind);
       awardPopularity(game, now, 14 + order.stake * 2, [player!]);
     } else {
       order.status = 'failed';
@@ -1308,6 +1328,79 @@ export function updateSupportOrders(game: Game, now: number) {
     }
     if (player?.battle) player.battle.decisionDueAt = now;
   }
+}
+
+function advanceSupportChain(game: Game, now: number, player: Player, kind: string) {
+  const battle = game.world.battle!;
+  const chain = battle.supportChains!.find((entry) => entry.playerId === player.id) ?? {
+    playerId: player.id,
+    stage: 0,
+    completed: 0,
+    lastAdvancedAt: 0,
+  };
+  if (!battle.supportChains!.some((entry) => entry.playerId === player.id)) battle.supportChains!.push(chain);
+  const expected = SUPPORT_CHAIN_SEQUENCE[Math.min(chain.stage, SUPPORT_CHAIN_SEQUENCE.length - 1)];
+  if (kind !== expected || chain.stage >= SUPPORT_CHAIN_SEQUENCE.length) return;
+  chain.stage += 1;
+  chain.lastAdvancedAt = now;
+  const next = SUPPORT_CHAIN_SEQUENCE[chain.stage];
+  pushEvent(
+    game,
+    now,
+    'supportOrder',
+    chain.stage >= SUPPORT_CHAIN_SEQUENCE.length
+      ? `【阵营连携】${playerName(game, player)}完成三段战术链，终结技已经就绪。`
+      : `【阵营连携】${playerName(game, player)}推进战术链，下一步：${supportOrderName(next)}。`,
+    player,
+  );
+}
+
+export function activateSupportFinisher(
+  game: Game,
+  now: number,
+  args: { playerId: string; doctrine: string; targetPlayerId?: string },
+) {
+  ensureBattleState(game, now);
+  const battle = game.world.battle!;
+  const player = game.world.players.get(args.playerId as any);
+  if (!player?.battle || player.battle.eliminated) throw new Error('应援角色已经离场。');
+  const chain = battle.supportChains!.find((entry) => entry.playerId === player.id);
+  if (!chain || chain.stage < SUPPORT_CHAIN_SEQUENCE.length) throw new Error('三段战术连携尚未完成。');
+  if (!['hunter', 'logistics', 'intel'].includes(args.doctrine)) throw new Error('未知阵营路线。');
+  const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
+  let label = '';
+  if (args.doctrine === 'hunter') {
+    if (!target?.battle || target.battle.eliminated || target.id === player.id) throw new Error('请选择另一名存活角色作为终局目标。');
+    player.battle.weaponPower += 12;
+    battle.bountyHunterId = player.id;
+    battle.bountyPlayerId = target.id;
+    label = `终局标记锁定${playerName(game, target)}，武器威力提升`;
+    markInterventionReaction(game, now, player, 'RUL_04');
+  } else if (args.doctrine === 'logistics') {
+    player.battle.hp = Math.min(player.battle.maxHp, player.battle.hp + 35);
+    player.battle.stamina = player.battle.maxStamina;
+    player.battle.armor += 10;
+    player.battle.medkits += 1;
+    player.battle.coins += 30;
+    label = '全装空投抵达，生命、护甲、体力和物资全面补充';
+    markInterventionReaction(game, now, player, 'FAN_01');
+  } else {
+    const hidden = battle.relationshipEdges?.find((edge) => edge.hidden && (edge.a === player.battle!.characterId || edge.b === player.battle!.characterId));
+    if (hidden) {
+      hidden.hidden = false;
+      hidden.lastReason = '情报频道终结技揭露';
+    }
+    player.battle.stress = Math.max(0, (player.battle.stress ?? 0) - 25);
+    player.battle.clues = (player.battle.clues ?? 0) + 1;
+    label = hidden ? '关系透视揭露隐藏关系，并获得一条关键线索' : '关系透视排除错误情报，并稳定角色压力';
+    markInterventionReaction(game, now, player, 'INF_01');
+  }
+  chain.stage = 0;
+  chain.completed += 1;
+  chain.lastAdvancedAt = now;
+  awardPopularity(game, now, 35, [player]);
+  pushEvent(game, now, 'supportOrder', `【阵营终结技】${playerName(game, player)}：${label}。`, player, target);
+  return { label, completed: chain.completed };
 }
 
 export function applyIntervention(
