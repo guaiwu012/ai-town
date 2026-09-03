@@ -274,19 +274,35 @@ function BattleCharacterSprite({ characterId, displayName, eliminated, isMoving,
         tint={eliminated ? 0x8c8991 : isHit ? 0xff8f8f : 0xffffff}
       />
     </Container>
+    {displayName && <CharacterName name={displayName} eliminated={eliminated} />}
+  </>;
+}
+
+function CharacterName({ name, eliminated }: { name: string; eliminated: boolean }) {
+  const width = Math.max(42, Math.min(68, name.length * 11 + 18));
+  const draw = useCallback((g: PIXI.Graphics) => {
+    g.clear();
+    g.lineStyle(1.2, eliminated ? 0x736d78 : 0x75d9cd, eliminated ? 0.55 : 0.9);
+    g.beginFill(0x020a10, eliminated ? 0.64 : 0.88);
+    g.drawRoundedRect(-width / 2, 9, width, 17, 3);
+    g.endFill();
+  }, [eliminated, width]);
+
+  return <>
+    <Graphics draw={draw} />
     <Text
       x={0}
-      y={13}
-      scale={0.3}
-      text={displayName ?? ''}
+      y={17.5}
+      scale={0.72}
+      text={name}
       anchor={{ x: 0.5, y: 0.5 }}
       style={new PIXI.TextStyle({
-        fill: eliminated ? '#a79da8' : '#f2fff9',
+        fill: eliminated ? '#b8afb9' : '#f4fffb',
         fontFamily: 'Arial, sans-serif',
-        fontSize: 12,
+        fontSize: 14,
         fontWeight: '700',
-        stroke: '#071019',
-        strokeThickness: 4,
+        stroke: '#02070c',
+        strokeThickness: 3,
       })}
     />
   </>;

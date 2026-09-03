@@ -15,7 +15,7 @@ type Decision = {
   speech?: string;
 };
 
-type DecisionContext = {
+export type DecisionContext = {
   world: Doc<'worlds'>;
   player: Doc<'worlds'>['players'][number];
   descriptions: Doc<'playerDescriptions'>[];
@@ -82,60 +82,8 @@ async function reportFailure(ctx: ActionCtx, args: { worldId: Id<'worlds'>; driv
 }
 
 async function requestDecision(snapshot: DecisionContext, playerId: string, apiKey: string): Promise<Decision> {
-  const player = snapshot.player;
-  const stats = player.battle!;
-  const nameFor = (id: string) => snapshot.descriptions.find((description) => description.playerId === id)?.name ?? id;
-  const profile = profileForCharacterId(stats.characterId ?? 'C01');
-  const characterPersona = personaForCharacter(stats.characterId);
-  const candidates = snapshot.world.players
-    .filter((candidate) => candidate.id !== playerId && candidate.battle && !candidate.battle.eliminated)
-    .map((candidate) => ({ id: candidate.id, name: nameFor(candidate.id), areaId: candidate.battle?.areaId, hp: Math.ceil(candidate.battle?.hp ?? 0), alliance: stats.alliance === candidate.id }));
-  const relationships = (snapshot.world.battle?.relationshipEdges ?? [])
-    .filter((edge) => edge.a === stats.characterId || edge.b === stats.characterId)
-    .map((edge) => ({ with: edge.a === stats.characterId ? edge.b : edge.a, type: edge.type, strength: edge.strength, hidden: edge.hidden }));
-  const availableStories = AREA_SPECIAL_EVENTS
-    .filter((event) => event.areaId === stats.areaId)
-    .filter((event) => !(snapshot.world.battle?.consumedAreaStories ?? []).includes(event.id))
-    .map((event) => ({
-      id: event.id,
-      title: event.title,
-      requiredItem: 'requiredItem' in event ? event.requiredItem : undefined,
-      options: storyOptionsFor(event.id).map(({ id, label, description, difficultyModifier }) => ({ id, label, description, difficultyModifier })),
-    }));
-  const activeSupportOrder = snapshot.world.battle?.supportOrders?.find((order) => order.playerId === playerId && order.status === 'active');
-  const supportOrder = activeSupportOrder ? {
-    kind: activeSupportOrder.kind,
-    targetPlayerId: activeSupportOrder.targetPlayerId,
-    targetName: activeSupportOrder.targetPlayerId ? nameFor(activeSupportOrder.targetPlayerId) : undefined,
-    secondsRemaining: Math.max(0, Math.ceil((activeSupportOrder.expiresAt - Date.now()) / 1000)),
-    priority: '这是观众阵营已经付费且角色已接受的任务。除非濒死或路径非法，优先完成。hunt 要追踪并攻击目标；scavenge 要连续搜索物资；ally 要接近目标并结盟。',
-  } : undefined;
-  const prompt = {
-    role: `${nameFor(playerId)} (${stats.characterId})`,
-    persona: {
-      codename: profile.codename,
-      title: characterPersona.title,
-      archetype: characterPersona.archetype,
-      goal: characterPersona.goal,
-      combatStyle: characterPersona.combatStyle,
-      speechStyle: characterPersona.speechStyle,
-      aggression: profile.aggro,
-      cooperation: profile.coop,
-      riskPreference: profile.risk,
-      attackBias: characterPersona.attackBias,
-      allianceBias: characterPersona.allianceBias,
-      retreatBias: characterPersona.retreatBias,
-    },
-    self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), satiety: Math.ceil(stats.satiety ?? 0), zoneTime: Math.ceil(stats.zoneTime ?? 0), stress: Math.ceil(stats.stress ?? 0), stressThreshold: stats.stressThreshold, weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
-    openAreas: snapshot.world.battle?.openAreas,
-    zoneClosesAt: snapshot.world.battle?.zoneClosesAt,
-    relationships,
-    adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
-    candidates,
-    availableStories,
-    supportOrder,
-    instructions: '你是吃鸡比赛中的 AI。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟、交易或交战时的第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。遇到同区角色时必须根据 persona 的攻击、结盟、撤退倾向和关系做出选择；台词必须符合 speechStyle，不得使用通用模板。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；所有行动需符合 persona。',
-  };
+  const prompt = buildDecisionPrompt(snapshot, playerId);
+  const availableStories = prompt.availableStories;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), BATTLE_CONFIG.match.llmDecisionTimeoutMs);
   try {
@@ -162,4 +110,89 @@ async function requestDecision(snapshot: DecisionContext, playerId: string, apiK
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export function buildDecisionPrompt(snapshot: DecisionContext, playerId: string) {
+  const player = snapshot.player;
+  const stats = player.battle!;
+  const nameFor = (id: string) => snapshot.descriptions.find((description) => description.playerId === id)?.name ?? id;
+  const profile = profileForCharacterId(stats.characterId ?? 'C01');
+  const characterPersona = personaForCharacter(stats.characterId);
+  const candidates = snapshot.world.players
+    .filter((candidate) => candidate.id !== playerId && candidate.battle && !candidate.battle.eliminated)
+    .map((candidate) => ({
+      id: candidate.id,
+      name: nameFor(candidate.id),
+      areaId: candidate.battle?.areaId,
+      position: { x: Number(candidate.position.x.toFixed(1)), y: Number(candidate.position.y.toFixed(1)) },
+      distance: Number(Math.hypot(candidate.position.x - player.position.x, candidate.position.y - player.position.y).toFixed(1)),
+      sameArea: candidate.battle?.areaId === stats.areaId,
+      nextArea: nextAreaToward(stats.areaId ?? 'A01', candidate.battle?.areaId ?? 'A01', snapshot.world.battle?.openAreas ?? []),
+      hp: Math.ceil(candidate.battle?.hp ?? 0),
+      alliance: stats.alliance === candidate.id,
+    }));
+  const relationships = (snapshot.world.battle?.relationshipEdges ?? [])
+    .filter((edge) => edge.a === stats.characterId || edge.b === stats.characterId)
+    .map((edge) => ({ with: edge.a === stats.characterId ? edge.b : edge.a, type: edge.type, strength: edge.strength, hidden: edge.hidden }));
+  const availableStories = AREA_SPECIAL_EVENTS
+    .filter((event) => event.areaId === stats.areaId)
+    .filter((event) => !(snapshot.world.battle?.consumedAreaStories ?? []).includes(event.id))
+    .map((event) => ({
+      id: event.id,
+      title: event.title,
+      requiredItem: 'requiredItem' in event ? event.requiredItem : undefined,
+      options: storyOptionsFor(event.id).map(({ id, label, description, difficultyModifier }) => ({ id, label, description, difficultyModifier })),
+    }));
+  const activeSupportOrder = snapshot.world.battle?.supportOrders?.find((order) => order.playerId === playerId && order.status === 'active');
+  const supportOrder = activeSupportOrder ? {
+    kind: activeSupportOrder.kind,
+    targetPlayerId: activeSupportOrder.targetPlayerId,
+    targetName: activeSupportOrder.targetPlayerId ? nameFor(activeSupportOrder.targetPlayerId) : undefined,
+    secondsRemaining: Math.max(0, Math.ceil((activeSupportOrder.expiresAt - Date.now()) / 1000)),
+    priority: '这是观众阵营已经付费且角色已接受的任务。除非濒死或路径非法，优先完成。hunt 要追踪并攻击目标；scavenge 要连续搜索物资；ally 要接近目标并结盟。',
+  } : undefined;
+  return {
+    role: `${nameFor(playerId)} (${stats.characterId})`,
+    persona: {
+      codename: profile.codename,
+      title: characterPersona.title,
+      archetype: characterPersona.archetype,
+      goal: characterPersona.goal,
+      combatStyle: characterPersona.combatStyle,
+      speechStyle: characterPersona.speechStyle,
+      aggression: profile.aggro,
+      cooperation: profile.coop,
+      riskPreference: profile.risk,
+      attackBias: characterPersona.attackBias,
+      allianceBias: characterPersona.allianceBias,
+      retreatBias: characterPersona.retreatBias,
+    },
+    self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), satiety: Math.ceil(stats.satiety ?? 0), zoneTime: Math.ceil(stats.zoneTime ?? 0), stress: Math.ceil(stats.stress ?? 0), stressThreshold: stats.stressThreshold, weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
+    openAreas: snapshot.world.battle?.openAreas,
+    zoneClosesAt: snapshot.world.battle?.zoneClosesAt,
+    relationships,
+    adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),
+    candidates,
+    availableStories,
+    supportOrder,
+    instructions: '你是吃鸡比赛中的 AI，已通过全局追踪系统知道 candidates 中每名存活 AI 的区域和精确坐标。只返回 JSON，不要 Markdown。格式：{"action":"move|search|buy|trade|ally|attack|flee|heal|investigate","targetPlayerId":"可选候选 ID","targetAreaId":"移动时必填且只能选相邻开放区","storyEventId":"investigate 时必填，必须选 availableStories.id","storyApproach":"investigate 时必填，必须选对应剧情 options.id","reason":"不超过70字中文理由","speech":"结盟、交易或交战时的第一人称中文台词，不超过48字"}。攻击、结盟、交易只可选同区域目标。追踪异区目标时使用其 nextArea 作为 targetAreaId；遇到同区角色时必须根据 persona 的攻击、结盟、撤退倾向和关系做出选择。台词必须符合 speechStyle，不得使用通用模板。调查必须明确选择一个当前可用剧情及其专属处置方案，并满足 requiredItem。高压力或低饱食时优先撤离、治疗、搜索补给；所有行动需符合 persona。',
+  };
+}
+
+function nextAreaToward(startAreaId: string, targetAreaId: string, openAreaIds: string[]) {
+  if (startAreaId === targetAreaId) return undefined;
+  const openAreas = new Set(openAreaIds);
+  const queue: Array<{ areaId: string; firstStep?: string }> = [{ areaId: startAreaId }];
+  const visited = new Set([startAreaId]);
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neighbor of adjacentAreaIds(current.areaId).map(String)) {
+      if (visited.has(neighbor) || !openAreas.has(neighbor)) continue;
+      const firstStep = current.firstStep ?? neighbor;
+      if (neighbor === targetAreaId) return firstStep;
+      visited.add(neighbor);
+      queue.push({ areaId: neighbor, firstStep });
+    }
+  }
+  return undefined;
 }

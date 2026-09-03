@@ -3,7 +3,7 @@ import type { Game } from './game';
 import type { Player } from './player';
 import { playerId } from './ids';
 import { distance } from '../util/geometry';
-import { blocked, movePlayer } from './movement';
+import { blocked, findRoute, movePlayer } from './movement';
 import { point } from '../util/types';
 import {
   BATTLE_CONFIG,
@@ -1962,6 +1962,22 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
     performRuleAction('move', enemy);
     return;
   }
+  const trackedOpponent = globallyTrackedOpponent(game, player);
+  if (trackedOpponent?.battle) {
+    const destination = nextOpenAreaToward(
+      game,
+      stats.areaId ?? 'A01',
+      trackedOpponent.battle.areaId ?? 'A01',
+    );
+    if (destination && performRuleAction('move', undefined, destination)) {
+      player.activity = {
+        description: `${playerName(game, player)} 正在追踪 ${playerName(game, trackedOpponent)}`,
+        emoji: 'TARGET',
+        until: now + 2000,
+      };
+      return;
+    }
+  }
   performRuleAction('move');
 }
 
@@ -2484,6 +2500,38 @@ function nearestEnemy(game: Game, player: Player, now: number) {
   )[0];
 }
 
+function globallyTrackedOpponent(game: Game, player: Player) {
+  const playerArea = player.battle?.areaId ?? 'A01';
+  return alivePlayers(game)
+    .filter((candidate) => candidate.id !== player.id && candidate.id !== player.battle?.alliance)
+    .map((candidate) => {
+      const relation = relationshipBetween(game, player, candidate);
+      const rivalPriority = relation?.type === 'rival' ? -4 : 0;
+      const hostilityPriority = Math.min(0, (relation?.strength ?? 0) / 20);
+      const hops = areaHopDistance(game, playerArea, candidate.battle?.areaId ?? 'A01');
+      const hpRatio = (candidate.battle?.hp ?? 0) / Math.max(1, candidate.battle?.maxHp ?? 1);
+      return { candidate, score: hops * 10 + hpRatio * 2 + rivalPriority + hostilityPriority };
+    })
+    .sort((a, b) => a.score - b.score)[0]?.candidate;
+}
+
+function areaHopDistance(game: Game, startAreaId: string, targetAreaId: string) {
+  if (startAreaId === targetAreaId) return 0;
+  const openAreas = new Set(game.world.battle?.openAreas ?? []);
+  const queue = [{ areaId: startAreaId, distance: 0 }];
+  const visited = new Set([startAreaId]);
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const neighbor of adjacentAreaIds(current.areaId).map(String)) {
+      if (visited.has(neighbor) || !openAreas.has(neighbor)) continue;
+      if (neighbor === targetAreaId) return current.distance + 1;
+      visited.add(neighbor);
+      queue.push({ areaId: neighbor, distance: current.distance + 1 });
+    }
+  }
+  return Number.POSITIVE_INFINITY;
+}
+
 function bountyTargetFor(game: Game, player: Player) {
   const battle = game.world.battle;
   if (!battle?.bountyHunterId || battle.bountyHunterId !== player.id || !battle.bountyPlayerId) return undefined;
@@ -2581,7 +2629,7 @@ function tacticalMove(
   if (player.pathfinding) {
     return false;
   }
-  const destination = tacticalDestination(game, player, target, mode);
+  const destination = tacticalDestination(game, now, player, target, mode);
   if (!destination) {
     return false;
   }
@@ -2591,6 +2639,7 @@ function tacticalMove(
 
 function tacticalDestination(
   game: Game,
+  now: number,
   player: Player,
   target: Player,
   mode: 'approach' | 'retreat' | 'sidestep',
@@ -2607,8 +2656,23 @@ function tacticalDestination(
     const weapon = BATTLE_CONFIG.weapons[player.battle?.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
     const firingTiles = openTilesNear(game, player, targetTile, Math.max(3, Math.ceil(weapon.range) + 1))
       .filter((candidate) => distance(candidate, target.position) <= Math.max(1.2, weapon.range * 0.82))
-      .sort((a, b) => distance(a, origin) - distance(b, origin));
-    if (firingTiles[0]) return firingTiles[0];
+      .sort((a, b) => distance(a, origin) - distance(b, origin))
+      .slice(0, 6);
+    const shortest = firingTiles
+      .map((candidate) => {
+        const route = findRoute(game, now, player, candidate);
+        const reachesCandidate = route && !route.newDestination;
+        const firstTs = route?.path[0]?.[4];
+        const lastTs = route?.path.at(-1)?.[4];
+        return {
+          candidate,
+          travelMs: reachesCandidate && firstTs !== undefined && lastTs !== undefined
+            ? lastTs - firstTs
+            : Number.POSITIVE_INFINITY,
+        };
+      })
+      .sort((a, b) => a.travelMs - b.travelMs)[0];
+    if (shortest && Number.isFinite(shortest.travelMs)) return shortest.candidate;
   }
   const candidates = openTilesNear(game, player, origin, mode === 'approach' ? 6 : 4);
   if (candidates.length === 0) {
