@@ -1,4 +1,4 @@
-import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -78,6 +78,33 @@ describe('battle royale host intervention rules', () => {
     expect(player.activity?.emoji).toBe('ROUTE');
   });
 
+  it('does not start a random patrol while an enemy is already nearby', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const enemy = createPlayer('p:2', 'C02', 'A01');
+    enemy.position = { x: player.position.x + 3, y: player.position.y };
+    const game = createGame([player, enemy]);
+    player.battle.nextLocomotionAt = 0;
+
+    expect(tickBattleLocomotion(game, 2_000, player)).toBe(false);
+    expect(player.pathfinding).toBeUndefined();
+    expect(player.battle.nextLocomotionAt).toBe(2_500);
+  });
+
+  it('cancels stale movement and immediately fires at a hostile target in range', () => {
+    const attacker = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    target.position = { x: attacker.position.x + 2.4, y: attacker.position.y };
+    attacker.pathfinding = { destination: { x: 60, y: 40 }, started: 1_000, state: { kind: 'needsPath' } };
+    attacker.speed = 0.1;
+    const game = createGame([attacker, target]);
+    const beforeHp = target.battle.hp;
+
+    expect(runCombatReflex(game, 5_000, attacker)).toBe(true);
+    expect(target.battle.hp).toBeLessThan(beforeHp);
+    expect(attacker.pathfinding?.destination).not.toEqual({ x: 60, y: 40 });
+    expect(game.world.battle.actionLog[0]).toMatchObject({ action: 'attack', source: 'rule', targetPlayerId: target.id });
+  });
+
   it('only reports MOVE while coordinates are actively advancing', () => {
     const player = createPlayer('p:1', 'C01', 'A01');
     const game = createGame([player]);
@@ -146,6 +173,29 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
     expect(game.world.battle.actionLog.at(-1)?.patch?.players.map((entry: any) => entry.id)).toEqual([first.id, second.id]);
     expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 14, lastReason: '结盟' }));
+  });
+
+  it('corrects a redundant model move into an immediate attack when the target is in range', () => {
+    const attacker = createPlayer('p:4', 'C04', 'A04');
+    const target = createPlayer('p:9', 'C09', 'A04');
+    target.position = { x: attacker.position.x + 2.4, y: attacker.position.y };
+    const game = createGame([attacker, target]);
+    claimDecisionDriver(game, 9_000, 'driver-test-move');
+    const beforeHp = target.battle.hp;
+
+    const result = submitAIDecision(game, 10_000, {
+      driverId: 'driver-test-move',
+      playerId: attacker.id,
+      action: 'move',
+      targetPlayerId: target.id,
+      reason: '继续靠近目标',
+    });
+
+    expect(result).toMatchObject({ accepted: true });
+    expect(target.battle.hp).toBeLessThan(beforeHp);
+    expect(attacker.battle.lastDecisionAction).toBe('attack');
+    expect(attacker.battle.lastDecisionReason).toContain('立即开火');
+    expect(game.world.battle.actionLog.at(-1)).toMatchObject({ action: 'attack', source: 'model' });
   });
 
   it('lets an aggressive persona choose combat in most same-area encounters', () => {
@@ -372,10 +422,12 @@ describe('battle royale host intervention rules', () => {
     expect(Math.hypot(firingPosition.x - target.position.x, firingPosition.y - target.position.y)).toBeLessThanOrEqual(3.2);
 
     hunter.position = firingPosition;
-    delete hunter.pathfinding;
-    hunter.speed = 0;
+    hunter.pathfinding = { destination: points[0], started: 8_000, state: { kind: 'needsPath' } };
+    hunter.speed = 0.1;
+    hunter.activity = { description: '仍在沿旧路线追踪', emoji: 'TARGET', until: 20_000 };
     expect(runSupportOrderAction(game, 14_000, hunter)).toBe(true);
     expect(game.world.battle.feed.some((event: any) => event.kind === 'attack' && event.actor === hunter.id && event.target === target.id)).toBe(true);
+    expect(hunter.pathfinding?.destination).not.toEqual(points[0]);
   });
 
   it('assigns a bounty from the first contestant to the second contestant', () => {
@@ -427,6 +479,24 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.bountyHunterId).toBeUndefined();
     expect(game.world.battle.bountyPlayerId).toBeUndefined();
     expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏完成】'))).toBe(true);
+  });
+
+  it('forces an assigned hunter to close distance once the bounty target is in the same area', () => {
+    const hunter = createPlayer('p:1', 'C01', 'A01');
+    const target = createPlayer('p:2', 'C02', 'A01');
+    target.position = { x: hunter.position.x + 4, y: hunter.position.y };
+    const game = createGame([hunter, target]);
+    applyIntervention(game, 500, {
+      opId: 'RUL_04',
+      targetPlayerId: hunter.id,
+      secondPlayerId: target.id,
+    });
+
+    tickBattleRoyale(game, 7_000);
+
+    expect(hunter.pathfinding?.destination).toBeDefined();
+    expect(hunter.activity).toMatchObject({ emoji: 'TARGET' });
+    expect(game.world.battle.actionLog.some((entry: any) => entry.playerId === hunter.id && entry.action === 'move')).toBe(true);
   });
 
   it('invalidates a bounty without paying its reward when a third party eliminates the target', () => {

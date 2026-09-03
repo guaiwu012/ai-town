@@ -274,6 +274,7 @@ export type BattleState = Infer<typeof battleState>;
 
 const BATTLE_TICK_MS = BATTLE_CONFIG.match.battleTickMs;
 const ACTION_COOLDOWN_MS = BATTLE_CONFIG.match.actionCooldownMs;
+const COMBAT_REFLEX_COOLDOWN_MS = 3200;
 const TARGET_BATTLE_AGENT_COUNT = BATTLE_CONFIG.match.agentCount;
 
 export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
@@ -546,6 +547,7 @@ export function tickBattleRoyale(game: Game, now: number) {
   for (const player of alive) {
     if (player.battle?.eliminated) continue;
     const stats = player.battle!;
+    if (runCombatReflex(game, now, player)) continue;
     if (runSupportOrderAction(game, now, player)) continue;
     const llmActive = (battle.decisionDriverUntil ?? 0) > now && (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0);
     if (llmActive && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
@@ -613,6 +615,11 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
   const activeActivity = player.activity && player.activity.until > now ? player.activity : undefined;
   if (activeActivity && ['TALK', 'ALLY'].includes(activeActivity.emoji ?? '')) {
     stats.nextLocomotionAt = activeActivity.until + 250;
+    return false;
+  }
+  const nearbyEnemy = nearestEnemy(game, player);
+  if (nearbyEnemy && distance(player.position, nearbyEnemy.position) <= BATTLE_CONFIG.match.dangerRange) {
+    stats.nextLocomotionAt = now + 500;
     return false;
   }
   stats.nextLocomotionAt = now + 900 + Math.floor(battleRandom(game) * 900);
@@ -688,20 +695,56 @@ export function submitAIDecision(game: Game, now: number, args: {
   const safeReason = (args.reason ?? '').replace(/[\r\n]/g, ' ').slice(0, 140);
   const safeSpeech = sanitizeDialogue(args.speech);
   const replayBaseline = captureReplayPatchBaseline(game);
-  const result = executeBattleAction(game, now, player, args.action as any, target, args.targetAreaId, safeReason, safeSpeech, args.storyApproach, args.storyEventId);
+  const requestedWeapon = BATTLE_CONFIG.weapons[player.battle.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+  const action = args.action === 'move' && !args.targetAreaId && target?.battle &&
+    target.battle.areaId === player.battle.areaId && distance(player.position, target.position) <= requestedWeapon.range
+    ? 'attack'
+    : args.action;
+  const correctedMove = action === 'attack' && args.action === 'move';
+  const result = executeBattleAction(game, now, player, action as any, target, args.targetAreaId, safeReason, safeSpeech, args.storyApproach, args.storyEventId);
   player.battle.lastDecisionAt = now;
-  player.battle.lastDecisionAction = args.action;
-  player.battle.lastDecisionReason = safeReason || '未提供理由';
+  player.battle.lastDecisionAction = action;
+  player.battle.lastDecisionReason = correctedMove
+    ? `目标已在射程内，移动指令已修正为立即开火。${safeReason}`.slice(0, 140)
+    : safeReason || '未提供理由';
   player.battle.lastDecisionStatus = result.accepted ? '已执行' : '已拒绝';
   player.battle.lastDecisionFallback = result.reason;
   player.battle.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
   if (result.accepted) {
     battle.decisionCount = (battle.decisionCount ?? 0) + 1;
-    const approach = args.action === 'investigate' && args.storyEventId ? `（${storyOptionFor(args.storyEventId, args.storyApproach).label}）` : '';
-    pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(args.action)}${approach}：${safeReason || '基于当前局势'}。`, player, target);
+    const approach = action === 'investigate' && args.storyEventId ? `（${storyOptionFor(args.storyEventId, args.storyApproach).label}）` : '';
+    pushEvent(game, now, 'decision', `【决策】${playerName(game, player)} 选择${actionName(action)}${approach}：${correctedMove ? '目标已经在射程内，取消多余移动并立即开火' : safeReason || '基于当前局势'}。`, player, target);
   }
-  recordReplayAction(game, now, player, args.action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline, args.storyApproach, args.storyEventId);
+  recordReplayAction(game, now, player, action, 'model', result.accepted, result.reason, args.targetPlayerId, args.targetAreaId, replayBaseline, args.storyApproach, args.storyEventId);
   return result;
+}
+
+export function runCombatReflex(game: Game, now: number, player: Player) {
+  const stats = player.battle;
+  if (!stats || stats.eliminated || (stats.lastBattleAction ?? 0) + COMBAT_REFLEX_COOLDOWN_MS > now) return false;
+  const activeOrder = activeSupportOrderFor(game, player);
+  const orderedTarget = activeOrder?.kind === 'hunt' && activeOrder.targetPlayerId
+    ? game.world.players.get(activeOrder.targetPlayerId as any)
+    : undefined;
+  const orderedTargetBattle = orderedTarget?.battle;
+  const target = orderedTarget && orderedTargetBattle && orderedTargetBattle.areaId === stats.areaId && !orderedTargetBattle.eliminated
+    ? orderedTarget
+    : nearestEnemy(game, player);
+  if (!target?.battle || target.battle.eliminated) return false;
+  if (activeOrder?.kind === 'ally' && activeOrder.targetPlayerId === target.id) return false;
+  const relation = relationshipBetween(game, player, target);
+  if ((relation?.strength ?? 0) >= 25 && relation?.type !== 'rival') return false;
+  const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+  if (distance(player.position, target.position) > weapon.range) return false;
+  const replayBaseline = captureReplayPatchBaseline(game);
+  const result = executeBattleAction(game, now, player, 'attack', target, undefined, '射程内敌对目标触发战斗反射');
+  if (!result.accepted) return false;
+  stats.lastBattleAction = now;
+  stats.lastDecisionAction = 'attack';
+  stats.lastDecisionReason = '敌对目标进入武器射程，立即开火';
+  stats.lastDecisionStatus = '战斗反射';
+  recordReplayAction(game, now, player, 'attack', 'rule', true, '射程内敌对目标触发战斗反射', target.id, undefined, replayBaseline);
+  return true;
 }
 
 export function reportAIDecisionFailure(game: Game, now: number, args: { driverId: string; playerId: string; reason: string }) {
@@ -1213,7 +1256,13 @@ export function runSupportOrderAction(game: Game, now: number, player: Player) {
   if (!order || !player.battle || player.battle.eliminated) return false;
   const stats = player.battle;
   const target = order.targetPlayerId ? game.world.players.get(order.targetPlayerId as any) : undefined;
-  if (player.pathfinding) {
+  const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+  const huntTargetInRange = order.kind === 'hunt' && target?.battle && !target.battle.eliminated &&
+    target.battle.areaId === stats.areaId && distance(player.position, target.position) <= weapon.range;
+  if (player.pathfinding && huntTargetInRange) {
+    delete player.pathfinding;
+    player.speed = 0;
+  } else if (player.pathfinding) {
     if (player.activity?.emoji === 'TARGET') return true;
     delete player.pathfinding;
     player.speed = 0;
@@ -1241,7 +1290,6 @@ export function runSupportOrderAction(game: Game, now: number, player: Player) {
       }
       return true;
     }
-    const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
     if (distance(player.position, target.position) <= weapon.range) {
       execute('attack', target);
       return true;
@@ -1783,20 +1831,36 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   }
 
   const bountyTarget = bountyTargetFor(game, player);
-  if (bountyTarget && bountyTarget.battle?.areaId !== stats.areaId) {
-    const destination = nextOpenAreaToward(
-      game,
-      stats.areaId ?? 'A01',
-      bountyTarget.battle?.areaId ?? 'A01',
-    );
-    if (destination && performRuleAction('move', undefined, destination)) {
-      player.activity = {
-        description: `${playerName(game, player)} 正在追踪 ${playerName(game, bountyTarget)}`,
-        emoji: 'TARGET',
-        until: now + 2000,
-      };
-      pushEvent(game, now, 'bounty', `【悬赏】${playerName(game, player)} 正沿区域路线追踪 ${playerName(game, bountyTarget)}。`, player, bountyTarget);
-      return;
+  if (bountyTarget?.battle) {
+    if (player.pathfinding) {
+      delete player.pathfinding;
+      player.speed = 0;
+    }
+    if (bountyTarget.battle.areaId !== stats.areaId) {
+      const destination = nextOpenAreaToward(
+        game,
+        stats.areaId ?? 'A01',
+        bountyTarget.battle.areaId ?? 'A01',
+      );
+      if (destination && performRuleAction('move', undefined, destination)) {
+        player.activity = {
+          description: `${playerName(game, player)} 正在追踪 ${playerName(game, bountyTarget)}`,
+          emoji: 'TARGET',
+          until: now + 2000,
+        };
+        pushEvent(game, now, 'bounty', `【悬赏】${playerName(game, player)} 正沿区域路线追踪 ${playerName(game, bountyTarget)}。`, player, bountyTarget);
+        return;
+      }
+    } else {
+      const bountyWeapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+      if (distance(player.position, bountyTarget.position) <= bountyWeapon.range) {
+        performRuleAction('attack', bountyTarget);
+        return;
+      }
+      if (performRuleAction('move', bountyTarget)) {
+        player.activity = { description: `${playerName(game, player)} 正在逼近悬赏目标`, emoji: 'TARGET', until: now + 2000 };
+        return;
+      }
     }
   }
 
@@ -1861,6 +1925,8 @@ function areaDanger(areaId: string) {
 function attack(game: Game, now: number, attacker: Player, target: Player) {
   const attack = attacker.battle!;
   const defend = target.battle!;
+  delete attacker.pathfinding;
+  attacker.speed = 0;
   const relation = relationshipBetween(game, attacker, target);
   const betrayal = attack.alliance === target.id || (relation?.strength ?? 0) >= 70;
   const areaId = attacker.battle?.areaId;
@@ -1952,7 +2018,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       battle.bountyPlayerId = undefined;
     }
     awardPopularity(game, now, 25 + (completedBounty ? 15 : 0), [attacker]);
-  } else if (battleRandom(game) < 0.72) {
+  } else if (attack.weapon !== 'Fists' && battleRandom(game) < 0.28) {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
   updateRelationship(game, attacker, target, -12, '攻击');
