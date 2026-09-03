@@ -622,9 +622,27 @@ export function tickBattleLocomotion(game: Game, now: number, player: Player) {
     return false;
   }
   const nearbyEnemy = nearestEnemy(game, player, now);
-  if (nearbyEnemy && distance(player.position, nearbyEnemy.position) <= BATTLE_CONFIG.match.dangerRange) {
-    stats.nextLocomotionAt = now + 500;
-    return false;
+  const nearbyRelation = nearbyEnemy ? relationshipBetween(game, player, nearbyEnemy) : undefined;
+  const nearbyEnemyIsHostile = nearbyEnemy && (
+    (nearbyRelation?.strength ?? 0) < 25 || nearbyRelation?.type === 'rival'
+  );
+  if (nearbyEnemy && nearbyEnemyIsHostile && distance(player.position, nearbyEnemy.position) <= BATTLE_CONFIG.match.dangerRange) {
+    const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+    const targetDistance = distance(player.position, nearbyEnemy.position);
+    const mode = targetDistance > weapon.range ? 'approach' : 'sidestep';
+    stats.nextLocomotionAt = now + 700;
+    if (tacticalMove(game, now, player, nearbyEnemy, mode)) {
+      stats.combatTargetId = nearbyEnemy.id;
+      stats.combatUntil = Math.max(stats.combatUntil ?? 0, now + 8_000);
+      player.activity = {
+        description: mode === 'approach'
+          ? `${playerName(game, player)} 正在接敌 ${playerName(game, nearbyEnemy)}`
+          : `${playerName(game, player)} 正在交火走位`,
+        emoji: 'TARGET',
+        until: now + 1200,
+      };
+      return true;
+    }
   }
   stats.nextLocomotionAt = now + 900 + Math.floor(battleRandom(game) * 900);
   const areaId = stats.areaId ?? 'A01';
@@ -1100,6 +1118,12 @@ export function areaEventEligible(game: Game, now: number, event: (typeof AREA_S
   const { id: eventId, areaId } = event;
   const occupants = alivePlayers(game).filter((player) => player.battle?.areaId === areaId);
   if (occupants.length === 0) return false;
+  if (event.effect === 'truth') {
+    return !battle.truthRevealed &&
+      !!battle.truthPathKnown &&
+      (battle.truthClues?.length ?? 0) >= 3 &&
+      occupants.some((player) => player.battle?.characterId === 'C12');
+  }
   if ('requiredItem' in event && event.requiredItem && !occupants.some((player) => player.battle?.inventory?.includes(event.requiredItem))) return false;
   const stayedTwoMinutes = occupants.some((player) => now - (player.battle?.areaEnteredAt ?? now) >= 120000);
   const stayedOneMinuteTogether = occupants.filter((player) => now - (player.battle?.areaEnteredAt ?? now) >= 60000).length >= 2;
@@ -2050,7 +2074,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
       battle.bountyPlayerId = undefined;
     }
     awardPopularity(game, now, 25 + (completedBounty ? 15 : 0), [attacker]);
-  } else if (attack.weapon !== 'Fists' && battleRandom(game) < 0.28) {
+  } else if (attack.weapon !== 'Fists') {
     tacticalMove(game, now, attacker, target, attack.weapon === 'Shotgun' ? 'approach' : 'sidestep');
   }
   updateRelationship(game, attacker, target, -12, '攻击');
@@ -2340,15 +2364,16 @@ function collectTruthClue(game: Game, now: number, clue: string, player: Player)
 
 function unlockTruth(game: Game, now: number, player: Player) {
   const battle = game.world.battle!;
-  if (player.battle?.characterId !== 'C12') throw new Error('只有 N-00 能进入真相之间。');
-  if (!battle.truthPathKnown || (battle.truthClues?.length ?? 0) < 3) throw new Error('真相路径尚未满足：需要空白身份卡与 3 条线索。');
-  if (battle.truthRevealed) throw new Error('真相已经揭示。');
+  if (player.battle?.characterId !== 'C12') return false;
+  if (!battle.truthPathKnown || (battle.truthClues?.length ?? 0) < 3) return false;
+  if (battle.truthRevealed) return false;
   battle.truthUnlocked = true;
   battle.truthRevealed = true;
   player.battle.areaId = 'S01';
   pushEvent(game, now, 'truth', '【真相】N-00 进入真相之间，制造者日志向全场公开。', player);
   awardPopularity(game, now, 100, [player]);
   completeMission(game, now, 'HID_06');
+  return true;
 }
 
 function updateMissionProgress(game: Game, now: number) {

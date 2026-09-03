@@ -78,16 +78,31 @@ describe('battle royale host intervention rules', () => {
     expect(player.activity?.emoji).toBe('ROUTE');
   });
 
-  it('does not start a random patrol while an enemy is already nearby', () => {
+  it('approaches a nearby hostile instead of freezing outside weapon range', () => {
     const player = createPlayer('p:1', 'C01', 'A01');
     const enemy = createPlayer('p:2', 'C02', 'A01');
-    enemy.position = { x: player.position.x + 3, y: player.position.y };
+    enemy.position = { x: player.position.x + 4, y: player.position.y };
     const game = createGame([player, enemy]);
     player.battle.nextLocomotionAt = 0;
 
-    expect(tickBattleLocomotion(game, 2_000, player)).toBe(false);
-    expect(player.pathfinding).toBeUndefined();
-    expect(player.battle.nextLocomotionAt).toBe(2_500);
+    expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
+    expect(player.pathfinding?.destination).toBeDefined();
+    expect(player.battle).toMatchObject({ combatTargetId: enemy.id, combatUntil: 10_000 });
+    expect(player.activity).toMatchObject({ emoji: 'TARGET' });
+    expect(player.activity?.description).toContain('接敌');
+  });
+
+  it('sidesteps while a hostile is already inside weapon range', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const enemy = createPlayer('p:2', 'C02', 'A01');
+    enemy.position = { x: player.position.x + 2.4, y: player.position.y };
+    const game = createGame([player, enemy]);
+    player.battle.nextLocomotionAt = 0;
+
+    expect(tickBattleLocomotion(game, 2_000, player)).toBe(true);
+    expect(player.pathfinding?.destination).toBeDefined();
+    expect(player.activity).toMatchObject({ emoji: 'TARGET' });
+    expect(player.activity?.description).toContain('交火走位');
   });
 
   it('cancels stale movement and immediately fires at a hostile target in range', () => {
@@ -901,6 +916,21 @@ describe('battle royale host intervention rules', () => {
     expect(areaEventEligible(game, 2_000, event)).toBe(false);
     player.battle.inventory = ['监控终端权限卡'];
     expect(areaEventEligible(game, 2_000, event)).toBe(true);
+  });
+
+  it('keeps the world tick alive when the truth story prerequisites are incomplete', () => {
+    const player = createPlayer('p:24', 'C12', 'S01');
+    const game = createGame([player]);
+    const event = AREA_SPECIAL_EVENTS.find((candidate) => candidate.id === 'S01_01')!;
+    game.world.battle.lastAreaEventCheck = 0;
+
+    expect(areaEventEligible(game, 10_000, event)).toBe(false);
+    expect(() => triggerAreaSpecialEvent(game, 10_000)).not.toThrow();
+    expect(game.world.battle.areaEventCounts).toEqual([]);
+
+    game.world.battle.truthPathKnown = true;
+    game.world.battle.truthClues = ['线索一', '线索二', '线索三'];
+    expect(areaEventEligible(game, 20_000, event)).toBe(true);
   });
 
   it('returns each reset contestant to a walkable spawn inside their assigned battle area', () => {
