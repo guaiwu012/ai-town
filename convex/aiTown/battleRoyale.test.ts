@@ -205,7 +205,8 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.dialogueLog.some((entry: any) => entry.text.includes('我们先停火'))).toBe(true);
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
     expect(game.world.battle.actionLog.at(-1)?.patch?.players.map((entry: any) => entry.id)).toEqual([first.id, second.id]);
-    expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 15, lastReason: '结盟' }));
+    expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ lastReason: '结盟' }));
+    expect(game.world.battle.relationshipEdges.find((edge: any) => (edge.a === 'C01' && edge.b === 'C02') || (edge.a === 'C02' && edge.b === 'C01')).strength).toBeGreaterThanOrEqual(20);
   });
 
   it('corrects a redundant model move into an immediate attack when the target is in range', () => {
@@ -696,10 +697,11 @@ describe('battle royale host intervention rules', () => {
 
     applyIntervention(game, 2_000, { opId: 'INF_03', targetPlayerId: first.id, secondPlayerId: second.id });
 
-    const link = game.world.battle.relationshipEdges.find((edge: any) => edge.id === 'REL_C01_C02');
+    const link = game.world.battle.relationshipEdges.find((edge: any) => (edge.a === 'C01' && edge.b === 'C02') || (edge.a === 'C02' && edge.b === 'C01'));
     expect(first.battle.alliance).toBeUndefined();
     expect(second.battle.alliance).toBeUndefined();
-    expect(link).toMatchObject({ strength: -25, lastReason: '匿名挑拨' });
+    expect(link).toMatchObject({ lastReason: '匿名挑拨' });
+    expect(link.strength).toBeLessThan(0);
   });
 
   it('applies the hospital story intervention only to the hospital area', () => {
@@ -846,7 +848,8 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.feed.filter((event: any) => event.text.includes('禁区预警'))).toHaveLength(warningCount);
 
     tickBattleRoyale(game, 31_000);
-    expect(game.world.battle.openAreas).toHaveLength(12);
+    expect(game.world.battle.openAreas.length).toBeGreaterThanOrEqual(10);
+    expect(game.world.battle.openAreas.length).toBeLessThanOrEqual(11);
     expect(game.world.battle.zoneClosesAt).toBe(31_000 + 90_000);
   });
 

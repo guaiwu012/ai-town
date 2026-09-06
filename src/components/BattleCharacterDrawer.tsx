@@ -1,6 +1,6 @@
 import { ServerGame } from '../hooks/serverGame';
 import { GameId } from '../../convex/aiTown/ids';
-import { AREA_SPECIAL_EVENTS, personaForCharacter, storyOptionFor } from '../../data/battleRoyaleConfig';
+import { AREA_SPECIAL_EVENTS, BATTLE_CONFIG, itemDefinition, personaForCharacter, profileForCharacterId, storyOptionFor } from '../../data/battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena';
 import BattleVitalBattery from './BattleVitalBattery';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale';
@@ -28,6 +28,8 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
   const recentDialogue = (game.world.battle?.dialogueLog ?? []).filter((entry) => (!replayTime || entry.ts <= replayTime) && (entry.speakerId === player.id || entry.listenerId === player.id)).slice(0, 6);
   const auditedAction = recentActions[0];
   const persona = personaForCharacter(stats.characterId);
+  const profile = profileForCharacterId(stats.characterId ?? 'C01');
+  const areaRule = BATTLE_CONFIG.areas.find((entry) => entry.id === stats.areaId);
   return (
     <aside className="character-drawer pointer-events-auto" aria-label={`${name}角色详情`}>
       <div className="character-drawer-header">
@@ -42,8 +44,9 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
       </div>
       <DrawerSection title="当前状态"><p>{replayTime ? '回放时刻状态' : player.activity?.description ?? '正在观察战场'}</p><p>区域：{stats.areaId ?? 'A01'} · 击杀：{stats.kills} · 压力：{Math.ceil(stats.stress ?? 0)}/{stats.stressThreshold ?? '--'}</p><p>饱食：{Math.ceil(stats.satiety ?? 0)} · 禁区时间：{Math.ceil(stats.zoneTime ?? 0)}/{stats.maxZoneTime ?? '--'}</p></DrawerSection>
       <DrawerSection title={`角色卡 · ${persona.title}`}><p>{persona.archetype}</p><p>{persona.goal}</p><p>战斗：{persona.combatStyle}</p><p>说话：{persona.speechStyle}</p><div className="drawer-persona-bias"><span>攻击 {Math.round(persona.attackBias * 100)}%</span><span>结盟 {Math.round(persona.allianceBias * 100)}%</span><span>撤退 {Math.round(persona.retreatBias * 100)}%</span></div></DrawerSection>
-      <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
-      <DrawerSection title="背包"><p>{stats.inventory?.length ? stats.inventory.join('、') : '暂无额外物资'} · 医疗包 {stats.medkits}</p></DrawerSection>
+      <DrawerSection title="Excel 人设档案"><p>{profile.publicRole} · {profile.gender} · {profile.ageBand}</p><p>{profile.oneLiner}</p><p>标签：{profile.tags.join('、')} · 口吻：{profile.voiceTone}</p><p>公开简介：{profile.publicBio}</p><p>开局倾向：{profile.startLoadout}</p>{game.world.battle?.truthRevealed && <p className="drawer-warning">隐藏真相：{profile.hiddenTruth}</p>}</DrawerSection>
+      <DrawerSection title="区域规则"><p>{area?.label ?? stats.areaId} · 危险度 {areaRule?.danger ?? '--'} · 地标障碍 {area?.obstacles.length ?? 0} 处</p><p>主题：{areaRule?.theme}</p><p>准入：{areaRule?.entryRequirement}</p><p>环境：{areaRule?.environmentEffect}</p><p>机制：{areaRule?.specialMechanic}</p><p className={areaLock ? 'drawer-warning' : undefined}>{areaLock ? `剧情封锁中，还剩 ${Math.ceil((areaLock.until - Date.now()) / 1000)} 秒` : '区域移动正常'}</p></DrawerSection>
+      <DrawerSection title="背包">{stats.inventory?.length ? stats.inventory.map((item, index) => { const definition = itemDefinition(item); return <p key={`${item}-${index}`}><strong>{item}</strong> · {definition.rarity} · {definition.effectDescription} · {definition.slotSize} 格</p>; }) : <p>暂无额外物资</p>}<p>医疗包 {stats.medkits}</p>{stats.itemEffects?.map((effect, index) => <p key={`${effect.key}-${index}`}>生效中：{effect.source}（{effect.key} +{effect.value}）</p>)}</DrawerSection>
       <DrawerSection title="决策审计">
         <p>{auditedAction ? `${auditedAction.source === 'model' ? '模型' : '规则'} · ${displayAction(auditedAction.action)}${storyChoiceLabel(auditedAction.storyEventId, auditedAction.storyApproach)} · ${auditedAction.accepted ? '已执行' : '已拒绝'}` : '等待本轮决策'}</p>
         {auditedAction?.reason && <p className={auditedAction.accepted ? undefined : 'drawer-warning'}>{auditedAction.accepted ? auditedAction.reason : `回退：${auditedAction.reason}`}</p>}

@@ -1,7 +1,28 @@
 // Data-driven battle configuration adapted from the reference design tables.
 // Keep runtime code dependent on these ids instead of display names.
 
+import {
+  REFERENCE_AREAS,
+  REFERENCE_CHARACTERS,
+  REFERENCE_COMBOS,
+  REFERENCE_GLOBAL_CONFIG,
+  REFERENCE_HIDDEN_MISSIONS,
+  REFERENCE_ITEMS,
+  REFERENCE_RELATION_PARAMS,
+  REFERENCE_RELATION_SEEDS,
+  REFERENCE_RELATION_TYPES,
+  REFERENCE_RATINGS,
+  REFERENCE_RUNTIME_CHARACTERS,
+  REFERENCE_SCORE_EVENTS,
+  referenceNumber,
+} from './referenceRuntime';
+
 export type RelationType = 'family' | 'ex' | 'rival' | 'mentor' | 'lover' | 'friend' | 'stranger';
+const RELATION_TYPE_MAP: Record<string, RelationType> = {
+  '亲人': 'family', '前任': 'ex', '宿敌': 'rival', '师生': 'mentor',
+  '恋人': 'lover', '朋友': 'friend', '陌生人': 'stranger',
+};
+export function relationType(value: string): RelationType { return RELATION_TYPE_MAP[value] ?? 'stranger'; }
 
 export type CharacterPersona = {
   title: string;
@@ -40,14 +61,20 @@ export function personaForCharacter(characterId?: string) {
 
 export const BATTLE_CONFIG = {
   match: {
-    agentCount: 12,
-    maxInventorySlots: 6,
-    initialInterventionPoints: 15,
-    maxInterventionPoints: 30,
-    heatRewardStep: 50,
-    searchCooldownMs: 12000,
-    dayMs: 900000,
-    nightMs: 600000,
+    agentCount: referenceNumber('char_count'),
+    maxInventorySlots: referenceNumber('char_inventory_size'),
+    initialInterventionPoints: referenceNumber('initial_intervention_points'),
+    maxInterventionPoints: referenceNumber('max_intervention_points'),
+    heatRewardStep: referenceNumber('heat_per_intervention_point'),
+    hiddenMissionRewardPoints: referenceNumber('points_per_hidden_mission'),
+    maxOperationsPerTick: referenceNumber('max_ops_per_tick'),
+    searchMinItems: referenceNumber('search_min_items'),
+    searchMaxItems: referenceNumber('search_max_items'),
+    areaPoolSpawnCount: referenceNumber('area_pool_spawn_count'),
+    searchDepleteMode: String(REFERENCE_GLOBAL_CONFIG.search_deplete_mode),
+    searchCooldownMs: referenceNumber('search_cooldown_sec') * 1000,
+    dayMs: referenceNumber('day_duration_min') * 60000,
+    nightMs: referenceNumber('night_duration_min') * 60000,
     battleTickMs: 2500,
     actionCooldownMs: 6500,
     llmDecisionIntervalMs: 12000,
@@ -60,35 +87,20 @@ export const BATTLE_CONFIG = {
     closeEncounterCooldownMs: 36000,
     maxFeed: 24,
   },
-  characters: [
-    { id: 'C01', codename: '灯塔', name: '陆敬山', strength: 5, mind: 3, psyche: 4, social: 3, aggro: '中', coop: '高', risk: '中', heat: 85, stressThreshold: 75, areaId: 'A01' },
-    { id: 'C02', codename: '焰火', name: '夏语甜', strength: 2, mind: 4, psyche: 2, social: 5, aggro: '低', coop: '中', risk: '高', heat: 110, stressThreshold: 45, areaId: 'A02' },
-    { id: 'C03', codename: '尺规', name: '沈酌', strength: 2, mind: 5, psyche: 4, social: 2, aggro: '低', coop: '低', risk: '低', heat: 65, stressThreshold: 80, areaId: 'A03' },
-    { id: 'C04', codename: '刺', name: '姜夏野', strength: 5, mind: 2, psyche: 2, social: 2, aggro: '高', coop: '低', risk: '高', heat: 95, stressThreshold: 40, areaId: 'A04' },
-    { id: 'C05', codename: '糖纸', name: '阮清', strength: 2, mind: 3, psyche: 2, social: 4, aggro: '低', coop: '高', risk: '低', heat: 75, stressThreshold: 35, areaId: 'A05' },
-    { id: 'C06', codename: '霜', name: '白映雪', strength: 2, mind: 5, psyche: 5, social: 2, aggro: '中', coop: '中', risk: '中', heat: 70, stressThreshold: 85, areaId: 'A06' },
-    { id: 'C07', codename: '回声', name: '何屿', strength: 3, mind: 3, psyche: 3, social: 3, aggro: '低', coop: '中', risk: '中', heat: 80, stressThreshold: 55, areaId: 'A07' },
-    { id: 'C08', codename: '行情', name: '老周', strength: 3, mind: 4, psyche: 3, social: 5, aggro: '低', coop: '高', risk: '中', heat: 72, stressThreshold: 60, areaId: 'A08' },
-    { id: 'C09', codename: '刃口', name: '阿隼', strength: 4, mind: 3, psyche: 4, social: 1, aggro: '高', coop: '低', risk: '中', heat: 88, stressThreshold: 70, areaId: 'A09' },
-    { id: 'C10', codename: '灵枭', name: '林飞飞', strength: 3, mind: 5, psyche: 5, social: 2, aggro: '低', coop: '低', risk: '低', heat: 60, stressThreshold: 95, areaId: 'A10' },
-    { id: 'C11', codename: '旧债', name: '谢迟', strength: 2, mind: 5, psyche: 3, social: 3, aggro: '中', coop: '中', risk: '低', heat: 68, stressThreshold: 65, areaId: 'A11' },
-    { id: 'C12', codename: '无名', name: 'N-00', strength: 4, mind: 4, psyche: 5, social: 1, aggro: '中', coop: '低', risk: '低', heat: 50, stressThreshold: 90, areaId: 'A12' },
-  ],
-  areas: [
-    { id: 'A01', key: 'bastion_ruins', name: '堡垒废墟', danger: 3, owner: 'C01', buff: '防具搜索率+20%', mechanic: '残存哨戒炮台' },
-    { id: 'A02', key: 'broadcast_tower', name: '演播塔', danger: 2, owner: 'C02', buff: '信息搜索率+20%', mechanic: '监控相邻区域' },
-    { id: 'A03', key: 'archive_library', name: '智库书库', danger: 2, owner: 'C03', buff: '信息搜索率+30%', mechanic: '查看区域资源余量' },
-    { id: 'A04', key: 'fighting_pit', name: '格斗笼', danger: 4, owner: 'C04', buff: '近战伤害+15%', mechanic: '陷阱地板' },
-    { id: 'A05', key: 'academy_ruins', name: '学园废墟', danger: 2, owner: 'C05', buff: '社交搜索率+20%', mechanic: '校园广播' },
-    { id: 'A06', key: 'field_hospital', name: '战地医院', danger: 2, owner: 'C06', buff: '药品搜索数量翻倍', mechanic: '紧急手术室' },
-    { id: 'A07', key: 'training_ground', name: '训练场', danger: 2, owner: 'C07', buff: '移动速度+10%', mechanic: '无隐蔽点' },
-    { id: 'A08', key: 'shadow_market', name: '暗巷市场', danger: 3, owner: 'C08', buff: '交易成功率+30%', mechanic: 'NPC/角色交易' },
-    { id: 'A09', key: 'armory', name: '武器库', danger: 5, owner: 'C09', buff: '武器搜索率+40%', mechanic: '入场位置警报' },
-    { id: 'A10', key: 'deep_forest', name: '密林深处', danger: 3, owner: 'C10', buff: '隐蔽率+30%', mechanic: '迷路至随机邻区' },
-    { id: 'A11', key: 'court_ruins', name: '法庭遗址', danger: 1, owner: 'C11', buff: '谈判成功率+20%', mechanic: '档案室揭示隐藏关系' },
-    { id: 'A12', key: 'observatory_ruins', name: '观测站废墟', danger: 2, owner: 'C12', buff: '全图位置侦察', mechanic: '数据终端线索' },
-    { id: 'S01', key: 'truth_chamber', name: '真相之间', danger: 5, owner: 'C12', buff: '真相剧情', mechanic: 'C12 专属一次性入口', special: true },
-  ],
+  characters: REFERENCE_CHARACTERS.map((character, index) => {
+    const runtime = REFERENCE_RUNTIME_CHARACTERS.find((entry) => entry.characterId === character.id)!;
+    return { ...character, heat: runtime.heat, heatReason: runtime.heatReason, heatMultiplier: runtime.heatMultiplier,
+      hpMax: runtime.hpMax, staminaMax: runtime.staminaMax, satietyMax: runtime.satietyMax, satietyInitial: runtime.satietyInitial,
+      zoneTime: runtime.zoneTime, zoneTimeMax: runtime.zoneTimeMax, inventorySlots: runtime.inventorySlots, alive: runtime.alive,
+      areaId: `A${String(index + 1).padStart(2, '0')}` };
+  }),
+  areas: REFERENCE_AREAS.map((area, index) => ({
+    id: index === 12 ? 'S01' : `A${String(index + 1).padStart(2, '0')}`,
+    ...area,
+    buff: area.environmentEffect,
+    mechanic: area.specialMechanic,
+    ...(index === 12 ? { special: true } : {}),
+  })),
   adjacency: [
     ['A01', 'A06'], ['A01', 'A09'], ['A01', 'A10'],
     ['A02', 'A03'], ['A02', 'A05'], ['A02', 'A12'],
@@ -97,29 +109,31 @@ export const BATTLE_CONFIG = {
     ['A06', 'A10'], ['A07', 'A11'], ['A08', 'A09'],
     ['A08', 'A11'], ['A12', 'S01'],
   ],
-  relationships: [
-    { id: 'REL_SEED_01', a: 'C01', b: 'C05', type: 'family' as RelationType, strength: 85, hidden: false, mutable: true, triggerWeight: 90 },
-    { id: 'REL_SEED_02', a: 'C02', b: 'C07', type: 'ex' as RelationType, strength: 55, hidden: false, mutable: true, triggerWeight: 80 },
-    { id: 'REL_SEED_03', a: 'C04', b: 'C09', type: 'rival' as RelationType, strength: 75, hidden: false, mutable: true, triggerWeight: 95 },
-    { id: 'REL_SEED_04', a: 'C03', b: 'C12', type: 'mentor' as RelationType, strength: 70, hidden: true, mutable: true, triggerWeight: 85 },
-  ],
+  relationships: REFERENCE_RELATION_SEEDS.map((row) => ({
+    id: String(row.rel_id), a: String(row.char_a), b: String(row.char_b),
+    type: relationType(String(row.rel_type)), strength: Number(row.strength),
+    hidden: Boolean(row.is_hidden), mutable: Boolean(row.is_mutable),
+    triggerWeight: Number(row.trigger_weight), source: String(row.source),
+  })),
   runtime: {
-    satietyStart: 80,
-    zoneTimeStart: 30,
-    zoneTimeMax: 40,
+    satietyStart: referenceNumber('satiety_initial'),
+    satietyMax: referenceNumber('satiety_max'),
+    zoneTimeStart: referenceNumber('char_initial_zone_time'),
+    zoneTimeMax: referenceNumber('char_max_zone_time'),
     staminaBase: 60,
     staminaPerStrength: 10,
     hpBase: 100,
     hpPerStrength: 20,
-    searchStaminaCost: 12,
-    attackStaminaCost: 6,
-    moveStaminaCost: 8,
-    fleeStaminaCost: 15,
-    daySatietyPerMinute: 2,
-    nightSatietyPerMinute: 3,
-    daySearchBonus: 0.1,
-    nightVisionPenalty: 0.3,
-    nightAmbushBonus: 0.2,
+    searchStaminaCost: referenceNumber('search_stamina_cost'),
+    searchHpFallback: referenceNumber('search_hp_fallback'),
+    attackStaminaCost: referenceNumber('melee_stamina_cost'),
+    moveStaminaCost: referenceNumber('move_stamina_cost'),
+    fleeStaminaCost: referenceNumber('flee_stamina_cost'),
+    daySatietyPerMinute: referenceNumber('satiety_drain_day_per_min'),
+    nightSatietyPerMinute: referenceNumber('satiety_drain_night_per_min'),
+    daySearchBonus: referenceNumber('day_search_bonus_pct') / 100,
+    nightVisionPenalty: referenceNumber('night_vision_penalty_pct') / 100,
+    nightAmbushBonus: referenceNumber('night_ambush_bonus_pct') / 100,
   },
   weapons: {
     Fists: { power: 8, range: 1.4, cost: 0 },
@@ -144,15 +158,25 @@ export const BATTLE_CONFIG = {
     S01: ['真相数据核心', '制造者日志'],
   } as Record<string, string[]>,
   zone: {
-    warningMs: 30000,
-    zoneTimeCostPerSecond: 1,
-    killRewardSeconds: 5,
-    eliteKillRewardSeconds: 7,
-    finaleBufferSeconds: 10,
+    warningMs: referenceNumber('zone_warn_yellow_sec') * 1000,
+    redCountdownMs: referenceNumber('zone_red_countdown_sec') * 1000,
+    zoneTimeCostPerSecond: referenceNumber('zone_time_drain_per_sec'),
+    killRewardSeconds: referenceNumber('zone_kill_reward_sec'),
+    eliteKillRewardSeconds: referenceNumber('zone_elite_kill_reward_sec'),
+    finaleBufferSeconds: referenceNumber('zone_finale_bonus_sec'),
     earlyIntervalMs: 180000,
     midIntervalMs: 120000,
     lateIntervalMs: 90000,
   },
+} as const;
+
+export const RELATION_GENERATION = {
+  params: Object.fromEntries(Object.entries(REFERENCE_RELATION_PARAMS).map(([key, value]) => [key, Number(value)])),
+  types: REFERENCE_RELATION_TYPES.filter((row) => Number(row.weight) > 0).map((row) => ({
+    type: relationType(String(row.rel_type)), weight: Number(row.weight),
+    strengthMin: Number(row.strength_min), strengthMax: Number(row.strength_max),
+    triggerWeight: Number(row.trigger_weight),
+  })),
 } as const;
 
 // Normalized anchors preserve the existing Pixi tile map while making the
@@ -202,18 +226,24 @@ export const ITEM_EFFECTS: Record<string, { kind: 'heal' | 'armor' | 'stamina' |
 };
 
 export const GLOBAL_RARE_ITEMS = [
-  { id: 'GLOBAL_01', name: '生命树枝', quantity: 2, spawn: '第1夜：A08、A11' },
-  { id: 'GLOBAL_02', name: '陨石碎片', quantity: 2, spawn: '第1夜：A10、A06；之后每日随机开放区域' },
+  { id: 'GLOBAL_01', name: '生命树枝', quantity: 4, spawn: '第1夜：A08、A11；第2夜：A10、A06' },
+  { id: 'GLOBAL_02', name: '陨石碎片', quantity: 4, spawn: '第1夜起：每次日夜交替随机开放区域 1 个' },
   { id: 'GLOBAL_03', name: '秘银盾', quantity: 1, spawn: '第2日：A07' },
   { id: 'GLOBAL_04', name: '能源核心', quantity: 1, spawn: '第3日：A07' },
   { id: 'GLOBAL_05', name: 'VF原液', quantity: 1, spawn: '第3夜：A06' },
 ] as const;
 
-export type BattleItemDefinition = { rarity: 'common' | 'uncommon' | 'rare' | 'legendary'; tradeValue: number };
-const DEFAULT_ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = Object.fromEntries(
+type ItemEconomy = { rarity: 'common' | 'uncommon' | 'rare' | 'legendary'; tradeValue: number };
+export type BattleItemDefinition = ItemEconomy & {
+  id: string; category: string; subCategory: string; effectDescription: string; effectKey: string;
+  effectValue: number; effectValue2: number; durationSeconds: number; consumable: boolean; stackable: boolean;
+  slotSize: number; searchWeight: number; primaryAreaId: string; characterExclusive: boolean;
+  exclusiveCharacterId?: string; globalRare: boolean; spawnRule: string;
+};
+const DEFAULT_ITEM_DEFINITIONS: Record<string, ItemEconomy> = Object.fromEntries(
   [...new Set(Object.values(BATTLE_CONFIG.areaItems).flat())].map((item) => [item, { rarity: 'common', tradeValue: 12 }]),
 );
-export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
+const LEGACY_ITEM_ECONOMY: Record<string, ItemEconomy> = {
   ...DEFAULT_ITEM_DEFINITIONS,
   '军用口粮': { rarity: 'common', tradeValue: 8 }, '保暖服': { rarity: 'uncommon', tradeValue: 22 }, '防弹插板': { rarity: 'rare', tradeValue: 40 }, '战术匕首': { rarity: 'uncommon', tradeValue: 28 }, '军籍牌': { rarity: 'rare', tradeValue: 55 },
   '演播档案带': { rarity: 'rare', tradeValue: 55 }, '加密档案': { rarity: 'rare', tradeValue: 48 }, '策略手稿': { rarity: 'uncommon', tradeValue: 24 }, '急救包': { rarity: 'uncommon', tradeValue: 28 }, '医疗记录终端': { rarity: 'rare', tradeValue: 48 },
@@ -233,8 +263,34 @@ export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
   '生命树枝': { rarity: 'legendary', tradeValue: 120 }, '陨石碎片': { rarity: 'legendary', tradeValue: 110 }, '秘银盾': { rarity: 'legendary', tradeValue: 120 }, '能源核心': { rarity: 'legendary', tradeValue: 150 }, 'VF原液': { rarity: 'legendary', tradeValue: 140 },
 };
 
+const rarityMap = { C: 'common', B: 'uncommon', A: 'rare', S: 'legendary' } as const;
+const fallbackTradeValue = { common: 8, uncommon: 24, rare: 50, legendary: 120 } as const;
+const CHARACTER_STORY_ITEM_NAMES = new Set(['军籍牌', '演播档案带', '策略手稿', '血染刺套', '学生档案', '未署名病历', '奖牌', '欠条', '武器清单', '鸟羽护符', '案件卷宗', '空白身份卡']);
+const referencedItemDefinitions: Record<string, BattleItemDefinition> = Object.fromEntries(
+  REFERENCE_ITEMS.map((item) => {
+    const rarity = rarityMap[item.rarity as keyof typeof rarityMap] ?? 'common';
+    const economy = LEGACY_ITEM_ECONOMY[item.name] ?? DEFAULT_ITEM_DEFINITIONS[item.name];
+    return [item.name, { ...item, rarity, tradeValue: economy?.tradeValue ?? fallbackTradeValue[rarity] }];
+  }),
+);
+export const ITEM_DEFINITIONS: Record<string, BattleItemDefinition> = {
+  ...Object.fromEntries(Object.entries(LEGACY_ITEM_ECONOMY).map(([name, economy]) => [name, {
+    id: `EXT_${name}`, category: '剧情扩展', subCategory: '剧情专属', ...economy,
+    effectDescription: '由区域/人物剧情表执行', effectKey: 'story_item', effectValue: 0, effectValue2: 0,
+    durationSeconds: 0, consumable: false, stackable: false, slotSize: 1, searchWeight: 1,
+    primaryAreaId: Object.entries(BATTLE_CONFIG.areaItems).find(([, items]) => items.includes(name))?.[0] ?? '',
+    characterExclusive: CHARACTER_STORY_ITEM_NAMES.has(name), globalRare: false, spawnRule: 'story-table',
+  }])),
+  ...referencedItemDefinitions,
+};
+
 export function itemDefinition(item: string): BattleItemDefinition {
-  return ITEM_DEFINITIONS[item] ?? { rarity: 'common', tradeValue: 12 };
+  return ITEM_DEFINITIONS[item] ?? {
+    id: `EXT_${item}`, category: '扩展', subCategory: '扩展', rarity: 'common', tradeValue: 12,
+    effectDescription: '项目扩展物品', effectKey: 'special', effectValue: 0, effectValue2: 0,
+    durationSeconds: 0, consumable: false, stackable: false, slotSize: 1, searchWeight: 1,
+    primaryAreaId: '', characterExclusive: false, globalRare: false, spawnRule: 'extension',
+  };
 }
 
 export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
@@ -242,14 +298,14 @@ export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
 export const INTERVENTION_OPERATIONS = [
   { id: 'ENV_01', name: '制造障碍', category: '环境', cost: 3, cooldownMs: 60000, target: 'area', description: '封锁指定区域出口 90 秒。' },
   { id: 'ENV_02', name: '极端天气', category: '环境', cost: 5, cooldownMs: 180000, target: 'area', description: '区域内角色持续承受极端天气伤害。' },
-  { id: 'ENV_03', name: '提前关闭', category: '环境', cost: 5, cooldownMs: 0, target: 'area', description: '立即关闭一个仍开放的区域。' },
-  { id: 'ENV_04', name: '激活陷阱', category: '环境', cost: 2, cooldownMs: 30000, target: 'area', description: '触发区域机关，对区域内角色造成 12 点伤害。' },
+  { id: 'ENV_03', name: '提前关闭', category: '环境', cost: 5, cooldownMs: 0, target: 'global', description: '立即触发一轮禁区关闭。' },
+  { id: 'ENV_04', name: '激活陷阱', category: '环境', cost: 2, cooldownMs: 30000, target: 'area', description: '触发区域机关，随机伤害一名角色。' },
   { id: 'ENV_05', name: '修复区域', category: '环境', cost: 4, cooldownMs: 120000, target: 'area', description: '重新开放已关闭区域 120 秒。' },
-  { id: 'SUP_01', name: '投放补给', category: '补给', cost: 2, cooldownMs: 60000, target: 'area', description: '区域内存活角色各获得医疗包与 20 物资。' },
-  { id: 'SUP_02', name: '盛宴补给', category: '补给', cost: 3, cooldownMs: 120000, target: 'area', description: '区域内角色恢复生命和体力。' },
+  { id: 'SUP_01', name: '空投补给', category: '补给', cost: 2, cooldownMs: 60000, target: 'area', description: '投放 2–3 件 A/B 稀有度物品。' },
+  { id: 'SUP_02', name: '盛宴', category: '补给', cost: 3, cooldownMs: 120000, target: 'area', description: '投放大量高级物资并全图广播位置。' },
   { id: 'SUP_03', name: '陷阱补给', category: '补给', cost: 1, cooldownMs: 30000, target: 'area', description: '伪装补给造成 10 点伤害。' },
   { id: 'SUP_04', name: '移除物资', category: '补给', cost: 2, cooldownMs: 60000, target: 'area', description: '移除指定区域的一份可搜索资源。' },
-  { id: 'SUP_05', name: '赞助角色', category: '补给', cost: 3, cooldownMs: 90000, target: 'player', description: '指定角色获得 35 物资与护甲。' },
+  { id: 'SUP_05', name: '赞助角色', category: '补给', cost: 3, cooldownMs: 90000, target: 'player', description: '直接赠送一件物品给目标。' },
   { id: 'FAN_01', name: '阵营应援空投', category: '应援', cost: 2, cooldownMs: 60000, target: 'player', description: '为应援角色恢复体力、增加护甲并投放物资。' },
   { id: 'RUL_01', name: '临时联盟', category: '规则', cost: 4, cooldownMs: 0, target: 'pair', description: '强制两名角色结盟 180 秒。' },
   { id: 'RUL_02', name: '禁用武器', category: '规则', cost: 5, cooldownMs: 0, target: 'global', description: '全场 120 秒内只能使用拳头。' },
@@ -262,6 +318,11 @@ export const INTERVENTION_OPERATIONS = [
   { id: 'INF_05', name: '隐藏资源', category: '信息', cost: 1, cooldownMs: 30000, target: 'pair', description: '让第一角色独占第二角色所在区域的下一份资源。' },
   { id: 'REC_01', name: '关系侦察', category: '侦察', cost: 1, cooldownMs: 15000, target: 'player', description: '公布指定角色的一条关系。' },
   { id: 'REC_02', name: '任务侦察', category: '侦察', cost: 3, cooldownMs: 0, target: 'global', description: '揭示一条隐藏任务。' },
+  { id: 'ZON_01', name: '延迟关闭', category: '禁区', cost: 2, cooldownMs: 0, target: 'area', description: '指定区域关闭倒计时增加 30 秒，每区一次。' },
+  { id: 'ZON_02', name: '加速关闭', category: '禁区', cost: 3, cooldownMs: 0, target: 'area', description: '指定区域跳过黄色预警并立即进入红区，每局三次。' },
+  { id: 'ZON_03', name: '指定关闭', category: '禁区', cost: 5, cooldownMs: 0, target: 'area', description: '强制指定区域进入下轮关闭名单，每局两次。' },
+  { id: 'ZON_04', name: '赠送时间', category: '禁区', cost: 3, cooldownMs: 0, target: 'player', description: '指定角色禁区时间增加 5 秒，每局三次。' },
+  { id: 'ZON_05', name: '加倍消耗', category: '禁区', cost: 2, cooldownMs: 0, target: 'player', description: '指定角色禁区时间消耗速率变为两倍，持续 20 秒，每角色一次。' },
   { id: 'STO_01', name: '拆除笼门', category: '剧情', cost: 2, cooldownMs: 30000, target: 'area', description: '解除格斗笼的剧情封锁，参赛者可撤离。' },
   { id: 'STO_02', name: '替换有效药品', category: '剧情', cost: 1, cooldownMs: 30000, target: 'area', description: '战地医院的角色获得有效药品。' },
   { id: 'STO_03', name: '激怒野兽', category: '剧情', cost: 3, cooldownMs: 120000, target: 'area', description: '密林野兽袭击伤害翻倍。' },
@@ -292,18 +353,24 @@ export function availableAreaItemsFor(characterId: string | undefined, areaId: s
   return (BATTLE_CONFIG.areaItems[areaId] ?? []).filter((item) => !characterStoryItems.has(item) || item === ownStoryItem);
 }
 
+const hiddenMissionScore = (id: string) => Number(REFERENCE_HIDDEN_MISSIONS.find((row) => row.mission_id === id)?.base_score ?? 0);
 export const HIDDEN_MISSIONS = [
-  { id: 'HID_01', title: '守护者', description: '确保阮清进入最后三人。', targetA: 'C05' },
-  { id: 'HID_02', title: '猎人', description: '让阿隼被淘汰。', targetA: 'C09' },
-  { id: 'HID_03', title: '丘比特', description: '让夏语甜与何屿维持联盟。', targetA: 'C02', targetB: 'C07' },
-  { id: 'HID_04', title: '破坏者', description: '让亲属或旧友发生冲突。' },
-  { id: 'HID_05', title: '导演', description: '让指定两名角色进入最终对决。', targetA: 'C01', targetB: 'C04' },
-  { id: 'HID_06', title: '无名真相', description: '帮助 N-00 开启真相之间。', targetA: 'C12' },
+  { id: 'HID_01', title: '守护者', description: '确保阮清进入最后三人。', targetA: 'C05', score: hiddenMissionScore('HID_01') },
+  { id: 'HID_02', title: '猎人', description: '让阿隼被淘汰。', targetA: 'C09', score: hiddenMissionScore('HID_02') },
+  { id: 'HID_03', title: '丘比特', description: '让夏语甜与何屿维持联盟。', targetA: 'C02', targetB: 'C07', score: hiddenMissionScore('HID_03') },
+  { id: 'HID_04', title: '破坏者', description: '让亲属或旧友发生冲突。', score: hiddenMissionScore('HID_04') },
+  { id: 'HID_05', title: '导演', description: '让指定两名角色进入最终对决。', targetA: 'C01', targetB: 'C04', score: hiddenMissionScore('HID_05') },
+  { id: 'HID_06', title: '无名真相', description: '帮助 N-00 开启真相之间。', targetA: 'C12', score: hiddenMissionScore('HID_06') },
 ] as const;
 
-export const SCORE_RULES = { combat: 10, kill: 25, betrayal: 30, alliance: 20, allianceBreak: 25, reunion: 15, sacrifice: 35, negotiation: 15, ambush: 20, reversal: 40, characterStory: 15, truth: 100, idle: -5, hiding: -3, stalemate: -5 } as const;
-export const COMBO_RULES = [{ windowMs: 30000, minEvents: 3, multiplier: 1.5 }, { windowMs: 60000, minEvents: 5, multiplier: 2 }] as const;
-export const POPULARITY_RATINGS = [{ rating: 'S', min: 500 }, { rating: 'A', min: 350 }, { rating: 'B', min: 200 }, { rating: 'C', min: 0 }] as const;
+const scoreById = (id: string) => Number(REFERENCE_SCORE_EVENTS.find((row) => row.event_id === id)?.base_score ?? 0);
+export const SCORE_RULES = {
+  combat: scoreById('SCR_P01'), kill: scoreById('SCR_P02'), betrayal: scoreById('SCR_P03'), alliance: scoreById('SCR_P04'), allianceBreak: scoreById('SCR_P05'),
+  reunion: scoreById('SCR_P06'), sacrifice: scoreById('SCR_P07'), negotiation: scoreById('SCR_P08'), ambush: scoreById('SCR_P09'), reversal: scoreById('SCR_P10'),
+  characterStory: scoreById('SCR_P11'), truth: scoreById('SCR_P12'), idle: scoreById('SCR_M01'), hiding: scoreById('SCR_M02'), stalemate: scoreById('SCR_M03'),
+} as const;
+export const COMBO_RULES = REFERENCE_COMBOS.map((row) => ({ windowMs: Number(row.window_sec) * 1000, minEvents: Number(row.min_events), multiplier: Number(row.multiplier) }));
+export const POPULARITY_RATINGS = REFERENCE_RATINGS.map((row) => ({ rating: String(row.rating), min: Number(row.heat_min) }));
 
 // 24 regional rows from the reference story table. Runtime dispatches these by effect,
 // so narrative rows stay data-driven instead of being hard-coded in the loop.

@@ -23,7 +23,9 @@ import {
   HIDDEN_MISSIONS,
   SCORE_RULES,
   COMBO_RULES,
+  POPULARITY_RATINGS,
   INTERVENTION_OPERATIONS,
+  RELATION_GENERATION,
   SUPPORT_CHAIN_SEQUENCE,
   SUPPORT_ORDER_COOLDOWN_MS,
   SUPPORT_ORDER_DURATION_MS,
@@ -35,6 +37,7 @@ import {
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 
 const weapons = ['Fists', 'Pistol', 'Shotgun', 'Rifle', 'Sniper'] as const;
+export const EXECUTABLE_ITEM_EFFECT_KEYS = ['all_stats_plus', 'aoe_damage', 'chem_immune', 'clue_fragment', 'cold_resist', 'comm_link', 'damage_buff_pct', 'damage_reduction_pct', 'disguise', 'eavesdrop', 'escape_smoke', 'hp', 'lore_text', 'melee_damage', 'move_speed_pct', 'plot_symbol', 'plot_trigger', 'radar_count', 'ranged_damage', 'reveal_relation', 'reveal_secret', 'satiety', 'satiety+stamina', 'scout_resources', 'special', 'stamina', 'stealth_pct', 'stealth_zone', 'truth_trigger', 'unlock', 'watch_area'] as const;
 
 export const battleStats = v.object({
   hp: v.number(),
@@ -60,6 +63,7 @@ export const battleStats = v.object({
   heat: v.optional(v.number()),
   clues: v.optional(v.number()),
   inventory: v.optional(v.array(v.string())),
+  itemEffects: v.optional(v.array(v.object({ key: v.string(), value: v.number(), value2: v.number(), source: v.string(), until: v.optional(v.number()) }))),
   interventionKind: v.optional(v.string()),
   interventionUntil: v.optional(v.number()),
   decisionDueAt: v.optional(v.number()),
@@ -175,6 +179,7 @@ export type BattleReplayPatch = Infer<typeof battleReplayPatch>;
 
 export const battleState = v.object({
   started: v.number(),
+  sessionId: v.optional(v.string()), platform: v.optional(v.string()), elapsedSec: v.optional(v.number()), phaseElapsedSec: v.optional(v.number()), phaseStartedAt: v.optional(v.number()),
   lastTick: v.number(),
   nextEventId: v.number(),
   // Replay actions have their own sequence: several actions may occur between feed events.
@@ -191,7 +196,9 @@ export const battleState = v.object({
   lastZoneUpdate: v.optional(v.number()),
   zoneClosesAt: v.optional(v.number()),
   lastZoneWarningAt: v.optional(v.number()),
+  yellowAreaIds: v.optional(v.array(v.string())), redAreaIds: v.optional(v.array(v.string())), pendingClosingAreas: v.optional(v.array(v.string())),
   popularity: v.optional(v.number()),
+  popularityRating: v.optional(v.string()),
   popularityPeak: v.optional(v.number()),
   comboCount: v.optional(v.number()),
   comboMultiplier: v.optional(v.number()),
@@ -235,6 +242,8 @@ export const battleState = v.object({
     targetB: v.optional(v.string()),
   }))),
   completedMissionIds: v.optional(v.array(v.string())),
+  mainMission: v.optional(v.string()), mainMissionDone: v.optional(v.boolean()), relationSeedId: v.optional(v.string()),
+  settlementRating: v.optional(v.string()), settlementPopularity: v.optional(v.number()), selectedOpId: v.optional(v.string()),
   truthPathKnown: v.optional(v.boolean()),
   truthUnlocked: v.optional(v.boolean()),
   truthRevealed: v.optional(v.boolean()),
@@ -255,7 +264,8 @@ export const battleState = v.object({
   decisionMax: v.optional(v.number()),
   decisionDriverStatus: v.optional(v.string()),
   relationshipEdges: v.optional(v.array(v.object({
-    id: v.string(), a: v.string(), b: v.string(), type: v.string(), strength: v.number(), hidden: v.boolean(), lastReason: v.optional(v.string()),
+    id: v.string(), a: v.string(), b: v.string(), type: v.string(), strength: v.number(), hidden: v.boolean(),
+    mutable: v.optional(v.boolean()), triggerWeight: v.optional(v.number()), source: v.optional(v.string()), lastReason: v.optional(v.string()),
   }))),
   areaResources: v.optional(v.array(v.object({ areaId: v.string(), remaining: v.number(), max: v.number() }))),
   lastResourceRefresh: v.optional(v.number()),
@@ -293,8 +303,8 @@ const COMBAT_REFLEX_COOLDOWN_MS = 3200;
 const TARGET_BATTLE_AGENT_COUNT = BATTLE_CONFIG.match.agentCount;
 
 export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
-  const maxHp = BATTLE_CONFIG.runtime.hpBase + (profile.strength - 1) * BATTLE_CONFIG.runtime.hpPerStrength;
-  const maxStamina = BATTLE_CONFIG.runtime.staminaBase + (profile.strength - 1) * BATTLE_CONFIG.runtime.staminaPerStrength;
+  const maxHp = profile.hpMax;
+  const maxStamina = profile.staminaMax;
   return {
     hp: maxHp,
     maxHp,
@@ -308,14 +318,15 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
     areaId: profile.areaId,
     stamina: maxStamina,
     maxStamina,
-    satiety: BATTLE_CONFIG.runtime.satietyStart,
-    zoneTime: BATTLE_CONFIG.runtime.zoneTimeStart,
-    maxZoneTime: BATTLE_CONFIG.runtime.zoneTimeMax,
+    satiety: profile.satietyInitial,
+    zoneTime: profile.zoneTime,
+    maxZoneTime: profile.zoneTimeMax,
     stress: 0,
     stressThreshold: profile.stressThreshold,
     heat: profile.heat,
     clues: 0,
     inventory: [],
+    itemEffects: [],
     decisionDueAt: 0,
     areaEnteredAt: 0,
     areaSearches: 0,
@@ -330,6 +341,7 @@ export function defaultBattleStats(profile = profileForIndex(0)): BattleStats {
 export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
   return {
     started: now,
+    sessionId: `battle-${now}-${seed}`, platform: 'PC', elapsedSec: 0, phaseElapsedSec: 0, phaseStartedAt: now,
     lastTick: 0,
     nextEventId: 1,
     nextActionId: 1,
@@ -352,7 +364,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     lastZoneUpdate: now,
     zoneClosesAt: now + BATTLE_CONFIG.zone.earlyIntervalMs,
     lastZoneWarningAt: 0,
-    popularity: 0,
+    yellowAreaIds: [], redAreaIds: [], pendingClosingAreas: [], popularity: 0, popularityRating: 'C',
     popularityPeak: 0,
     comboCount: 0,
     comboMultiplier: 1,
@@ -368,6 +380,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     heatMilestoneClaimed: 0,
     hiddenMissions: selectHiddenMissions(seed),
     completedMissionIds: [],
+    mainMission: 'REACH_S_RATING', mainMissionDone: false, relationSeedId: `seed-${seed}`,
     truthPathKnown: false,
     truthUnlocked: false,
     truthRevealed: false,
@@ -388,7 +401,7 @@ export function defaultBattleState(now: number, seed = now >>> 0): BattleState {
     lastGlobalEventCheck: 0, globalEffects: [],
     seed,
     rngState: seed || 1,
-    ruleVersion: 'p3.0-reference-complete',
+    ruleVersion: 'p3.1-excel-traceable',
     actionLog: [],
     replayCheckpoints: [],
     lastReplayCheckpointAt: now,
@@ -405,18 +418,19 @@ export function ensureBattleState(game: Game, now: number) {
     const profile = profileForCharacterId(player.battle.characterId ?? profileForIndex(index).id);
     player.battle.characterId = profile.id;
     player.battle.areaId ??= profile.areaId;
-    player.battle.maxHp = BATTLE_CONFIG.runtime.hpBase + (profile.strength - 1) * BATTLE_CONFIG.runtime.hpPerStrength;
+    player.battle.maxHp = profile.hpMax;
     player.battle.hp = Math.min(player.battle.hp, player.battle.maxHp);
-    player.battle.maxStamina = BATTLE_CONFIG.runtime.staminaBase + (profile.strength - 1) * BATTLE_CONFIG.runtime.staminaPerStrength;
+    player.battle.maxStamina = profile.staminaMax;
     player.battle.stamina ??= player.battle.maxStamina;
-    player.battle.satiety ??= BATTLE_CONFIG.runtime.satietyStart;
-    player.battle.zoneTime ??= BATTLE_CONFIG.runtime.zoneTimeStart;
-    player.battle.maxZoneTime ??= BATTLE_CONFIG.runtime.zoneTimeMax;
+    player.battle.satiety ??= profile.satietyInitial;
+    player.battle.zoneTime ??= profile.zoneTime;
+    player.battle.maxZoneTime ??= profile.zoneTimeMax;
     player.battle.stress ??= 0;
     player.battle.stressThreshold ??= profile.stressThreshold;
     player.battle.heat ??= profile.heat;
     player.battle.clues ??= 0;
     player.battle.inventory ??= [];
+    player.battle.itemEffects ??= [];
     player.battle.interventionUntil ??= 0;
     player.battle.decisionDueAt ??= now + index * 1000;
     player.battle.nextLocomotionAt ??= now + index * 280;
@@ -443,7 +457,8 @@ export function ensureBattleState(game: Game, now: number) {
   battle.lastZoneUpdate ??= now;
   battle.zoneClosesAt ??= battle.lastZoneUpdate + BATTLE_CONFIG.zone.earlyIntervalMs;
   battle.lastZoneWarningAt ??= 0;
-  battle.popularity ??= 0;
+  battle.yellowAreaIds ??= []; battle.redAreaIds ??= []; battle.pendingClosingAreas ??= [];
+  battle.popularity ??= 0; battle.popularityRating ??= 'C';
   battle.popularityPeak ??= battle.popularity;
   battle.comboCount ??= 0;
   battle.comboMultiplier ??= 1;
@@ -459,6 +474,7 @@ export function ensureBattleState(game: Game, now: number) {
   battle.heatMilestoneClaimed ??= 0;
   battle.hiddenMissions ??= selectHiddenMissions(battle.seed ?? now >>> 0);
   battle.completedMissionIds ??= [];
+  battle.mainMission ??= 'REACH_S_RATING'; battle.mainMissionDone ??= false; battle.relationSeedId ??= `seed-${battle.seed ?? now >>> 0}`;
   battle.truthPathKnown ??= false;
   battle.truthUnlocked ??= false;
   battle.truthRevealed ??= false;
@@ -492,20 +508,45 @@ export function ensureBattleState(game: Game, now: number) {
   battle.replayCheckpoints ??= [];
   battle.lastReplayCheckpointAt ??= now;
   battle.lastVitalsUpdate ??= now;
+  battle.sessionId ??= `battle-${battle.started}-${battle.seed ?? 1}`; battle.platform ??= 'PC'; battle.elapsedSec ??= 0; battle.phaseElapsedSec ??= 0; battle.phaseStartedAt ??= battle.started;
   battle.isPaused ??= false; battle.heatHistory ??= [{ ts: now, value: battle.popularity ?? 0 }]; battle.operationUses ??= []; battle.restoredAreas ??= []; battle.weatherAreas ??= []; battle.exclusiveResources ??= []; battle.rareDrops ??= [];
 }
 
 function seededRandom(seed: number) { let state = seed || 1; return () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state / 4294967296; }; }
 function selectHiddenMissions(seed: number) { const random = seededRandom(seed ^ 0x484944); const shuffled = [...HIDDEN_MISSIONS].sort(() => random() - 0.5); return shuffled.slice(0, random() < 0.5 ? 1 : 2).map((mission) => ({ ...mission, status: '进行中' })); }
-function defaultRelationshipEdges(seed = 1) {
-  const edges: Array<{ id: string; a: string; b: string; type: string; strength: number; hidden: boolean; lastReason?: string }> = BATTLE_CONFIG.relationships.map(({ id, a, b, type, strength, hidden }) => ({ id, a, b, type, strength, hidden }));
-  const random = seededRandom(seed ^ 0x52454c); const characters = BATTLE_CONFIG.characters.map((character) => character.id); const types = ['friend', 'rival', 'ex', 'mentor', 'lover', 'family']; const weights = [35, 20, 15, 10, 10, 10]; const extraCount = 4 + Math.floor(random() * 3); let attempts = 0;
-  while (edges.length < BATTLE_CONFIG.relationships.length + extraCount && attempts++ < 100) { const a = characters[Math.floor(random() * characters.length)]; const b = characters[Math.floor(random() * characters.length)]; if (a === b || edges.some((edge) => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a))) continue; let cursor = random() * 100; const type = types[weights.findIndex((weight) => (cursor -= weight) <= 0)] ?? 'friend'; const hostile = type === 'rival' || type === 'ex'; const strength = hostile ? -(20 + Math.floor(random() * 41)) : 20 + Math.floor(random() * 51); edges.push({ id: `REL_RANDOM_${edges.length + 1}`, a, b, type, strength, hidden: random() < 0.45 }); }
+export function defaultRelationshipEdges(seed = 1) {
+  const edges: Array<{ id: string; a: string; b: string; type: string; strength: number; hidden: boolean; mutable?: boolean; triggerWeight?: number; source?: string; lastReason?: string }> = BATTLE_CONFIG.relationships.map((row) => ({ ...row }));
+  const random = seededRandom(seed ^ 0x52454c);
+  const characters = BATTLE_CONFIG.characters.map((character) => character.id);
+  const params = RELATION_GENERATION.params;
+  const extraCount = params.extra_drama_min + Math.floor(random() * (params.extra_drama_max - params.extra_drama_min + 1));
+  const extraCounts = new Map<string, number>();
+  let attempts = 0;
+  while (edges.filter((edge) => edge.source === 'random').length < extraCount && attempts++ < 500) {
+    const a = characters[Math.floor(random() * characters.length)];
+    const b = characters[Math.floor(random() * characters.length)];
+    if (a === b || (extraCounts.get(a) ?? 0) >= params.max_extra_drama_per_char || (extraCounts.get(b) ?? 0) >= params.max_extra_drama_per_char || edges.some((edge) => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a))) continue;
+    let cursor = random() * RELATION_GENERATION.types.reduce((sum, entry) => sum + entry.weight, 0);
+    const selected = RELATION_GENERATION.types.find((entry) => (cursor -= entry.weight) <= 0) ?? RELATION_GENERATION.types[0];
+    const strength = selected.strengthMin + Math.floor(random() * (selected.strengthMax - selected.strengthMin + 1));
+    edges.push({ id: `REL_RANDOM_${edges.length + 1}`, a, b, type: selected.type, strength, hidden: false, mutable: true, triggerWeight: selected.triggerWeight, source: 'random' });
+    extraCounts.set(a, (extraCounts.get(a) ?? 0) + 1); extraCounts.set(b, (extraCounts.get(b) ?? 0) + 1);
+  }
+  const extraHidden = params.extra_hidden_min + Math.floor(random() * (params.extra_hidden_max - params.extra_hidden_min + 1));
+  for (const edge of [...edges].filter((entry) => entry.source === 'random').sort(() => random() - 0.5).slice(0, extraHidden)) edge.hidden = true;
+  for (let i = 0; i < characters.length; i++) for (let j = i + 1; j < characters.length; j++) {
+    const a = characters[i]; const b = characters[j];
+    if (!edges.some((edge) => (edge.a === a && edge.b === b) || (edge.a === b && edge.b === a))) edges.push({
+      id: `REL_STRANGER_${a}_${b}`, a, b, type: 'stranger',
+      strength: params.stranger_strength_min + Math.floor(random() * (params.stranger_strength_max - params.stranger_strength_min + 1)),
+      hidden: false, mutable: true, triggerWeight: params.stranger_trigger_weight, source: 'generated-default',
+    });
+  }
   return edges;
 }
 
 function defaultAreaResources() {
-  return BATTLE_CONFIG.areas.map((area) => ({ areaId: area.id, remaining: area.id === 'S01' ? 2 : 12, max: area.id === 'S01' ? 2 : 12 }));
+  return BATTLE_CONFIG.areas.map((area) => ({ areaId: area.id, remaining: area.id === 'S01' ? 2 : BATTLE_CONFIG.match.areaPoolSpawnCount, max: area.id === 'S01' ? 2 : BATTLE_CONFIG.match.areaPoolSpawnCount }));
 }
 
 export function resetBattleMatch(game: Game, now: number) {
@@ -561,12 +602,12 @@ export function tickBattleRoyale(game: Game, now: number) {
   const doubleVictory = battle.doubleVictory;
   if (alive.length === 2 && doubleVictory && doubleVictory.until > now) {
     const ids = new Set(alive.map((player) => String(player.id)));
-    if (ids.has(doubleVictory.first) && ids.has(doubleVictory.second) && !battle.storyTriggers?.includes('RULE:DOUBLE_VICTORY')) { battle.storyTriggers!.push('RULE:DOUBLE_VICTORY'); battle.phase = 'settlement'; pushEvent(game, now, 'winner', `【双胜】${playerName(game, alive[0])}与${playerName(game, alive[1])}共同获胜。`, alive[0], alive[1]); return; }
+    if (ids.has(doubleVictory.first) && ids.has(doubleVictory.second) && !battle.storyTriggers?.includes('RULE:DOUBLE_VICTORY')) { battle.storyTriggers!.push('RULE:DOUBLE_VICTORY'); settleBattle(battle); pushEvent(game, now, 'winner', `【双胜】${playerName(game, alive[0])}与${playerName(game, alive[1])}共同获胜。`, alive[0], alive[1]); return; }
   }
   if (alive.length <= 1) {
     if (alive.length === 1 && battle.feed[0]?.kind !== 'winner') {
       const winner = game.playerDescriptions.get(alive[0].id)?.name ?? alive[0].id;
-      battle.phase = 'settlement';
+      settleBattle(battle);
       pushEvent(game, now, 'winner', `【胜利】${winner} 成为最后的幸存者。`, alive[0]);
     }
     return;
@@ -595,6 +636,14 @@ export function tickBattleRoyale(game: Game, now: number) {
       : battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined;
     runAgentBattleAction(game, now, player, fallbackReason);
   }
+}
+
+function settleBattle(battle: BattleState) {
+  battle.phase = 'settlement';
+  battle.settlementPopularity = battle.popularity ?? 0;
+  battle.settlementRating = POPULARITY_RATINGS.find((rating) => (battle.popularity ?? 0) >= rating.min)?.rating ?? 'C';
+  battle.popularityRating = battle.settlementRating;
+  battle.mainMissionDone = battle.settlementRating === 'S';
 }
 
 export function setBattlePaused(game: Game, now: number, paused: boolean) {
@@ -842,6 +891,8 @@ function tickMatchRules(game: Game, now: number) {
   const replayBaseline = captureReplayPatchBaseline(game);
   applyBattleVitals(game, now);
   const elapsed = Math.max(0, now - battle.started);
+  battle.elapsedSec = Math.floor(elapsed / 1000);
+  battle.popularityRating = POPULARITY_RATINGS.find((rating) => (battle.popularity ?? 0) >= rating.min)?.rating ?? 'C';
   const dayLength = BATTLE_CONFIG.match.dayMs + BATTLE_CONFIG.match.nightMs;
   const cycleMs = elapsed % dayLength;
   const timeOfDay = cycleMs < BATTLE_CONFIG.match.dayMs ? 'day' : 'night';
@@ -854,8 +905,10 @@ function tickMatchRules(game: Game, now: number) {
   }
 
   const aliveCount = alivePlayers(game).length;
-  const phase = aliveCount <= 2 ? 'finale' : aliveCount <= 6 ? 'intensify' : elapsed > 600000 ? 'develop' : 'opening';
-  battle.phase = phase;
+  const openNormalCount = (battle.openAreas ?? []).filter((areaId) => areaId !== 'S01').length;
+  const phase = openNormalCount <= 3 ? 'finale' : aliveCount <= 6 ? 'intensify' : elapsed > 600000 ? 'develop' : 'opening';
+  if (battle.phase !== phase) { battle.phase = phase; battle.phaseStartedAt = now; }
+  battle.phaseElapsedSec = Math.floor((now - (battle.phaseStartedAt ?? battle.started)) / 1000);
   const interval = phase === 'finale' || phase === 'intensify'
     ? BATTLE_CONFIG.zone.lateIntervalMs
     : phase === 'develop'
@@ -864,17 +917,23 @@ function tickMatchRules(game: Game, now: number) {
   const zoneClosesAt = battle.zoneClosesAt ?? ((battle.lastZoneUpdate ?? now) + interval);
   battle.zoneClosesAt = zoneClosesAt;
   if (
-    battle.openAreas && battle.openAreas.length > 3
+    openNormalCount > 1
     && now >= zoneClosesAt - BATTLE_CONFIG.zone.warningMs
     && battle.lastZoneWarningAt !== zoneClosesAt
   ) {
     battle.lastZoneWarningAt = zoneClosesAt;
+    const areaCounts = new Map<string, number>();
+    for (const player of alivePlayers(game)) areaCounts.set(player.battle?.areaId ?? 'A01', (areaCounts.get(player.battle?.areaId ?? 'A01') ?? 0) + 1);
+    const candidates = (battle.openAreas ?? []).filter((areaId) => areaId !== 'S01').sort((a, b) => (areaCounts.get(a) ?? 0) - (areaCounts.get(b) ?? 0));
+    const plannedCount = Math.min(candidates.length - 1, phase === 'finale' ? candidates.length - 1 : phase === 'intensify' ? 2 + Math.floor(battleRandom(game) * 2) : phase === 'develop' ? 2 : 1 + Math.floor(battleRandom(game) * 2));
+    battle.pendingClosingAreas = candidates.slice(0, plannedCount);
+    battle.yellowAreaIds = [...battle.pendingClosingAreas];
     battle.interventionEffect = { kind: 'zone-warning', until: zoneClosesAt };
-    pushEvent(game, now, 'zone', `【禁区预警】${Math.ceil((zoneClosesAt - now) / 1000)} 秒后将收缩，请尽快规划转移。`);
+    pushEvent(game, now, 'zone', `【禁区预警】${battle.yellowAreaIds.map(areaName).join('、')} 将在 ${Math.ceil((zoneClosesAt - now) / 1000)} 秒后关闭。`);
   }
   if (
     battle.openAreas &&
-    battle.openAreas.length > 3 &&
+    openNormalCount > 1 &&
     now >= zoneClosesAt
   ) {
     const openNormalAreas = battle.openAreas.filter((areaId) => areaId !== 'S01');
@@ -883,14 +942,21 @@ function tickMatchRules(game: Game, now: number) {
       const areaId = player.battle?.areaId ?? 'A01';
       areaCounts.set(areaId, (areaCounts.get(areaId) ?? 0) + 1);
     }
-    const closingArea = openNormalAreas.sort(
+    const closeCount = Math.min(openNormalAreas.length - 1, phase === 'finale' ? openNormalAreas.length - 1 : phase === 'intensify' ? 2 + Math.floor(battleRandom(game) * 2) : phase === 'develop' ? 2 : 1 + Math.floor(battleRandom(game) * 2));
+    const closingAreas = (battle.pendingClosingAreas?.length ? battle.pendingClosingAreas.filter((areaId) => openNormalAreas.includes(areaId)) : openNormalAreas.sort(
       (a, b) => (areaCounts.get(a) ?? 0) - (areaCounts.get(b) ?? 0),
-    )[0];
-    if (closingArea) {
-      battle.openAreas = battle.openAreas.filter((areaId) => areaId !== closingArea);
+    ).slice(0, closeCount));
+    if (closingAreas.length) {
+      battle.openAreas = battle.openAreas.filter((areaId) => !closingAreas.includes(areaId));
       battle.lastZoneUpdate = now;
       battle.zoneClosesAt = now + interval;
-      pushEvent(game, now, 'zone', `【禁区关闭】${areaName(closingArea)} 已永久关闭，AI 必须转移。`, undefined, undefined);
+      battle.yellowAreaIds = []; battle.redAreaIds = [...new Set([...(battle.redAreaIds ?? []), ...closingAreas])]; battle.pendingClosingAreas = [];
+      pushEvent(game, now, 'zone', `【禁区关闭】${closingAreas.map(areaName).join('、')} 已永久关闭，AI 必须转移。`, undefined, undefined);
+      if (phase === 'finale' && !(battle.storyTriggers ?? []).includes('zone:finale')) {
+        battle.storyTriggers!.push('zone:finale');
+        for (const player of alivePlayers(game)) player.battle!.zoneTime = Math.min(player.battle!.maxZoneTime ?? BATTLE_CONFIG.runtime.zoneTimeMax, (player.battle!.zoneTime ?? 0) + BATTLE_CONFIG.zone.finaleBufferSeconds);
+        pushEvent(game, now, 'zone', `【终局】仅剩最后区域，所有存活者获得 ${BATTLE_CONFIG.zone.finaleBufferSeconds} 秒撤离缓冲。`);
+      }
     }
   }
 
@@ -899,13 +965,15 @@ function tickMatchRules(game: Game, now: number) {
     const last = stats.lastZoneDamageAt ?? now;
     const elapsedSeconds = Math.floor((now - last) / 1000);
     if (elapsedSeconds < 1) continue;
-    const cost = elapsedSeconds * BATTLE_CONFIG.zone.zoneTimeCostPerSecond;
+    const drainMultiplier = itemModifier(stats, 'zone_drain_mult', now) || 1;
+    const cost = elapsedSeconds * BATTLE_CONFIG.zone.zoneTimeCostPerSecond * drainMultiplier;
     stats.zoneTime = Math.max(0, (stats.zoneTime ?? 0) - cost);
     stats.lastZoneDamageAt = now;
     stats.stress = (stats.stress ?? 0) + elapsedSeconds;
     pushEvent(game, now, 'zone', `【禁区时间】${playerName(game, player)}消耗 ${cost} 秒，剩余 ${Math.ceil(stats.zoneTime)} 秒。`, player);
     if (stats.zoneTime === 0) {
       stats.eliminated = true;
+      freezeEliminatedRelationships(game, stats.characterId);
       pushEvent(game, now, 'eliminate', `【淘汰】${playerName(game, player)}禁区时间耗尽。`, player);
     }
   }
@@ -990,9 +1058,9 @@ export function triggerRelationshipDrama(game: Game, now: number) {
 
 function refreshAreaResources(game: Game, now: number) {
   const battle = game.world.battle!;
-  if (now < (battle.lastResourceRefresh ?? now) + 120000) return;
+  if (now < (battle.lastResourceRefresh ?? now) + BATTLE_CONFIG.match.searchCooldownMs) return;
   for (const resource of battle.areaResources ?? []) {
-    resource.remaining = Math.min(resource.max, resource.remaining + 3);
+    resource.remaining = Math.min(resource.max, resource.remaining + 1);
   }
   battle.lastResourceRefresh = now;
   pushEvent(game, now, 'resource', '【资源】部分区域资源已刷新。');
@@ -1001,11 +1069,17 @@ function refreshAreaResources(game: Game, now: number) {
 function spawnScheduledRareItems(game: Game, now: number, day: number, timeOfDay: 'day' | 'night') {
   const battle = game.world.battle!; const drops = battle.rareDrops ??= [];
   const add = (name: string, areaId: string, quantity = 1) => { if (!GLOBAL_RARE_ITEMS.some((item) => item.name === name) || drops.some((drop) => drop.name === name && drop.areaId === areaId)) return; drops.push({ name, areaId, remaining: quantity }); pushEvent(game, now, 'resource', `【稀有物资】${name}已出现在${areaName(areaId)}。`); };
-  if (day === 1 && timeOfDay === 'night') { add('生命树枝', 'A08'); add('生命树枝', 'A11'); add('陨石碎片', 'A10'); add('陨石碎片', 'A06'); }
+  if (day === 1 && timeOfDay === 'night') { add('生命树枝', 'A08'); add('生命树枝', 'A11'); }
+  if (day === 2 && timeOfDay === 'night') { add('生命树枝', 'A10'); add('生命树枝', 'A06'); }
   if (day === 2 && timeOfDay === 'day') add('秘银盾', 'A07');
   if (day === 3 && timeOfDay === 'day') add('能源核心', 'A07');
   if (day === 3 && timeOfDay === 'night') add('VF原液', 'A06');
-  if (day > 1 && timeOfDay === 'day') { const open = (battle.openAreas ?? []).filter((areaId) => areaId !== 'S01'); if (open.length) add('陨石碎片', open[Math.floor(battleRandom(game) * open.length)]); }
+  const meteorCount = drops.filter((drop) => drop.name === '陨石碎片').reduce((sum, drop) => sum + drop.remaining, 0);
+  if ((day > 1 || timeOfDay === 'night') && meteorCount < 4) {
+    const occupied = new Set(drops.filter((drop) => drop.name === '陨石碎片').map((drop) => drop.areaId));
+    const open = (battle.openAreas ?? []).filter((areaId) => areaId !== 'S01' && !occupied.has(areaId));
+    if (open.length) add('陨石碎片', open[Math.floor(battleRandom(game) * open.length)]);
+  }
 }
 
 export function triggerAreaSpecialEvent(game: Game, now: number) {
@@ -1548,10 +1622,11 @@ export function applyIntervention(
   const battle = game.world.battle!;
   const operation = INTERVENTION_OPERATIONS.find((candidate) => candidate.id === args.opId);
   if (!operation) throw new Error('未知干预操作。');
+  if (battle.phase === 'finale' && (operation.id.startsWith('ZON_') || operation.id === 'ENV_03')) throw new Error('终局不可干预禁区。');
   const cooldown = battle.operationCooldowns?.find((entry) => entry.id === operation.id);
   if (cooldown && cooldown.until > now) throw new Error(`${operation.name}仍在冷却。`);
   if ((battle.interventionPoints ?? 0) < operation.cost) throw new Error('干预点不足。');
-  const maxUses = ({ RUL_01: 2, RUL_02: 1, RUL_03: 1, REC_02: 3 } as Record<string, number>)[operation.id]; const used = battle.operationUses?.find((entry) => entry.id === operation.id)?.count ?? 0; if (maxUses && used >= maxUses) throw new Error(`${operation.name}已达到本局使用上限。`);
+  const maxUses = ({ RUL_01: 2, RUL_02: 1, RUL_03: 1, REC_02: 3, ZON_02: 3, ZON_03: 2, ZON_04: 3 } as Record<string, number>)[operation.id]; const used = battle.operationUses?.find((entry) => entry.id === operation.id)?.count ?? 0; if (maxUses && used >= maxUses) throw new Error(`${operation.name}已达到本局使用上限。`);
   const target = args.targetPlayerId ? game.world.players.get(args.targetPlayerId as any) : undefined;
   const second = args.secondPlayerId ? game.world.players.get(args.secondPlayerId as any) : undefined;
   const areaId = args.targetAreaId ?? target?.battle?.areaId ?? 'A01';
@@ -1569,13 +1644,23 @@ export function applyIntervention(
     case 'ENV_03':
       if (!battle.openAreas?.includes(areaId) || areaId === 'S01') throw new Error('该区域不能关闭。');
       battle.openAreas = battle.openAreas.filter((id) => id !== areaId); announce(`${areaName(areaId)}被主办方提前划为禁区。`); break;
-    case 'ENV_04': case 'SUP_03':
-      affected.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - (operation.id === 'ENV_04' ? 12 : 10)); }); announce(`${areaName(areaId)}的${operation.id === 'ENV_04' ? '机关' : '补给箱'}被激活。`); break;
+    case 'ENV_04': case 'SUP_03': {
+      const victims = operation.id === 'ENV_04' && affected.length ? [affected[Math.floor(battleRandom(game) * affected.length)]] : affected;
+      victims.forEach((player) => { player.battle!.hp = Math.max(1, player.battle!.hp - (operation.id === 'ENV_04' ? 12 : 10)); }); announce(`${areaName(areaId)}的${operation.id === 'ENV_04' ? '机关' : '补给箱'}被激活。`); break;
+    }
     case 'ENV_05': if (battle.openAreas?.includes(areaId) || areaId === 'S01') throw new Error('请选择已关闭的普通区域。'); battle.openAreas = [...(battle.openAreas ?? []), areaId]; battle.restoredAreas!.push({ areaId, until: now + 120000 }); announce(`${areaName(areaId)}临时修复并重新开放 120 秒。`); break;
-    case 'SUP_01': { const resource = battle.areaResources?.find((entry) => entry.areaId === areaId); if (resource) resource.remaining = Math.min(resource.max, resource.remaining + 3); announce(`普通补给已投放至${areaName(areaId)}，新增 3 次搜索资源。`); break; }
-    case 'SUP_02': { const resource = battle.areaResources?.find((entry) => entry.areaId === areaId); if (resource) resource.remaining = Math.min(resource.max, resource.remaining + 6); announce(`${areaName(areaId)}开启盛宴补给，新增 6 次搜索资源。`); break; }
+    case 'SUP_01': case 'SUP_02': {
+      const pool = availableAreaItemsFor(undefined, areaId).filter((item) => operation.id === 'SUP_01' ? ['uncommon', 'rare'].includes(itemDefinition(item).rarity) : ['uncommon', 'rare', 'legendary'].includes(itemDefinition(item).rarity));
+      const count = operation.id === 'SUP_01' ? 2 + Math.floor(battleRandom(game) * 2) : 5;
+      for (let index = 0; index < count && pool.length; index++) { const item = pool[Math.floor(battleRandom(game) * pool.length)]; battle.rareDrops!.push({ name: item, areaId, remaining: 1 }); }
+      announce(`${operation.id === 'SUP_01' ? '空投补给' : '盛宴'}已投放至${areaName(areaId)}，共 ${Math.min(count, pool.length)} 件高级物资。`); break;
+    }
     case 'SUP_04': { const resource = battle.areaResources?.find((entry) => entry.areaId === areaId); if (resource) resource.remaining = Math.max(0, resource.remaining - 1); announce(`${areaName(areaId)}的一份可搜索物资已被移除。`); break; }
-    case 'SUP_05': target!.battle!.coins += 35; target!.battle!.armor += 4; announce(`${playerName(game, target!)}获得品牌赞助。`); break;
+    case 'SUP_05': {
+      const pool = availableAreaItemsFor(target!.battle!.characterId, target!.battle!.areaId ?? 'A01'); const item = weightedAreaItem(game, pool);
+      if (!item || inventorySlotsUsed(target!.battle!.inventory ?? []) + itemDefinition(item).slotSize > BATTLE_CONFIG.match.maxInventorySlots) throw new Error('目标背包没有足够空间。');
+      target!.battle!.inventory = [...(target!.battle!.inventory ?? []), item]; applyBattleItemEffect(game, now, target!, item); announce(`${playerName(game, target!)}获得品牌赞助物品 ${item}。`); break;
+    }
     case 'FAN_01':
       target!.battle!.stamina = Math.min(target!.battle!.maxStamina ?? 100, (target!.battle!.stamina ?? 0) + 18);
       target!.battle!.armor += 2;
@@ -1612,6 +1697,17 @@ export function applyIntervention(
       break;
     }
     case 'REC_02': battle.hiddenMissions![0] && (battle.hiddenMissions![0].status = `已揭示：${battle.hiddenMissions![0].status}`); announce('一条隐藏任务已被侦察揭示。'); break;
+    case 'ZON_01': {
+      const useKey = `ZON_01:${areaId}`; if ((battle.operationUses?.find((entry) => entry.id === useKey)?.count ?? 0) >= 1) throw new Error('该区域已延迟过一次。');
+      if (!(battle.pendingClosingAreas ?? []).includes(areaId)) throw new Error('请选择黄色预警中的区域。'); battle.zoneClosesAt = (battle.zoneClosesAt ?? now) + 30000; battle.operationUses!.push({ id: useKey, count: 1 }); announce(`区域 ${areaName(areaId)} 禁令暂缓 30 秒。`); break;
+    }
+    case 'ZON_02': if (!battle.openAreas?.includes(areaId) || areaId === 'S01') throw new Error('该区域不能关闭。'); battle.openAreas = battle.openAreas.filter((id) => id !== areaId); battle.redAreaIds = [...new Set([...(battle.redAreaIds ?? []), areaId])]; battle.yellowAreaIds = (battle.yellowAreaIds ?? []).filter((id) => id !== areaId); announce(`区域 ${areaName(areaId)} 即刻关闭！`); break;
+    case 'ZON_03': if (!battle.openAreas?.includes(areaId) || areaId === 'S01') throw new Error('该区域不能指定关闭。'); battle.pendingClosingAreas = [areaId, ...(battle.pendingClosingAreas ?? []).filter((id) => id !== areaId)]; break;
+    case 'ZON_04': target!.battle!.zoneTime = Math.min(target!.battle!.maxZoneTime ?? BATTLE_CONFIG.runtime.zoneTimeMax, (target!.battle!.zoneTime ?? 0) + 5); markInterventionReaction(game, now, target!, operation.id); break;
+    case 'ZON_05': {
+      const useKey = `ZON_05:${target!.id}`; if ((battle.operationUses?.find((entry) => entry.id === useKey)?.count ?? 0) >= 1) throw new Error('该角色已受过一次加倍消耗。');
+      target!.battle!.itemEffects ??= []; target!.battle!.itemEffects.push({ key: 'zone_drain_mult', value: 2, value2: 0, source: operation.name, until: now + 20000 }); battle.operationUses!.push({ id: useKey, count: 1 }); markInterventionReaction(game, now, target!, operation.id); break;
+    }
     case 'STO_01':
       if (areaId !== 'A04') throw new Error('拆除笼门只能作用于格斗笼。');
       battle.areaEventCooldowns = (battle.areaEventCooldowns ?? []).filter((entry) => entry.id !== 'A04_02');
@@ -2053,7 +2149,9 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
   }
   const weaponsDisabled = (game.world.battle?.disabledWeaponsUntil ?? 0) > now;
   const nightAmbush = game.world.battle?.timeOfDay === 'night' ? 1 + BATTLE_CONFIG.runtime.nightAmbushBonus : 1;
-  const effectiveWeaponPower = (weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower) * (areaId === 'A04' ? 1.15 : 1) * nightAmbush;
+  const itemDamageBonus = 1 + itemModifier(attack, 'damage_buff_pct', now) / 100;
+  const targetStealth = Math.min(0.6, itemModifier(defend, 'stealth_pct', now) / 100);
+  const effectiveWeaponPower = (weaponsDisabled ? BATTLE_CONFIG.weapons.Fists.power : attack.weaponPower) * (areaId === 'A04' ? 1.15 : 1) * nightAmbush * itemDamageBonus * (1 - targetStealth);
   const damage = Math.max(
     2,
     Math.floor(effectiveWeaponPower * (0.55 + battleRandom(game) * 0.35) - defend.armor),
@@ -2107,6 +2205,7 @@ function attack(game: Game, now: number, attacker: Player, target: Player) {
     const bountyTargetEliminated = battle.bountyPlayerId === target.id;
     const bountyHunterEliminated = battle.bountyHunterId === target.id;
     defend.eliminated = true;
+    freezeEliminatedRelationships(game, defend.characterId);
     attack.combatTargetId = undefined;
     attack.combatUntil = 0;
     defend.combatTargetId = undefined;
@@ -2158,71 +2257,91 @@ function loot(game: Game, now: number, player: Player) {
     pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 发现${areaName(areaId)}资源已经枯竭。`, player);
     return;
   }
-  if (resource) resource.remaining -= 1;
-  const rareDrop = game.world.battle?.rareDrops?.find((drop) => drop.areaId === areaId && drop.remaining > 0); if (rareDrop) { rareDrop.remaining -= 1; stats.inventory = [...(stats.inventory ?? []), rareDrop.name]; applyBattleItemEffect(game, now, player, rareDrop.name); pushEvent(game, now, 'loot', `【稀有发现】${playerName(game, player)}在${areaName(areaId)}获得${rareDrop.name}。`, player); triggerCharacterStory(game, now, player, areaId, rareDrop.name); return; }
-  const daylightBonus = game.world.battle?.timeOfDay === 'day' ? BATTLE_CONFIG.runtime.daySearchBonus : 0; const roll = Math.max(0, battleRandom(game) - daylightBonus);
-  if (roll < 0.16 && stats.medkits < 2) {
-    stats.medkits += areaId === 'A06' ? 2 : 1;
-    pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到医疗包。`, player);
-  } else if (roll < 0.34) {
-    const weapon = weapons[Math.min(weapons.length - 1, 1 + Math.floor(battleRandom(game) * 4))];
-    const power = weaponPower(weapon);
-    if (power > stats.weaponPower) {
-      stats.weapon = weapon;
-      stats.weaponPower = power;
-      pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 搜索到${weaponName(weapon)}。`, player);
-    } else {
-      stats.coins += 12;
-      pushEvent(
-        game,
-        now,
-        'loot',
-        `【交易】${playerName(game, player)} 出售多余装备，获得 12 物资。`,
-        player,
-      );
-    }
-  } else {
-    const coins = 2 + Math.floor(battleRandom(game) * 6);
-    stats.coins += coins;
-    const pool = availableAreaItemsFor(stats.characterId, areaId);
-    const foundItem = weightedAreaItem(game, pool);
-    if (foundItem && (stats.inventory?.length ?? 0) < BATTLE_CONFIG.match.maxInventorySlots) {
-      stats.inventory = [...(stats.inventory ?? []), foundItem];
-      applyBattleItemEffect(game, now, player, foundItem);
-    }
-    pushEvent(
-      game,
-      now,
-      'loot',
-      `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${foundItem ?? `${coins} 物资`}。`,
-      player,
-    );
-    triggerCharacterStory(game, now, player, areaId, foundItem);
-    if (foundItem && ['加密档案', '医疗记录终端', '监控日志碎片', '案件卷宗', '演播档案带'].includes(foundItem)) {
-      collectTruthClue(game, now, foundItem, player);
-    }
+  const rareDrop = game.world.battle?.rareDrops?.find((drop) => drop.areaId === areaId && drop.remaining > 0); if (rareDrop) {
+    const definition = itemDefinition(rareDrop.name);
+    if (inventorySlotsUsed(stats.inventory ?? []) + definition.slotSize <= BATTLE_CONFIG.match.maxInventorySlots) {
+      rareDrop.remaining -= 1; stats.inventory = [...(stats.inventory ?? []), rareDrop.name]; applyBattleItemEffect(game, now, player, rareDrop.name); pushEvent(game, now, 'loot', `【稀有发现】${playerName(game, player)}在${areaName(areaId)}获得${rareDrop.name}。`, player); triggerCharacterStory(game, now, player, areaId, rareDrop.name);
+    } else pushEvent(game, now, 'loot', `【背包】${playerName(game, player)}没有足够空间拾取${rareDrop.name}。`, player);
+    return;
   }
+  let requested = BATTLE_CONFIG.match.searchMinItems + Math.floor(battleRandom(game) * (BATTLE_CONFIG.match.searchMaxItems - BATTLE_CONFIG.match.searchMinItems + 1));
+  if (game.world.battle?.timeOfDay === 'day' && battleRandom(game) < BATTLE_CONFIG.runtime.daySearchBonus) requested = Math.min(BATTLE_CONFIG.match.searchMaxItems, requested + 1);
+  const count = Math.min(requested, resource?.remaining ?? requested);
+  const pool = availableAreaItemsFor(stats.characterId, areaId);
+  const found: string[] = [];
+  for (let index = 0; index < count; index++) {
+    const item = weightedAreaItem(game, pool);
+    if (!item) break;
+    const definition = itemDefinition(item);
+    if (inventorySlotsUsed(stats.inventory ?? []) + definition.slotSize > BATTLE_CONFIG.match.maxInventorySlots) break;
+    stats.inventory = [...(stats.inventory ?? []), item];
+    found.push(item);
+    applyBattleItemEffect(game, now, player, item);
+    triggerCharacterStory(game, now, player, areaId, item);
+    if (['加密档案', '医疗记录终端', '监控日志碎片', '案件卷宗', '演播档案带'].includes(item)) collectTruthClue(game, now, item, player);
+  }
+  if (resource) resource.remaining = Math.max(0, resource.remaining - Math.max(1, found.length));
+  pushEvent(game, now, 'loot', `【搜索】${playerName(game, player)} 在${areaName(areaId)}搜索到${found.length ? found.join('、') : '背包已满'}。`, player);
   if (!tacticalLootMove(game, now, player)) {
     wander(game, now, player);
   }
 }
 
 export function applyBattleItemEffect(game: Game, now: number, player: Player, item: string) {
-  const effect = ITEM_EFFECTS[item];
-  if (!effect) return;
+  const definition = itemDefinition(item);
+  const fallback = ITEM_EFFECTS[item];
   const stats = player.battle!;
-  if (effect.kind === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + effect.value);
-  if (effect.kind === 'armor') stats.armor += effect.value;
-  if (effect.kind === 'stamina') stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + effect.value);
-  if (effect.kind === 'satiety') stats.satiety = Math.min(100, (stats.satiety ?? 0) + effect.value);
-  if (effect.kind === 'stress') stats.stress = Math.max(0, (stats.stress ?? 0) + effect.value);
-  if (effect.kind === 'clue') collectTruthClue(game, now, `物品-${item}`, player);
-  if (effect.kind === 'weapon' && effect.value > stats.weaponPower) {
-    stats.weapon = item === '手枪' ? 'Pistol' : item === '突击步枪' ? 'Rifle' : 'Fists';
-    stats.weaponPower = effect.value;
+  const key = definition.effectKey || fallback?.kind;
+  const value = definition.effectValue || fallback?.value || 0;
+  const value2 = definition.effectValue2 || 0;
+  const expiresAt = definition.durationSeconds > 0 ? now + definition.durationSeconds * 1000 : undefined;
+  const storeModifier = () => {
+    stats.itemEffects ??= [];
+    stats.itemEffects = stats.itemEffects.filter((entry) => entry.key !== key || entry.source !== item);
+    stats.itemEffects.push({ key, value, value2, source: item, ...(expiresAt ? { until: expiresAt } : {}) });
+  };
+
+  if (key === 'hp' || key === 'heal') stats.hp = Math.min(stats.maxHp, stats.hp + value);
+  else if (key === 'stamina') stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + value);
+  else if (key === 'satiety') stats.satiety = Math.min(BATTLE_CONFIG.runtime.satietyMax, (stats.satiety ?? 0) + value);
+  else if (key === 'satiety+stamina') {
+    stats.satiety = Math.min(BATTLE_CONFIG.runtime.satietyMax, (stats.satiety ?? 0) + value);
+    stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + value2);
+  } else if (key === 'damage_reduction_pct' || key === 'armor') stats.armor += value;
+  else if (['melee_damage', 'ranged_damage', 'aoe_damage', 'weapon'].includes(key)) {
+    if (value > stats.weaponPower) { stats.weapon = item; stats.weaponPower = value; }
+  } else if (key === 'all_stats_plus' || key === 'allStats') {
+    stats.hp = stats.maxHp; stats.stamina = stats.maxStamina; stats.satiety = BATTLE_CONFIG.runtime.satietyMax;
+    stats.armor += 10; stats.zoneTime = stats.maxZoneTime;
+  } else if (key === 'clue_fragment' || key === 'clue') collectTruthClue(game, now, `物品-${definition.id}`, player);
+  else if (key === 'truth_trigger') unlockTruth(game, now, player);
+  else if (key === 'reveal_relation' || key === 'reveal_secret') {
+    const hidden = game.world.battle?.relationshipEdges?.find((edge) => edge.hidden);
+    if (hidden) hidden.hidden = false;
+  } else if (key === 'escape_smoke') {
+    stats.combatTargetId = undefined; stats.combatUntil = 0; delete player.pathfinding; player.speed = 0;
+  } else if (['cold_resist', 'chem_immune', 'damage_buff_pct', 'move_speed_pct', 'stealth_pct', 'stealth_zone', 'disguise', 'unlock'].includes(key)) {
+    storeModifier();
+  } else if (['eavesdrop', 'comm_link', 'scout_resources', 'radar_count', 'watch_area', 'lore_text', 'plot_symbol', 'plot_trigger', 'special'].includes(key)) {
+    game.world.battle!.interventionEffect = { kind: `item:${key}`, areaId: stats.areaId, playerId: player.id, until: now + 10000 };
+    if (key === 'lore_text' || key === 'plot_symbol' || key === 'plot_trigger') collectTruthClue(game, now, `物品-${definition.id}`, player);
   }
-  if (effect.kind === 'allStats') { stats.hp = stats.maxHp; stats.stamina = stats.maxStamina; stats.satiety = 100; stats.armor += 10; stats.zoneTime = stats.maxZoneTime; }
-  pushEvent(game, now, 'item', `【物品】${playerName(game, player)} 使用${item}获得即时效果。`, player);
+
+  if (definition.consumable) {
+    const inventory = stats.inventory ?? [];
+    const index = inventory.indexOf(item);
+    if (index >= 0) stats.inventory = inventory.filter((_, itemIndex) => itemIndex !== index);
+  }
+  pushEvent(game, now, 'item', `【物品】${playerName(game, player)} 使用${item}：${definition.effectDescription}。`, player);
+}
+
+export function inventorySlotsUsed(items: readonly string[]) {
+  return items.reduce((sum, item) => sum + Math.max(1, itemDefinition(item).slotSize), 0);
+}
+
+function itemModifier(stats: BattleStats, key: string, now: number) {
+  stats.itemEffects = (stats.itemEffects ?? []).filter((effect) => effect.until === undefined || effect.until > now);
+  return stats.itemEffects.filter((effect) => effect.key === key).reduce((sum, effect) => sum + effect.value, 0);
 }
 
 function weightedAreaItem(game: Game, pool: readonly string[]) {
@@ -2237,7 +2356,7 @@ function weightedAreaItem(game: Game, pool: readonly string[]) {
 }
 
 function itemWeight(item: string) {
-  return ({ common: 10, uncommon: 5, rare: 2, legendary: 0.5 } as Record<string, number>)[itemDefinition(item).rarity] ?? 10;
+  return itemDefinition(item).searchWeight;
 }
 
 function tryBuyUpgrade(game: Game, now: number, player: Player) {
@@ -2356,11 +2475,20 @@ function updateRelationship(game: Game, first: Player, second: Player, delta: nu
   if (!a || !b) return;
   let edge = battle.relationshipEdges?.find((candidate) => (candidate.a === a && candidate.b === b) || (candidate.a === b && candidate.b === a));
   if (!edge) {
-    edge = { id: `REL_${a}_${b}`, a, b, type: 'friend', strength: 0, hidden: false };
+    edge = { id: `REL_${a}_${b}`, a, b, type: 'stranger', strength: 0, hidden: false, mutable: true, triggerWeight: RELATION_GENERATION.params.stranger_trigger_weight, source: 'runtime' };
     battle.relationshipEdges!.push(edge);
   }
+  if (edge.mutable === false) return;
   edge.strength = Math.max(-100, Math.min(100, edge.strength + delta));
   edge.lastReason = reason;
+}
+
+function freezeEliminatedRelationships(game: Game, characterId?: string) {
+  if (!characterId) return;
+  for (const edge of game.world.battle?.relationshipEdges ?? []) if (edge.a === characterId || edge.b === characterId) {
+    edge.mutable = false;
+    edge.lastReason = edge.lastReason ?? '淘汰后冻结';
+  }
 }
 
 function relationshipBetween(game: Game, first: Player, second: Player) {
@@ -2458,6 +2586,7 @@ function updateMissionProgress(game: Game, now: number) {
   const battle = game.world.battle!;
   if ((battle.popularity ?? 0) >= 500 && !battle.completedMissionIds?.includes('MAIN_S')) {
     battle.completedMissionIds!.push('MAIN_S');
+    battle.mainMissionDone = true;
     pushEvent(game, now, 'mission', '【任务】主线目标完成：直播热度达到 S 级。');
   }
   const c05 = alivePlayers(game).find((player) => player.battle?.characterId === 'C05');
@@ -2477,7 +2606,13 @@ function completeMission(game: Game, now: number, missionId: string) {
   mission.status = '已完成';
   battle.completedMissionIds!.push(missionId);
   pushEvent(game, now, 'mission', `【任务】隐藏任务「${mission.title}」已完成。`);
-  if (missionId !== 'HID_06') { awardPopularity(game, now, 50, []); battle.interventionPoints = Math.min(battle.interventionPointsMax ?? 30, (battle.interventionPoints ?? 0) + 3); battle.interventionEarnedTotal = (battle.interventionEarnedTotal ?? 0) + 3; }
+  const definition = HIDDEN_MISSIONS.find((candidate) => candidate.id === missionId);
+  if (missionId !== 'HID_06' && definition) {
+    awardPopularity(game, now, definition.score, []);
+    const reward = BATTLE_CONFIG.match.hiddenMissionRewardPoints;
+    battle.interventionPoints = Math.min(battle.interventionPointsMax ?? 30, (battle.interventionPoints ?? 0) + reward);
+    battle.interventionEarnedTotal = (battle.interventionEarnedTotal ?? 0) + reward;
+  }
 }
 
 function alivePlayers(game: Game) {

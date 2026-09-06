@@ -1,63 +1,9 @@
-# 参考配表覆盖矩阵
+# 参考配表覆盖入口
 
-> 本文保留 P2 阶段的逐表审计记录；2026-09-06 的最终补齐结果与验收口径请以 [`reference-implementation-audit.md`](./reference-implementation-audit.md) 为准。
+旧版逐表矩阵已被可机器验证的逐列矩阵替代：
 
-最后核对：2026-09-02。参考源为 `HanataniTakahiro/AIdataosha` 的 `docs/superpowers/specs`。同名 `.md` 与 `.xlsx` 是同一业务表的两种载体，以下按一张表统计。
+- [`reference-column-traceability.md`](./reference-column-traceability.md)：442 个非空列的 Excel 行列—配置—执行—测试—UI 对照。
+- [`reference-implementation-audit.md`](./reference-implementation-audit.md)：本轮修正与验收结论。
+- [`asset-provenance.md`](./asset-provenance.md)：运行时素材与设计参考素材的来源、用途及授权提醒。
 
-状态定义：
-
-- **运行中**：数据或规则会在 Convex 比赛循环中被读取。
-- **部分抽象**：已有对应结构，但仍有列、前置条件或后果未消费。
-- **未接入**：目前只作为设计参考，不参与运行时。
-
-## 人物表
-
-| 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
-| --- | --- | --- | --- |
-| `人物/副本配表_01_人物人设_12人` | `BATTLE_CONFIG.characters` + `CHARACTER_PERSONAS`；`defaultBattleStats()`；`encounterDisposition()`；`cloudDecision.ts`；角色详情卡 | 运行中 | 代号、属性、个人目标、战斗风格、说话风格、攻击/结盟/撤退权重和独立台词已同时驱动规则 AI 与 DeepSeek。更长的个人记忆和跨局成长仍未接入。 |
-| `人物/配表_角色运行时属性` | `BattleStats`：HP、体力、饱食、区域停留、压力、热度、背包；`defaultBattleStats()`；`applyBattleVitals()` | 部分抽象 | 饱食会消耗体力并增压，医院可恢复压力/区域停留，高压 AI 优先撤离；完整的饥饿死亡、所有状态衰减曲线和 UI 数值解释仍待补齐。 |
-| `人物/配表_关系网` | `BATTLE_CONFIG.relationships`；`relationshipEdges`；`tryAlliance()`；`updateRelationship()`；`triggerRelationshipDrama()`；`dialogueLog` | 部分抽象 | 四条种子关系、隐藏关系揭露、结盟/交易/攻击背叛/挑拨、重逢、危局守护与绝境逆转均已运行；结盟/交易还会保存模型提议和规则回应。4-6 条随机戏剧关系和所有关系类型的独立效果仍待补齐。 |
-| `人物.xmind` | 角色名、代号、属性和关系的辅助校对来源 | 未接入 | 节点层级、叙事分支和人物关系说明没有单独导入。 |
-
-## 地图与物品表
-
-| 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
-| --- | --- | --- | --- |
-| `地图/配表_区域定义` | `BATTLE_CONFIG.areas`：A01-A12、S01、危险等级、归属角色、区域文字机制 | 部分抽象 | 区域危险等级、进入门槛、区域 buff 和大部分专属机制仅作为配置展示，尚未全面改变寻路、命中、掉落或决策效用。 |
-| `地图/配表_角色区域对应` | `BattleCharacterProfile.areaId`；`defaultBattleStats().areaId`；`battleAreaSpawnPoints()`；`availableAreaItemsFor()` | 运行中 | 新开局会将 12 名角色放入各自区域的可走出生点；区域主人处理本区事件获得熟悉地形 +1，角色专属剧情物只进入所属角色的搜索池。 |
-| `地图/配表_邻接关系` | `BATTLE_CONFIG.adjacency`；`adjacentAreaIds()`；`buildBattleArenaGrid()`；`moveToBattleArea()` | 运行中 | 区域移动强制相邻与开放校验，17 条参考邻接边同时生成可供 A* 穿行的栅格走廊。 |
-| `地图/配表_禁区规则` | `BATTLE_CONFIG.zone`；`tickMatchRules()`；`battle.openAreas` | 部分抽象 | 已有阶段、日夜、关闭播报、强制迁移与持续红区伤害；警告倒计时、严格关闭顺序/保护逻辑仍待补齐。 |
-| `地图/配表_区域资源` | `BATTLE_CONFIG.areaItems`；`areaResources`；`loot()`；战略总览资源显示 | 部分抽象 | 已执行数量、刷新、枯竭、加权掉落和余量展示；每区的完整稀有权重表仍待逐项同步。 |
-| `地图/配表_物品定义` | `ITEM_DEFINITIONS`；`ITEM_EFFECTS`；`loot()`；交易规则 | 部分抽象 | 13 区物品池的每个条目都具备稀有度与交易价值，并有自动测试覆盖；食物/饮料/药草会恢复饱食或压力，合成与更复杂使用条件仍待补齐。 |
-| `地图/地图策划案`、`地图布局.png`、`地图.xmind` | `data/battleArena.ts`；Pixi 战场原创视觉层；区域锚点、六边形边界、出生落点、导航栅格、地标障碍、巡逻点和邻接走廊 | 部分抽象 | A* 巡逻、战术移动和跨区路径已使用同一权威栅格；当前 26 个地标仍是矩形占地，更细的逐地标轮廓与交互仍在接入。 |
-| `地图/pic/*` | 总览视觉方向；`public/assets/battle/arena-live-map.png` 作为原创替换底图 | 部分抽象 | 新底图已用于 Pixi 战场视觉层；区域交互地标与完整碰撞资产仍待补齐。 |
-
-## 系统表
-
-| 参考表 | 当前抽象 | 状态 | 未被使用的内容 |
-| --- | --- | --- | --- |
-| `系统/配表_游戏全局配置` | `BATTLE_CONFIG.match`、`runtime`、`zone`、`weapons` | 部分抽象 | 角色行为频率、完整资源/淘汰/结算参数和所有数值公式未逐列同步；部分当前数值为 Demo 节奏调优值。 |
-| `系统/配表_区域特殊剧情` | `AREA_SPECIAL_EVENTS`；`AREA_STORY_NARRATIVES`；`storyOptionsFor()`；`areaEventEligible()`；`triggerAreaSpecialEvent()` | 运行中 | 24 条均具备三种事件专属处置、D20 检定和差异化后果；校园广播磁带、监控权限卡、暗巷 60 秒、药品 30% 概率、远程武器殉爆等参考条件已执行。后续继续增加人物特有后果。 |
-| `系统/配表_干预操作` | `INTERVENTION_OPERATIONS`；`applyIntervention()`；`submitSupportOrder()`；`SupportFactionPanel.tsx` | 部分抽象 | 17 个参考操作、定向空投及观众阵营任务均使用权威干预点。`RUL_04` 与阵营悬赏都具备执行者、目标、跨区寻路、完成/失效结算；阵营另有搜集、谈判、AI 拒绝/还价和路线奖励。次数上限、双胜规则、资源移除/隐藏和部分操作专属视觉仍未完全按表覆盖。 |
-| `系统/配表_日志事件` | `battle.feed`；`pushEvent()`；`BattleBroadcastToasts` | 部分抽象 | 事件种类和中文播报已运行；配表中的全部模板变量、优先级、归档和日志分析字段未实现。 |
-| `系统/配表_玩家状态` | `BattleStats`、`battleState`、`interventionEffect`、决策审计字段 | 部分抽象 | 已增加模型动作、拒绝和规则回退状态；潜伏、谈判、追踪、濒死等参考状态仍有部分只用 `activity` 文本表达。 |
-| `系统/配表_评分规则` | `awardPopularity()`；`updateMissionProgress()`；关系剧情规则 | 部分抽象 | 已实现攻击、淘汰、结盟、背叛、重逢、守护、逆转、剧情、真相、连击和热度换干预点；伏击、无事件惩罚的精确触发和完整评分明细仍待补齐。 |
-| `系统/系统策划案`、`系统.xmind`、`游戏循环与数据流.xmind` | 当前开发任务和架构文档的设计参考 | 未接入 | 其中的完整状态流、策划验收、数据流图和运营循环尚未生成可执行规则。 |
-
-## 非配表参考资产
-
-| 参考文件 | 当前使用 | 缺口 |
-| --- | --- | --- |
-| `2026-07-21-gamemaker-battle-royale-design.md` | 用于确认 P0/P1 玩法与观赛结构 | 没有自动化验收用例或需求追踪链接。 |
-| `主办方大逃杀 — 美术风格设计(1).docx` | 用作世界观与 UI 风格参考 | 未形成可授权的完整角色、场景、特效资源包。 |
-| `配表骨架总览.md` | 用于审计配表范围 | 不参与构建或运行。 |
-
-## 目前完全未进入运行时的表/资料
-
-以下并非“尚有字段未用”，而是整份资料尚未作为运行时输入：`人物.xmind`、`地图.xmind`、`系统.xmind`、`游戏循环与数据流.xmind`、`地图策划案.md`、`地图布局.png`、参考 `pic/*` 中除总览背景外的资源、系统策划案及美术风格 docx。
-
-## 接入优先级
-
-1. **P1：剧情人物分支**。关系状态、24×3 事件专属处置、模型选中事件优先级和参考表明确的剧情道具消费已运行；下一步增加按角色人设变化的专属后果。
-2. **P2：地标交互深度**。导航栅格、邻接走廊和基础碰撞已运行；下一步将矩形占地替换为精细轮廓并加入资源点、机关和剧情点交互。
-3. **P2：物品与结算深度**。继续接入合成、复杂使用条件和全量评分事件。
+权威数据快照位于 `data/referenceTables.generated.json`，解析入口是 `data/referenceRuntime.ts`；修改参考配表后必须重新生成追踪文件并通过 `data/referenceTraceability.test.ts`。
