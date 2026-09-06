@@ -1,4 +1,4 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, CHARACTER_PERSONAS, GLOBAL_SPECIAL_EVENTS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, CHARACTER_PERSONAS, COMBO_RULES, GLOBAL_RARE_ITEMS, GLOBAL_SPECIAL_EVENTS, HIDDEN_MISSIONS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, ITEM_EFFECTS, POPULARITY_RATINGS, SCORE_RULES, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
@@ -124,6 +124,11 @@ describe('battle royale P0/P1 configuration', () => {
     expect(attackLines.size).toBe(24);
     expect(supportLines.size).toBe(12);
     expect(INTERVENTION_OPERATIONS).toContainEqual(expect.objectContaining({ id: 'FAN_01', target: 'player', cost: 2 }));
+  });
+  test('covers the complete reference economy, intervention, mission and scoring tables', () => {
+    expect(GLOBAL_RARE_ITEMS.map((item) => item.name)).toEqual(['生命树枝', '陨石碎片', '秘银盾', '能源核心', 'VF原液']); GLOBAL_RARE_ITEMS.forEach((item) => expect(ITEM_EFFECTS[item.name]).toBeDefined());
+    expect(INTERVENTION_OPERATIONS.map((operation) => operation.id)).toEqual(expect.arrayContaining(['ENV_05', 'SUP_04', 'RUL_03', 'INF_05'])); expect(HIDDEN_MISSIONS).toHaveLength(6);
+    expect(COMBO_RULES).toEqual([{ windowMs: 30000, minEvents: 3, multiplier: 1.5 }, { windowMs: 60000, minEvents: 5, multiplier: 2 }]); expect(SCORE_RULES).toMatchObject({ combat: 10, kill: 25, betrayal: 30, truth: 100 }); expect(POPULARITY_RATINGS).toEqual([{ rating: 'S', min: 500 }, { rating: 'A', min: 350 }, { rating: 'B', min: 200 }, { rating: 'C', min: 0 }]);
   });
 });
 

@@ -1,5 +1,7 @@
 # 参考配表覆盖矩阵
 
+> 本文保留 P2 阶段的逐表审计记录；2026-09-06 的最终补齐结果与验收口径请以 [`reference-implementation-audit.md`](./reference-implementation-audit.md) 为准。
+
 最后核对：2026-09-02。参考源为 `HanataniTakahiro/AIdataosha` 的 `docs/superpowers/specs`。同名 `.md` 与 `.xlsx` 是同一业务表的两种载体，以下按一张表统计。
 
 状态定义：

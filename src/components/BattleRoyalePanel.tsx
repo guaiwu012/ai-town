@@ -6,7 +6,7 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import { SelectElement } from './Player';
-import { AREA_ANCHORS, BATTLE_CONFIG, INTERVENTION_OPERATIONS } from '../../data/battleRoyaleConfig';
+import { AREA_ANCHORS, BATTLE_CONFIG, INTERVENTION_OPERATIONS, POPULARITY_RATINGS } from '../../data/battleRoyaleConfig';
 import BattleEventIcon from './BattleEventIcon';
 import BattleVitalBattery from './BattleVitalBattery';
 
@@ -43,7 +43,7 @@ export default function BattleRoyalePanel({
   worldId,
   game,
   selectedPlayerId,
-  setSelectedElement,
+  setSelectedElement: _setSelectedElement,
   onBackToLive,
   onMatchReset,
   onFollowPlayer,
@@ -62,6 +62,7 @@ export default function BattleRoyalePanel({
   const [targetAreaId, setTargetAreaId] = useState('A01');
   const [targetPlayerId, setTargetPlayerId] = useState<string | undefined>();
   const [secondTargetPlayerId, setSecondTargetPlayerId] = useState<string | undefined>();
+  const [feedChannel, setFeedChannel] = useState<'public' | 'story' | 'dialogue'>('public'); const [showRelationships, setShowRelationships] = useState(false);
 
   useEffect(() => {
     if (!launchModal) return;
@@ -90,16 +91,14 @@ export default function BattleRoyalePanel({
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
   const battle = game.world.battle;
   const heat = battle?.popularity ?? 0;
-  const heatGrade = heat >= 700 ? 'S' : heat >= 500 ? 'A' : heat >= 300 ? 'B' : 'C';
-  const hotPlayer = players.reduce(
-    (current, player) => (player.battle?.heat ?? 0) > (current?.battle?.heat ?? 0) ? player : current,
-    players[0],
-  );
+  const heatGrade = POPULARITY_RATINGS.find((rating) => heat >= rating.min)?.rating ?? 'C';
   const openAreas = battle?.openAreas ?? BATTLE_CONFIG.areas.map((area) => area.id);
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
-  const eventFeed = (battle?.feed ?? []).slice(0, 6);
+  const storyKinds = new Set(['story', 'areaStory', 'globalStory', 'mission', 'truth', 'clue']);
+  const eventFeed = feedChannel === 'dialogue' ? (battle?.dialogueLog ?? []).slice(0, 6).map((entry) => ({ ...entry, kind: 'dialogue', text: entry.text })) : (battle?.feed ?? []).filter((event) => feedChannel === 'story' ? storyKinds.has(event.kind) : !storyKinds.has(event.kind) && event.kind !== 'dialogue').slice(0, 6);
   const zoneCountdownSeconds = Math.max(0, Math.ceil(((battle?.zoneClosesAt ?? Date.now()) - Date.now()) / 1000));
+  const heatTrend = battle?.heatHistory?.length ? battle.heatHistory : [{ ts: Date.now(), value: heat }]; const heatTrendMax = Math.max(1, ...heatTrend.map((point) => point.value));
 
   const mineStats = useMemo(() => getMineStats(mineBoard), [mineBoard]);
   const liveMineReward = getMineReward(mineStats, mineStatus);
@@ -193,6 +192,7 @@ export default function BattleRoyalePanel({
       setPending(false);
     }
   };
+  const togglePause = async () => { if (pending) return; setPending(true); try { await sendInput({ worldId, name: 'setBattlePaused', args: { paused: !battle?.isPaused } }); } finally { setPending(false); } };
 
   return (
     <>
@@ -212,10 +212,14 @@ export default function BattleRoyalePanel({
           </div>
           <div className="overview-toolbar-actions">
             <button className="live-hud-button" onClick={onBackToLive}>返回直播</button>
+            <button className="live-hud-button" onClick={togglePause} disabled={pending}>{battle?.isPaused ? '继续比赛' : '暂停比赛'}</button>
+            <button className="live-hud-button" onClick={() => setShowRelationships((value) => !value)}>{showRelationships ? '返回地图' : '关系网络'}</button>
             <button className="live-hud-button live-hud-danger" onClick={() => setResetConfirmOpen(true)}>新开一局</button>
           </div>
         </div>
         <div className="overview-map-frame">
+          {battle?.isPaused && <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/65 text-4xl font-black tracking-[0.3em] text-amber-200">比赛暂停</div>}
+          {showRelationships && <div className="absolute inset-3 z-30 overflow-y-auto rounded border border-cyan-700/60 bg-[#071522]/95 p-4"><h3 className="arena-heading text-2xl">角色关系网络</h3><div className="mt-3 grid grid-cols-2 gap-2">{(battle?.relationshipEdges ?? []).map((edge) => <div key={edge.id} className="rounded border border-slate-700 bg-slate-900/70 p-2 text-xs text-slate-200"><strong>{edge.hidden ? '？？？' : `${characterName(edge.a)} ↔ ${characterName(edge.b)}`}</strong><div className={edge.strength >= 0 ? 'text-emerald-300' : 'text-rose-300'}>{edge.hidden ? '隐藏关系' : `${displayRelation(edge.type)} · ${edge.strength > 0 ? '+' : ''}${edge.strength}`}</div>{edge.lastReason && <small className="text-slate-400">最近变化：{edge.lastReason}</small>}</div>)}</div></div>}
           <img src="/ai-town/assets/reference/battle-arena-map.png" alt="AI 大逃杀战场总览地图" />
           {BATTLE_CONFIG.areas.filter((area) => area.id !== 'S01').map((area) => {
             const occupants = players.filter((player) => player.battle?.areaId === area.id);
@@ -232,6 +236,7 @@ export default function BattleRoyalePanel({
                   <button className="overview-area-watch" aria-label={`切入${displayAreaName(area.id)}直播镜头`} title={`切入${displayAreaName(area.id)}直播镜头`} onClick={() => onFocusArea(area.id)}>◎</button>
                 </div>
                 <div className="overview-area-resource">资源 {resource?.remaining ?? '--'}/{resource?.max ?? '--'}</div>
+                {(battle?.feed ?? []).some((event) => event.areaId === area.id && Date.now() - event.ts < 10000) && <div className="overview-alert" title="此区域刚发生事件">!</div>}
                 {areaLock && <div className="overview-area-lock">笼门封锁 {Math.ceil((areaLock.until - Date.now()) / 1000)} 秒</div>}
                 <div className="overview-area-agents">
                   {occupants.map((player) => {
@@ -287,7 +292,7 @@ export default function BattleRoyalePanel({
         <div className="arena-panel p-3">
           <div className="arena-panel-title">热度趋势</div>
           <div className="overview-trend mt-2" aria-label="直播热度趋势">
-            {[28, 34, 31, 42, 46, 44, 58, 62, 59, 72, 78, 91].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}
+            {heatTrend.map((point) => <i key={point.ts} style={{ height: `${Math.max(4, point.value / heatTrendMax * 100)}%` }} title={`${point.value} 热度`} />)}
           </div>
           <div className="mt-2 flex justify-between text-[10px] uppercase tracking-wider text-slate-500"><span>过去 5 分钟</span><span>当前</span></div>
         </div>
@@ -390,8 +395,8 @@ export default function BattleRoyalePanel({
 
       <div className="overview-feed arena-panel min-h-0 overflow-hidden p-3">
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="arena-panel-title">公屏播报</h3>
-          <span className="text-[10px] uppercase tracking-wider text-slate-500">实时事件流</span>
+          <div className="flex gap-1">{(['public', 'story', 'dialogue'] as const).map((channel) => <button key={channel} className={`arena-feed-tag ${feedChannel === channel ? 'text-amber-200' : ''}`} onClick={() => setFeedChannel(channel)}>{channel === 'public' ? '公屏' : channel === 'story' ? '剧情' : '对话'}</button>)}</div>
+          <span className="text-[10px] uppercase tracking-wider text-slate-500">三频道日志</span>
         </div>
         <div className="grid gap-0.5">
           {eventFeed.length === 0 && <div className="py-2 text-xs text-slate-500">等待第一条直播事件...</div>}
@@ -547,8 +552,11 @@ function displayWeapon(weapon: string) {
 }
 
 function displayPhase(phase?: string) {
-  return ({ early: '前期阶段', mid: '中期阶段', late: '决胜阶段' } as Record<string, string>)[phase ?? 'early'] ?? '战斗阶段';
+  return ({ early: '开局期', mid: '发展期', late: '激化期', opening: '开局期', develop: '发展期', intensify: '激化期', finale: '决赛圈', settlement: '结算' } as Record<string, string>)[phase ?? 'opening'] ?? '战斗阶段';
 }
+
+function characterName(characterId: string) { return BATTLE_CONFIG.characters.find((character) => character.id === characterId)?.name ?? characterId; }
+function displayRelation(type: string) { return ({ friend: '旧友', rival: '宿敌', ex: '旧爱', mentor: '师徒', lover: '恋人', family: '亲属' } as Record<string, string>)[type] ?? type; }
 
 function formatCountdown(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);

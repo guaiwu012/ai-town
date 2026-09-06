@@ -1,4 +1,4 @@
-import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -205,7 +205,7 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.dialogueLog.some((entry: any) => entry.text.includes('我们先停火'))).toBe(true);
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'dialogue')).toHaveLength(2);
     expect(game.world.battle.actionLog.at(-1)?.patch?.players.map((entry: any) => entry.id)).toEqual([first.id, second.id]);
-    expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 14, lastReason: '结盟' }));
+    expect(game.world.battle.actionLog.at(-1)?.patch?.relationships).toContainEqual(expect.objectContaining({ strength: 15, lastReason: '结盟' }));
   });
 
   it('corrects a redundant model move into an immediate attack when the target is in range', () => {
@@ -797,7 +797,7 @@ describe('battle royale host intervention rules', () => {
     expect(first.player.pathfinding).toEqual(second.player.pathfinding);
   });
 
-  it('turns hunger into stamina pressure while the hospital restores stress and zone time', () => {
+  it('turns hunger into stamina pressure while the hospital restores stress without minting zone time', () => {
     const hungry = createPlayer('p:5', 'C05', 'A05');
     hungry.battle.satiety = 20;
     hungry.battle.stamina = 50;
@@ -811,11 +811,11 @@ describe('battle royale host intervention rules', () => {
 
     applyBattleVitals(game, 61_000);
 
-    expect(hungry.battle.satiety).toBe(17);
+    expect(hungry.battle.satiety).toBe(18);
     expect(hungry.battle.stamina).toBe(47);
     expect(hungry.battle.stress).toBe(32);
     expect(medic.battle.stress).toBeCloseTo(30 - 60 / 18);
-    expect(medic.battle.zoneTime).toBe(21);
+    expect(medic.battle.zoneTime).toBe(20);
   });
 
   it('applies consumable food and calming item effects through the production item layer', () => {
@@ -827,8 +827,8 @@ describe('battle royale host intervention rules', () => {
     applyBattleItemEffect(game, 2_000, player, '军用口粮');
     applyBattleItemEffect(game, 2_000, player, '罐装咖啡');
 
-    expect(player.battle.satiety).toBe(88);
-    expect(player.battle.stress).toBe(8);
+    expect(player.battle.satiety).toBe(90);
+    expect(player.battle.stress).toBe(18);
     expect(game.world.battle.feed.filter((event: any) => event.kind === 'item')).toHaveLength(2);
   });
 
@@ -969,5 +969,27 @@ describe('battle royale host intervention rules', () => {
       '关系:重逢:REL_SEED_01', '关系:守护:REL_SEED_01', '关系:逆转:REL_SEED_03',
     ]));
     expect(game.world.battle.popularity).toBe(afterFirst);
+  });
+
+  it('pauses authoritative clocks and resumes without skipping match time', () => {
+    const game = createGame([createPlayer('p:1', 'C01', 'A01'), createPlayer('p:2', 'C02', 'A02')]);
+    const closesAt = game.world.battle.zoneClosesAt;
+    setBattlePaused(game, 2_000, true); tickBattleRoyale(game, 20_000);
+    expect(game.world.battle.lastTick).toBe(0);
+    setBattlePaused(game, 22_000, false);
+    expect(game.world.battle.zoneClosesAt).toBe(closesAt + 20_000);
+  });
+
+  it('consumes zone time instead of health in a closed area', () => {
+    const player = createPlayer('p:5', 'C05', 'A05'); const opponent = createPlayer('p:6', 'C06', 'A06'); const game = createGame([player, opponent]);
+    game.world.battle.openAreas = game.world.battle.openAreas.filter((id: string) => id !== 'A05'); game.world.battle.zoneClosesAt = 999_999; player.battle.lastZoneDamageAt = 1_000; player.battle.hp = 100; player.battle.zoneTime = 30;
+    tickBattleRoyale(game, 4_000);
+    expect(player.battle.hp).toBe(100); expect(player.battle.zoneTime).toBe(27);
+  });
+
+  it('settles the configured final pair as a double victory', () => {
+    const first = createPlayer('p:1', 'C01', 'A01'); const second = createPlayer('p:4', 'C04', 'A04'); const game = createGame([first, second]);
+    game.world.battle.doubleVictory = { first: first.id, second: second.id, until: 100_000 }; tickBattleRoyale(game, 3_000);
+    expect(game.world.battle.phase).toBe('settlement'); expect(game.world.battle.feed.some((event: any) => event.kind === 'winner' && event.text.includes('双胜'))).toBe(true);
   });
 });
