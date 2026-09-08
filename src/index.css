@@ -769,6 +769,35 @@ p[contenteditable='true']:empty::before {
   font-family: var(--font-display);
   font-size: 1.45rem;
 }
+.focus-area-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.3rem 0.8rem;
+  margin-top: 0.25rem;
+  color: #c8d4d5;
+  font-size: 0.75rem;
+}
+.focus-area-status span {
+  display: block;
+  white-space: nowrap;
+}
+.focus-area-rule {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.focus-area-rule b,
+.focus-area-rule span {
+  display: block;
+}
+.focus-area-rule b {
+  color: #e8f0ed;
+}
+.focus-area-rule span {
+  color: #f0c96c;
+}
 .focus-card-stats,
 .focus-card-action {
   margin-top: 0.25rem;
