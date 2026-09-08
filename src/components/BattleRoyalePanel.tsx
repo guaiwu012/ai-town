@@ -80,6 +80,7 @@ export default function BattleRoyalePanel({
   const [logFilter, setLogFilter] = useState<FeedCategory | 'all'>('all');
   const [expandedAreaId, setExpandedAreaId] = useState<string>();
   const [overviewTab, setOverviewTab] = useState<OverviewTab>('intervention');
+  const [showAllInterventions, setShowAllInterventions] = useState(false);
 
   useEffect(() => {
     if (!launchModal) return;
@@ -115,7 +116,11 @@ export default function BattleRoyalePanel({
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
   const fullEventFeed = battle?.feed ?? [];
-  const eventFeed = fullEventFeed.slice(0, 3);
+  const eventFeed = fullEventFeed.slice(0, 1);
+  const interventionOperations = INTERVENTION_OPERATIONS.filter((operation) => operation.id !== 'TRU_01');
+  const visibleInterventionOperations = showAllInterventions
+    ? interventionOperations
+    : interventionOperations.slice(0, 2);
   const filteredEventFeed = fullEventFeed.filter(
     (event) => logFilter === 'all' || categoryForEvent(event.kind) === logFilter,
   );
@@ -395,7 +400,7 @@ export default function BattleRoyalePanel({
                   {battle?.decisionDriverStatus ?? '规则 AI 接管'} · 模型决策{' '}
                   {battle?.decisionCount ?? 0}/{battle?.decisionMax ?? 240}
                 </div>
-                <div className="intervention-target-grid">
+                {showAllInterventions && <div className="intervention-target-grid">
                   <label>
                     角色目标
                     <select
@@ -430,12 +435,14 @@ export default function BattleRoyalePanel({
                         ))}
                     </select>
                   </label>
-                </div>
+                </div>}
                 <div className="target-area-readout">
+                  角色目标 <strong>{game.playerDescriptions.get(interventionTarget?.id as GameId<'players'>)?.name ?? '未选择'}</strong>
+                  <span>·</span>
                   地图目标 <strong>{displayAreaName(targetAreaId)}</strong>
                 </div>
                 <div className="intervention-operation-grid">
-                  {INTERVENTION_OPERATIONS.filter((operation) => operation.id !== 'TRU_01').map(
+                  {visibleInterventionOperations.map(
                     (operation) => {
                       const needsPair = operation.target === 'pair';
                       return (
@@ -455,6 +462,15 @@ export default function BattleRoyalePanel({
                     },
                   )}
                 </div>
+                <button
+                  className="console-text-button intervention-more-toggle"
+                  onClick={() => setShowAllInterventions((current) => !current)}
+                  aria-expanded={showAllInterventions}
+                >
+                  {showAllInterventions
+                    ? '收起高级干预'
+                    : `展开全部干预（${interventionOperations.length} 项）`}
+                </button>
                 {interventionTarget?.battle?.characterId === 'C12' && (
                   <button
                     className="arena-action arena-action-primary w-full disabled:opacity-40"
@@ -529,7 +545,7 @@ export default function BattleRoyalePanel({
 
         <div className="overview-feed commercial-event-ticker arena-panel min-h-0 overflow-hidden">
           <div className="ticker-heading">
-            <h3>实时战报</h3>
+            <h3>最新战报</h3>
             <button className="console-text-button" onClick={() => setLogsOpen(true)}>
               查看全部
             </button>
