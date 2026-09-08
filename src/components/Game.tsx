@@ -24,8 +24,10 @@ import SupportFactionPanel from './SupportFactionPanel.tsx';
 import GameLoadingScreen from './GameLoadingScreen.tsx';
 import { useBattleAudio } from '../hooks/useBattleAudio.ts';
 import SupportOnboarding, { supportGuideSeen } from './SupportOnboarding.tsx';
+import AudienceDanmaku from './AudienceDanmaku.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
+const DANMAKU_PREFERENCE_KEY = 'ai-town-audience-danmaku-enabled';
 
 export default function Game() {
   const convex = useConvex();
@@ -45,6 +47,7 @@ export default function Game() {
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [replayTime, setReplayTime] = useState<number>();
   const [directorCaption, setDirectorCaption] = useState('直播准备 · 等待现场');
+  const [danmakuEnabled, setDanmakuEnabled] = useState(() => window.localStorage.getItem(DANMAKU_PREFERENCE_KEY) !== 'false');
   const directorSwitchRef = useRef({ at: 0, eventId: -1 });
   const [gameWrapperRef, { width, height }] = useElementSize();
 
@@ -54,6 +57,14 @@ export default function Game() {
 
   const game = useServerGame(worldId);
   const { audioEnabled, toggleAudio } = useBattleAudio(game);
+
+  const toggleDanmaku = () => {
+    setDanmakuEnabled((enabled) => {
+      const next = !enabled;
+      window.localStorage.setItem(DANMAKU_PREFERENCE_KEY, String(next));
+      return next;
+    });
+  };
 
   // Send a periodic heartbeat to our world to keep it alive.
   useWorldHeartbeat();
@@ -160,6 +171,7 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         {!replayActive && <BattleBroadcastToasts feed={game.world.battle?.feed} />}
+        {viewMode === 'live' && !replayActive && <AudienceDanmaku enabled={danmakuEnabled} feed={game.world.battle?.feed} />}
         <DecisionDriver worldId={worldId} game={game} enabled={!replayActive} />
         {viewMode === 'live' ? <>
           <LiveBattleHud
@@ -180,6 +192,8 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             replayActive={replayActive}
             audioEnabled={audioEnabled}
             onToggleAudio={toggleAudio}
+            danmakuEnabled={danmakuEnabled}
+            onToggleDanmaku={toggleDanmaku}
           />
           {!replayActive && <BattleStoryCard game={game} />}
           {!replayActive && <BattleDialogueBox game={game} focusPlayerId={focusPlayerId} focusAreaId={focusAreaId} />}

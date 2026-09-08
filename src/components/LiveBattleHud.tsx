@@ -24,6 +24,8 @@ type LiveBattleHudProps = {
   replayActive: boolean;
   audioEnabled: boolean;
   onToggleAudio: () => void;
+  danmakuEnabled: boolean;
+  onToggleDanmaku: () => void;
 };
 
 export default function LiveBattleHud({
@@ -44,6 +46,8 @@ export default function LiveBattleHud({
   replayActive,
   audioEnabled,
   onToggleAudio,
+  danmakuEnabled,
+  onToggleDanmaku,
 }: LiveBattleHudProps) {
   const battle = game.world.battle;
   const [now, setNow] = useState(Date.now());
@@ -88,6 +92,7 @@ export default function LiveBattleHud({
         <div className="live-match-meta">第 {day} 天 · {timeOfDay === 'night' ? '夜间' : '白天'} · {alive} 人存活</div>
         <div className="live-top-actions">
           <button className={`live-hud-button ${audioEnabled ? 'is-audio-on' : ''}`} onClick={onToggleAudio} aria-label={audioEnabled ? '关闭游戏声音' : '开启游戏声音'}>{audioEnabled ? '声音开启' : '声音关闭'}</button>
+          <button className={`live-hud-button ${danmakuEnabled ? 'is-danmaku-on' : ''}`} onClick={onToggleDanmaku} aria-pressed={danmakuEnabled}>{danmakuEnabled ? '弹幕开启' : '弹幕关闭'}</button>
           <button className="live-hud-button" onClick={onOpenOverview}>战略总览</button>
           <button className={`live-hud-button ${replayActive ? 'is-active' : ''}`} onClick={onToggleReplay}>{replayActive ? '回放中' : '回放'}</button>
           <button className="live-hud-button live-hud-danger" onClick={onRestart}>新开一局</button>

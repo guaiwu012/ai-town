@@ -370,6 +370,58 @@ p[contenteditable='true']:empty::before {
   top: 5.75rem;
 }
 
+.audience-danmaku-layer {
+  position: absolute;
+  z-index: 15;
+  inset: 17.5rem 0 9rem;
+  overflow: hidden;
+  pointer-events: none;
+  contain: layout paint;
+}
+.audience-danmaku {
+  --danmaku-lane: 0;
+  --danmaku-duration: 10s;
+  position: absolute;
+  top: calc(var(--danmaku-lane) * 3.15rem + 0.4rem);
+  left: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(32rem, 72vw);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(5, 13, 22, 0.78);
+  box-shadow: 0 0.35rem 1.2rem rgba(0, 0, 0, 0.3);
+  color: #fff;
+  padding: 0.4rem 0.78rem 0.4rem 0.45rem;
+  font-size: 0.86rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  backdrop-filter: blur(5px);
+  animation: audience-danmaku-slide var(--danmaku-duration) linear forwards;
+}
+.audience-danmaku-persona {
+  border-radius: 999px;
+  padding: 0.25rem 0.5rem;
+  background: rgba(44, 220, 196, 0.2);
+  color: #79f0d6;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+}
+.audience-danmaku.is-hot .audience-danmaku-persona { background: rgba(255, 79, 79, 0.24); color: #ffaaa0; }
+.audience-danmaku.is-smart .audience-danmaku-persona { background: rgba(74, 167, 255, 0.24); color: #a9d5ff; }
+.audience-danmaku.is-fun .audience-danmaku-persona { background: rgba(255, 198, 62, 0.24); color: #ffe196; }
+.audience-danmaku.is-chaos .audience-danmaku-persona { background: rgba(206, 102, 255, 0.24); color: #e6b5ff; }
+.live-hud-button.is-danmaku-on {
+  border-color: #55d8c2;
+  color: #aaf7e7;
+}
+@keyframes audience-danmaku-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100vw - 100%)); }
+}
+
 .overview-console {
   color: #e8dfd5;
   background: rgba(3, 12, 23, 0.78);
@@ -1248,7 +1300,10 @@ p[contenteditable='true']:empty::before {
   }
   .live-top-actions {
     margin-left: 0;
+    flex-wrap: wrap;
   }
+  .audience-danmaku-layer { inset: 18.5rem 0 13rem; }
+  .audience-danmaku { max-width: 86vw; font-size: 0.75rem; }
   .live-hud-bottom {
     align-items: stretch;
     flex-direction: column;
@@ -1266,6 +1321,18 @@ p[contenteditable='true']:empty::before {
     bottom: 0;
     right: 0;
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audience-danmaku {
+    left: auto;
+    right: 1rem;
+    animation: audience-danmaku-reduced 6s ease forwards;
+  }
+  @keyframes audience-danmaku-reduced {
+    0%, 100% { opacity: 0; }
+    12%, 82% { opacity: 1; }
   }
 }
 
