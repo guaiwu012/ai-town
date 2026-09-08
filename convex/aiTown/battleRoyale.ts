@@ -94,6 +94,7 @@ export const battleStats = v.object({
   locomotionX: v.optional(v.number()),
   locomotionY: v.optional(v.number()),
   locomotionRecoveries: v.optional(v.number()),
+  moveSpeed: v.optional(v.number()),
   pendingStoryApproach: v.optional(v.string()),
   pendingStoryEventId: v.optional(v.string()),
   combatTargetId: v.optional(playerId),
@@ -131,6 +132,7 @@ export type BattleDialogue = Infer<typeof battleDialogue>;
 export const battleStoryBeat = v.object({
   id: v.number(), eventId: v.string(), ts: v.number(), areaId: v.string(), title: v.string(), actorId: playerId,
   scene: v.string(), choice: v.string(), approach: v.optional(v.string()), check: v.string(), roll: v.number(), bonus: v.number(), difficulty: v.number(), success: v.boolean(), outcome: v.string(),
+  effectText: v.optional(v.string()), item: v.optional(v.string()),
 });
 export type BattleStoryBeat = Infer<typeof battleStoryBeat>;
 
@@ -199,6 +201,9 @@ export type BattleReplayPatch = Infer<typeof battleReplayPatch>;
 
 export const battleState = v.object({
   started: v.number(),
+  endedAt: v.optional(v.number()),
+  matchStatus: v.optional(v.string()),
+  winnerPlayerId: v.optional(playerId),
   sessionId: v.optional(v.string()), platform: v.optional(v.string()), elapsedSec: v.optional(v.number()), phaseElapsedSec: v.optional(v.number()), phaseStartedAt: v.optional(v.number()),
   lastTick: v.number(),
   nextEventId: v.number(),
@@ -261,6 +266,7 @@ export const battleState = v.object({
     title: v.string(),
     description: v.string(),
     status: v.string(),
+    score: v.optional(v.number()),
     targetA: v.optional(v.string()),
     targetB: v.optional(v.string()),
   }))),
