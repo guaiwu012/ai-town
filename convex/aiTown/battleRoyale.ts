@@ -21,7 +21,8 @@ import {
   CHARACTER_STORIES,
   availableAreaItemsFor,
   HIDDEN_MISSIONS,
-  POPULARITY_RATINGS,
+  popularityRatingFor,
+  tunedPopularityGain,
   INTERVENTION_OPERATIONS,
   RELATION_GENERATION,
   SUPPORT_CHAIN_SEQUENCE,
@@ -674,7 +675,7 @@ export function tickBattleRoyale(game: Game, now: number) {
 function settleBattle(battle: BattleState) {
   battle.phase = 'settlement';
   battle.settlementPopularity = battle.popularity ?? 0;
-  battle.settlementRating = POPULARITY_RATINGS.find((rating) => (battle.popularity ?? 0) >= rating.min)?.rating ?? 'C';
+  battle.settlementRating = popularityRatingFor(battle.popularity ?? 0, battle.interventionSpentTotal ?? 0);
   battle.popularityRating = battle.settlementRating;
   battle.mainMissionDone = battle.settlementRating === 'S';
   battle.settlementReward = SUPPLEMENTAL_RULES.ratingRewards[battle.settlementRating];
@@ -944,7 +945,7 @@ function tickMatchRules(game: Game, now: number) {
   applyBattleVitals(game, now);
   const elapsed = Math.max(0, now - battle.started);
   battle.elapsedSec = Math.floor(elapsed / 1000);
-  battle.popularityRating = POPULARITY_RATINGS.find((rating) => (battle.popularity ?? 0) >= rating.min)?.rating ?? 'C';
+  battle.popularityRating = popularityRatingFor(battle.popularity ?? 0, battle.interventionSpentTotal ?? 0);
   const dayLength = BATTLE_CONFIG.match.dayMs + BATTLE_CONFIG.match.nightMs;
   const cycleMs = elapsed % dayLength;
   const timeOfDay = cycleMs < BATTLE_CONFIG.match.dayMs ? 'day' : 'night';
@@ -2744,6 +2745,7 @@ function relationshipBetween(game: Game, first: Player, second: Player, now = ga
 export function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
   if (isAreaLocked(game.world.battle, now, player.battle?.areaId ?? 'A01')) return false;
   if (areaId === 'S01' && (player.battle?.characterId !== 'C12' || !game.world.battle?.truthUnlocked)) return false;
+  if (areaId !== 'S01' && !game.world.battle?.openAreas?.includes(areaId)) return false;
   if (areaId === 'A09' && itemModifier(player.battle!, 'unlock', now) <= 0) return false;
   if (areaId === 'A01' && itemModifier(player.battle!, 'cold_resist', now) <= 0) { player.battle!.hp = Math.max(1, player.battle!.hp - 10); player.battle!.stress = (player.battle!.stress ?? 0) + 5; }
   const candidates = battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
@@ -2778,7 +2780,8 @@ function awardPopularity(game: Game, now: number, baseScore: number, participant
   const result = scoreAward(now, baseScore, heat, comboEligible, battle.scoreLedger ?? []);
   battle.scoreLedger = result.entries;
   battle.scoreTimestamps = result.entries.map(entry => entry.ts);
-  battle.popularity = Math.max(0, Math.round(((battle.popularity ?? 0) + result.gained) * 100) / 100);
+  const gained = tunedPopularityGain(battle.popularity ?? 0, result.gained);
+  battle.popularity = Math.max(0, Math.round(((battle.popularity ?? 0) + gained) * 100) / 100);
   battle.popularityPeak = Math.max(battle.popularityPeak ?? 0, battle.popularity);
   battle.comboCount = result.entries.length;
   battle.comboMultiplier = result.multiplier;
@@ -2792,7 +2795,7 @@ function awardPopularity(game: Game, now: number, baseScore: number, participant
     battle.heatMilestoneClaimed = milestones;
     pushEvent(game, now, 'heat', `【热度】直播热度达到 ${battle.popularity}，主办方获得 ${newRewards} 点干预点。`);
   }
-  return result.gained;
+  return gained;
 }
 
 function recordHeatPoint(battle: BattleState, now: number) { const history = battle.heatHistory ??= []; const last = history[history.length - 1]; if (last && now - last.ts < 5000) last.value = battle.popularity ?? 0; else history.push({ ts: now, value: battle.popularity ?? 0 }); battle.heatHistory = history.slice(-30); }
@@ -2851,7 +2854,7 @@ function unlockTruth(game: Game, now: number, player: Player) {
 
 function updateMissionProgress(game: Game, now: number) {
   const battle = game.world.battle!;
-  if ((battle.popularity ?? 0) >= 500 && !battle.completedMissionIds?.includes('MAIN_S')) {
+  if (popularityRatingFor(battle.popularity ?? 0, battle.interventionSpentTotal ?? 0) === 'S' && !battle.completedMissionIds?.includes('MAIN_S')) {
     battle.completedMissionIds!.push('MAIN_S');
     battle.mainMissionDone = true;
     pushEvent(game, now, 'mission', '【任务】主线目标完成：直播热度达到 S 级。');

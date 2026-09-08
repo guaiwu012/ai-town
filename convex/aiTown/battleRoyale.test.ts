@@ -1,4 +1,4 @@
-import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, moveToBattleArea, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -981,6 +981,18 @@ describe('battle royale host intervention rules', () => {
     game.world.battle.openAreas = game.world.battle.openAreas.filter((id: string) => id !== 'A05'); game.world.battle.zoneClosesAt = 999_999; player.battle.lastZoneDamageAt = 1_000; player.battle.hp = 100; player.battle.zoneTime = 30;
     tickBattleRoyale(game, 4_000);
     expect(player.battle.hp).toBe(100); expect(player.battle.zoneTime).toBe(27);
+  });
+
+  it('blocks safe contestants from entering or pathing across a closed area', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const opponent = createPlayer('p:2', 'C02', 'A02');
+    const game = createGame([player, opponent]);
+    game.world.battle.openAreas = game.world.battle.openAreas.filter((id: string) => id !== 'A06');
+    const closedPoint = battleAreaSpawnPoints('A06', 80, 60)[0];
+
+    expect(blocked(game, 2_000, closedPoint, player.id)).toBe('closed battle area');
+    expect(moveToBattleArea(game, 2_000, player, 'A06')).toBe(false);
+    expect(player.battle.areaId).toBe('A01');
   });
 
   it('settles the configured final pair as a double victory', () => {

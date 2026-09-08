@@ -1,7 +1,15 @@
-import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, CHARACTER_PERSONAS, COMBO_RULES, GLOBAL_RARE_ITEMS, GLOBAL_SPECIAL_EVENTS, HIDDEN_MISSIONS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, ITEM_EFFECTS, POPULARITY_RATINGS, SCORE_RULES, adjacentAreaIds, availableAreaItemsFor, itemDefinition, storyOptionsFor, validateBattleConfig } from './battleRoyaleConfig';
+import { BATTLE_ACTIONS, BATTLE_CONFIG, AREA_ANCHORS, AREA_SPECIAL_EVENTS, AREA_STORY_NARRATIVES, CHARACTER_PERSONAS, COMBO_RULES, GLOBAL_RARE_ITEMS, GLOBAL_SPECIAL_EVENTS, HIDDEN_MISSIONS, INTERVENTION_OPERATIONS, ITEM_DEFINITIONS, ITEM_EFFECTS, POPULARITY_PROGRESSION, POPULARITY_RATINGS, SCORE_RULES, adjacentAreaIds, availableAreaItemsFor, itemDefinition, popularityRatingFor, storyOptionsFor, tunedPopularityGain, validateBattleConfig } from './battleRoyaleConfig';
 import { BATTLE_ARENA_ZONES, battleAreaNavigationPoints, battleAreaSpawnPoints, buildBattleArenaGrid, isBattleArenaPositionWalkable, isBattleArenaWalkable, isPointInBattleArea } from './battleArena';
 
 describe('battle royale P0/P1 configuration', () => {
+  test('paces live ratings and reserves S rank for active spectators', () => {
+    expect(popularityRatingFor(2_000, 0)).toBe('A');
+    expect(popularityRatingFor(POPULARITY_PROGRESSION.sHeat, POPULARITY_PROGRESSION.sInterventionSpent)).toBe('S');
+    expect(tunedPopularityGain(100, 20)).toBe(20);
+    expect(tunedPopularityGain(500, 20)).toBe(10);
+    expect(tunedPopularityGain(1_000, 20)).toBe(5);
+  });
+
   test('has a valid 13-area graph and an anchor for every area', () => {
     expect(() => validateBattleConfig()).not.toThrow();
     expect(BATTLE_CONFIG.areas).toHaveLength(13);

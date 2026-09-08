@@ -7,7 +7,7 @@ import { Game } from './game';
 import { GameId } from './ids';
 import { Player } from './player';
 import { WorldMap } from './worldMap';
-import { isBattleArenaPositionWalkable } from '../../data/battleArena';
+import { BATTLE_ARENA_ZONES, isBattleArenaPositionWalkable, isPointInBattleArea } from '../../data/battleArena';
 import { SUPPLEMENTAL_RULES } from '../../data/referenceExecution';
 
 export function battleMovementMultiplier(player: Pick<Player, 'battle'>, now: number) {
@@ -178,6 +178,18 @@ export function blocked(game: Game, now: number, pos: Point, playerId?: GameId<'
     .filter((p) => p.id !== playerId && (!movingPlayer?.battle || !p.battle?.eliminated))
     .map((p) => p.position);
   if (movingPlayer?.battle) {
+    const openAreas = new Set(game.world.battle?.openAreas ?? []);
+    const closedAreaAt = (point: Point) => BATTLE_ARENA_ZONES.find((zone) => (
+      !openAreas.has(zone.id)
+      && isPointInBattleArea(zone.id, point, game.worldMap.width, game.worldMap.height)
+    ))?.id;
+    const candidateClosedArea = closedAreaAt(pos);
+    const currentClosedArea = closedAreaAt(movingPlayer.position);
+    // A contestant already caught by a closure may keep moving outward, but a
+    // contestant in safety can never path into (or cut across) a closed polygon.
+    if (candidateClosedArea && candidateClosedArea !== currentClosedArea) {
+      return 'closed battle area';
+    }
     return blockedWithBattlePositions(pos, otherPositions, game.worldMap);
   }
   return blockedWithPositions(pos, otherPositions, game.worldMap);

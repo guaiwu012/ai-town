@@ -6,7 +6,7 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import type { SelectElement } from './Player';
-import { BATTLE_CONFIG, INTERVENTION_OPERATIONS } from '../../data/battleRoyaleConfig';
+import { BATTLE_CONFIG, INTERVENTION_OPERATIONS, POPULARITY_PROGRESSION, popularityRatingFor } from '../../data/battleRoyaleConfig';
 import {
   AccessibleDialog,
   EventIcon,
@@ -111,7 +111,7 @@ export default function BattleRoyalePanel({
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
   const battle = game.world.battle;
   const heat = battle?.popularity ?? 0;
-  const heatGrade = heat >= 700 ? 'S' : heat >= 500 ? 'A' : heat >= 300 ? 'B' : 'C';
+  const heatGrade = popularityRatingFor(heat, battle?.interventionSpentTotal ?? 0);
   const openAreas = battle?.openAreas ?? BATTLE_CONFIG.areas.map((area) => area.id);
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
@@ -488,10 +488,10 @@ export default function BattleRoyalePanel({
                   <span>主线任务</span>
                   <strong>达到 S 级直播热度</strong>
                   <p>
-                    当前 {heatGrade} 级 · {heat}/700
+                    当前 {heatGrade} 级 · 热度 {heat}/{POPULARITY_PROGRESSION.sHeat} · 已投入 {battle?.interventionSpentTotal ?? 0}/{POPULARITY_PROGRESSION.sInterventionSpent} 点
                   </p>
                   <div className="task-progress">
-                    <i style={{ width: `${Math.min(100, heat / 7)}%` }} />
+                    <i style={{ width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%` }} />
                   </div>
                 </div>
                 <div className="task-summary-card">
@@ -577,10 +577,10 @@ export default function BattleRoyalePanel({
             <span>主线任务</span>
             <h3>达到 S 级直播热度</h3>
             <p>
-              当前 {heatGrade} 级 · {heat} / 700
+              当前 {heatGrade} 级 · 热度 {heat} / {POPULARITY_PROGRESSION.sHeat} · 干预投入 {battle?.interventionSpentTotal ?? 0} / {POPULARITY_PROGRESSION.sInterventionSpent}
             </p>
             <div className="task-progress">
-              <i style={{ width: `${Math.min(100, heat / 7)}%` }} />
+              <i style={{ width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%` }} />
             </div>
           </article>
           <article className="task-card">

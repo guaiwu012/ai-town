@@ -395,6 +395,34 @@ export const SCORE_RULES = {
 export const COMBO_RULES = REFERENCE_COMBOS.map((row) => ({ windowMs: Number(row.window_sec) * 1000, minEvents: Number(row.min_events), multiplier: Number(row.multiplier) }));
 export const POPULARITY_RATINGS = REFERENCE_RATINGS.map((row) => ({ rating: String(row.rating), min: Number(row.heat_min) }));
 
+// The source workbook remains the scoring authority above. This progression layer
+// spaces the ratings for a live match and makes S rank require spectator agency.
+export const POPULARITY_PROGRESSION = {
+  sHeat: 1500,
+  sInterventionSpent: 12,
+  aHeat: 800,
+  bHeat: 300,
+  softCapStart: 350,
+  hardCapStart: 900,
+  midGainMultiplier: 0.5,
+  lateGainMultiplier: 0.25,
+} as const;
+
+export function popularityRatingFor(popularity: number, interventionSpent = 0) {
+  if (popularity >= POPULARITY_PROGRESSION.sHeat && interventionSpent >= POPULARITY_PROGRESSION.sInterventionSpent) return 'S';
+  if (popularity >= POPULARITY_PROGRESSION.aHeat) return 'A';
+  if (popularity >= POPULARITY_PROGRESSION.bHeat) return 'B';
+  return 'C';
+}
+
+export function tunedPopularityGain(currentPopularity: number, rawGain: number) {
+  if (rawGain <= 0 || currentPopularity < POPULARITY_PROGRESSION.softCapStart) return rawGain;
+  const multiplier = currentPopularity >= POPULARITY_PROGRESSION.hardCapStart
+    ? POPULARITY_PROGRESSION.lateGainMultiplier
+    : POPULARITY_PROGRESSION.midGainMultiplier;
+  return Math.round(rawGain * multiplier * 100) / 100;
+}
+
 // 24 regional rows from the reference story table. Runtime dispatches these by effect,
 // so narrative rows stay data-driven instead of being hard-coded in the loop.
 export const AREA_SPECIAL_EVENTS = [
