@@ -464,35 +464,29 @@ describe('battle royale host intervention rules', () => {
     expect(hunter.pathfinding?.destination).not.toEqual(points[0]);
   });
 
-  it('assigns a bounty from the first contestant to the second contestant', () => {
+  it('marks one contestant for a public bounty using the source target rule', () => {
     const hunter = createPlayer('p:1', 'C01', 'A01');
     const target = createPlayer('p:2', 'C02', 'A06');
     const game = createGame([hunter, target]);
 
-    expect(() => applyIntervention(game, 2_000, { opId: 'RUL_04', targetPlayerId: hunter.id }))
-      .toThrow('请选择两名不同角色。');
-
     const result = applyIntervention(game, 2_000, {
       opId: 'RUL_04',
-      targetPlayerId: hunter.id,
-      secondPlayerId: target.id,
+      targetPlayerId: target.id,
     });
 
-    expect(result).toMatchObject({ remainingPoints: 11, operation: '悬赏追杀' });
-    expect(game.world.battle).toMatchObject({ bountyHunterId: hunter.id, bountyPlayerId: target.id });
-    expect(hunter.activity?.description).toContain('接到追杀任务');
+    expect(result).toMatchObject({ remainingPoints: 11, operation: '悬赏标记' });
+    expect(game.world.battle).toMatchObject({ bountyHunterId: undefined, bountyPlayerId: target.id });
     expect(target.activity?.description).toContain('悬赏警报');
-    expect(game.world.battle.feed.some((event: any) => event.text.includes('向C01发布追杀任务，目标为C02'))).toBe(true);
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('悬赏C02'))).toBe(true);
   });
 
-  it('makes the assigned hunter pursue across areas and awards only a completed contract', () => {
+  it('makes a contestant pursue the bounty and rewards equipment and time', () => {
     const hunter = createPlayer('p:1', 'C01', 'A01');
     const target = createPlayer('p:2', 'C02', 'A06');
     const game = createGame([hunter, target]);
     applyIntervention(game, 2_000, {
       opId: 'RUL_04',
-      targetPlayerId: hunter.id,
-      secondPlayerId: target.id,
+      targetPlayerId: target.id,
     });
 
     tickBattleRoyale(game, 7_000);
@@ -509,21 +503,21 @@ describe('battle royale host intervention rules', () => {
       targetPlayerId: target.id,
     })).toMatchObject({ accepted: true });
 
-    expect(hunter.battle.coins - coinsBefore).toBe(90);
+    expect(hunter.battle.coins - coinsBefore).toBe(55);
+    expect(hunter.battle.inventory).toContain('防弹插板');
     expect(game.world.battle.bountyHunterId).toBeUndefined();
     expect(game.world.battle.bountyPlayerId).toBeUndefined();
     expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏完成】'))).toBe(true);
   });
 
-  it('forces an assigned hunter to close distance once the bounty target is in the same area', () => {
+  it('closes distance once the public bounty target is in the same area', () => {
     const hunter = createPlayer('p:1', 'C01', 'A01');
     const target = createPlayer('p:2', 'C02', 'A01');
     target.position = { x: hunter.position.x + 4, y: hunter.position.y };
     const game = createGame([hunter, target]);
     applyIntervention(game, 500, {
       opId: 'RUL_04',
-      targetPlayerId: hunter.id,
-      secondPlayerId: target.id,
+      targetPlayerId: target.id,
     });
 
     tickBattleRoyale(game, 7_000);
@@ -533,15 +527,14 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.actionLog.some((entry: any) => entry.playerId === hunter.id && entry.action === 'move')).toBe(true);
   });
 
-  it('invalidates a bounty without paying its reward when a third party eliminates the target', () => {
+  it('pays the bounty equipment to a third party that eliminates the target', () => {
     const hunter = createPlayer('p:1', 'C01', 'A01');
     const target = createPlayer('p:2', 'C02', 'A01');
     const thirdParty = createPlayer('p:3', 'C03', 'A01');
     const game = createGame([hunter, target, thirdParty]);
     applyIntervention(game, 2_000, {
       opId: 'RUL_04',
-      targetPlayerId: hunter.id,
-      secondPlayerId: target.id,
+      targetPlayerId: target.id,
     });
     thirdParty.position = { ...target.position };
     target.battle.hp = 1;
@@ -557,7 +550,8 @@ describe('battle royale host intervention rules', () => {
     expect(thirdParty.battle.coins - coinsBefore).toBe(55);
     expect(game.world.battle.bountyHunterId).toBeUndefined();
     expect(game.world.battle.bountyPlayerId).toBeUndefined();
-    expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏失效】'))).toBe(true);
+    expect(thirdParty.battle.inventory).toContain('防弹插板');
+    expect(game.world.battle.feed.some((event: any) => event.text.includes('【悬赏完成】'))).toBe(true);
   });
 
   it('records a validated model-selected investigation approach', () => {
@@ -674,18 +668,17 @@ describe('battle royale host intervention rules', () => {
     expect(areaEventEligible(game, 2_000, event)).toBe(true);
   });
 
-  it('reveals the selected character hidden relationship and leaves an audit event', () => {
+  it('shows the organizer all selected relationships without revealing them to characters', () => {
     const game = createGame([createPlayer('p:4', 'C03', 'A05')]);
 
     applyIntervention(game, 2_000, { opId: 'REC_01', targetPlayerId: 'p:4' });
 
     const mentorLink = game.world.battle.relationshipEdges.find((edge: any) => edge.id === 'REL_SEED_04');
-    expect(mentorLink.hidden).toBe(false);
-    expect(mentorLink.lastReason).toBe('主办方关系侦察');
-    expect(game.world.battle.feed.some((event: any) => event.text.includes('隐藏师徒关系已被公开侦察'))).toBe(true);
+    expect(mentorLink.hidden).toBe(true);
+    expect(game.world.battle.organizerIntel.some((line: string) => line.includes('师徒') && line.includes('隐藏'))).toBe(true);
     const replayEntry = game.world.battle.actionLog.at(-1);
     expect(replayEntry).toMatchObject({ action: 'intervention', accepted: true });
-    expect(replayEntry.patch.relationships).toContainEqual(expect.objectContaining({ id: 'REL_SEED_04', hidden: false }));
+    expect(replayEntry.patch.relationships).toEqual([]);
   });
 
   it('turns anonymous provocation into a durable negative relationship change', () => {

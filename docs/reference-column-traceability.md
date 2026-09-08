@@ -184,43 +184,43 @@
 | areaResources / Table 14 | 3. 刷新时间（H1；R2-6） | REFERENCE_ITEMS / BATTLE_CONFIG.areaItems | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 背包 |
 | areaResources / Table 14 | 4. 刷新地点（H1；R2-6） | REFERENCE_ITEMS / BATTLE_CONFIG.areaItems | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 背包 |
 | areaResources / Table 14 | 5. 用途（H1；R2-6） | REFERENCE_ITEMS / BATTLE_CONFIG.areaItems | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 背包 |
-| items / 00_字段说明 | 1. 项（H3；R4-9） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 00_字段说明 | 2. 说明（H3；R4-9） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 00b_effect_key字典 | 1. effect_key（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 00b_effect_key字典 | 2. 含义（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 00b_effect_key字典 | 3. effect_value 含义（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 00b_effect_key字典 | 4. effect_value_2（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 1. item_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 2. name（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 3. category（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 4. sub_category（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 5. rarity（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 6. effect_desc（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 7. effect_key（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 8. effect_value（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 9. effect_value_2（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 10. duration_sec（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 11. is_consumable（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 12. stackable（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 13. slot_size（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 14. search_weight（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 15. primary_area_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 16. is_char_exclusive（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 17. exclusive_char_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 18. is_global_rare（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 01_物品主表 | 19. spawn_rule（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 02_区域池映射 | 1. area_id（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 02_区域池映射 | 2. item_id（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 02_区域池映射 | 3. name（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 02_区域池映射 | 4. rarity（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 02_区域池映射 | 5. is_char_exclusive（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 1. item_id（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 2. name（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 3. qty_rule（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 4. spawn_rule（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 5. effect_key（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 6. effect_value（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
-| items / 03_全局稀有 | 7. slot_size（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | performSearch / applyBattleItemEffect | data/referenceTraceability.test.ts | BattleCharacterDrawer 物品效果 |
+| items / 00_字段说明 | 1. 项（H3；R4-9） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 00_字段说明 | 2. 说明（H3；R4-9） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 00b_effect_key字典 | 1. effect_key（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 00b_effect_key字典 | 2. 含义（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 00b_effect_key字典 | 3. effect_value 含义（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 00b_effect_key字典 | 4. effect_value_2（H1；R2-17） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 1. item_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 2. name（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 3. category（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 4. sub_category（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 5. rarity（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 6. effect_desc（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 7. effect_key（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 8. effect_value（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 9. effect_value_2（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 10. duration_sec（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 11. is_consumable（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 12. stackable（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 13. slot_size（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 14. search_weight（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 15. primary_area_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 16. is_char_exclusive（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 17. exclusive_char_id（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 18. is_global_rare（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 01_物品主表 | 19. spawn_rule（H1；R2-69） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 02_区域池映射 | 1. area_id（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 02_区域池映射 | 2. item_id（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 02_区域池映射 | 3. name（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 02_区域池映射 | 4. rarity（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 02_区域池映射 | 5. is_char_exclusive（H1；R2-64） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 1. item_id（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 2. name（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 3. qty_rule（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 4. spawn_rule（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 5. effect_key（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 6. effect_value（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
+| items / 03_全局稀有 | 7. slot_size（H1；R2-6） | REFERENCE_ITEMS / ITEM_DEFINITIONS | loot / applyBattleItemEffect / refreshItemIntel / attack | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects |
 | zoneRules / Table 1 | 1. 阶段（H1；R2-5） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
 | zoneRules / Table 1 | 2. 触发条件（H1；R2-5） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
 | zoneRules / Table 1 | 3. 每轮关闭数量（H1；R2-5） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
@@ -246,18 +246,18 @@
 | zoneRules / Table 5 | 5. 是否向角色广播（H1；R2-6） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
 | zoneRules / Table 6 | 1. 情况（H1；R2-5） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
 | zoneRules / Table 6 | 2. 处理（H1；R2-5） | BATTLE_CONFIG.zone | tickMatchRules / performIntervention | data/referenceTraceability.test.ts | LiveBattleHud 禁区状态 |
-| characterAreas / Table 1 | 1. 角色ID（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 1 | 2. 代号（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 1 | 3. 角色名（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 1 | 4. 对应区域（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 1 | 5. 区域名称（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 1 | 6. 特殊区域（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 1. 角色（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 2. 触发条件（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 3. 剧情事件名（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 4. 效果（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 5. 热度奖励（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
-| characterAreas / Table 2 | 6. 隐藏任务推进（H1；R2-13） | CHARACTER_STORIES / BATTLE_CONFIG.areas | triggerCharacterStory / moveToBattleArea | data/referenceTraceability.test.ts | BattleCharacterDrawer 区域剧情 |
+| characterAreas / Table 1 | 1. 角色ID（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 1 | 2. 代号（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 1 | 3. 角色名（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 1 | 4. 对应区域（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 1 | 5. 区域名称（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 1 | 6. 特殊区域（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 1. 角色（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 2. 触发条件（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 3. 剧情事件名（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 4. 效果（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 5. 热度奖励（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
+| characterAreas / Table 2 | 6. 隐藏任务推进（H1；R2-13） | REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES | triggerCharacterStory / moveToBattleArea | convex/aiTown/referenceExecution.test.ts | BattleCharacterDrawer 区域剧情与私人情报 |
 | adjacency / 00_说明 | 1. 项（H3；R4-8） | BATTLE_CONFIG.adjacency | adjacentAreaIds / moveToBattleArea | data/referenceTraceability.test.ts | BattleMapOverlay 路径 |
 | adjacency / 00_说明 | 2. 内容（H3；R4-8） | BATTLE_CONFIG.adjacency | adjacentAreaIds / moveToBattleArea | data/referenceTraceability.test.ts | BattleMapOverlay 路径 |
 | adjacency / 01_边列表 | 1. edge_id（H1；R2-18） | BATTLE_CONFIG.adjacency | adjacentAreaIds / moveToBattleArea | data/referenceTraceability.test.ts | BattleMapOverlay 路径 |
@@ -288,55 +288,55 @@
 | stories / Table 2 | 5. 热度（H1；R2-4） | AREA_SPECIAL_EVENTS / GLOBAL_SPECIAL_EVENTS | triggerAreaSpecialEvent / triggerGlobalSpecialEvent | data/referenceTraceability.test.ts | 直播事件流 / 区域剧情 |
 | stories / Table 3 | 1. 事件（H1；R2-7） | AREA_SPECIAL_EVENTS / GLOBAL_SPECIAL_EVENTS | triggerAreaSpecialEvent / triggerGlobalSpecialEvent | data/referenceTraceability.test.ts | 直播事件流 / 区域剧情 |
 | stories / Table 3 | 2. 可干预（H1；R2-7） | AREA_SPECIAL_EVENTS / GLOBAL_SPECIAL_EVENTS | triggerAreaSpecialEvent / triggerGlobalSpecialEvent | data/referenceTraceability.test.ts | 直播事件流 / 区域剧情 |
-| interventions / Table 1 | 1. ID（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 2. 操作（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 3. 消耗（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 4. 冷却（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 5. 目标（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 6. 效果（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 1 | 7. 广播（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 1. ID（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 2. 操作（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 3. 消耗（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 4. 冷却（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 5. 目标（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 6. 效果（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 2 | 7. 广播（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 1. ID（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 2. 操作（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 3. 消耗（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 4. 冷却（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 5. 目标（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 6. 效果（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 3 | 7. 广播（H1；R2-5） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 1. ID（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 2. 操作（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 3. 消耗（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 4. 冷却（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 5. 目标（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 6. 效果（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 4 | 7. 广播（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 1. ID（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 2. 操作（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 3. 消耗（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 4. 冷却（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 5. 目标（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 5 | 6. 效果（H1；R2-3） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 6 | 1. 参数（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 6 | 2. 值（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| interventions / Table 6 | 3. 推导（H1；R2-6） | INTERVENTION_OPERATIONS | performIntervention | data/referenceTraceability.test.ts | BattleRoyalePanel 导演台 |
-| logs / Table 1 | 1. 分类（H1；R2-22） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 1 | 2. event_type（H1；R2-22） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 1 | 3. 全局日志（H1；R2-22） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 1 | 4. 地图日志（H1；R2-22） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 1 | 5. 角色日志（H1；R2-22） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 2 | 1. event_type（H1；R2-13） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 2 | 2. 模板（H1；R2-13） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 2 | 3. 示例（H1；R2-13） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 3 | 1. event_type（H1；R2-7） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 3 | 2. 模板（H1；R2-7） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 4 | 1. event_type（H1；R2-8） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
-| logs / Table 4 | 2. 模板（H1；R2-8） | REFERENCE_LOG_* | pushEvent / recordBattleDialogue | data/referenceTraceability.test.ts | LiveBattleHud 事件流 |
+| interventions / Table 1 | 1. ID（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 2. 操作（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 3. 消耗（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 4. 冷却（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 5. 目标（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 6. 效果（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 1 | 7. 广播（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 1. ID（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 2. 操作（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 3. 消耗（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 4. 冷却（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 5. 目标（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 6. 效果（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 2 | 7. 广播（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 1. ID（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 2. 操作（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 3. 消耗（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 4. 冷却（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 5. 目标（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 6. 效果（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 3 | 7. 广播（H1；R2-5） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 1. ID（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 2. 操作（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 3. 消耗（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 4. 冷却（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 5. 目标（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 6. 效果（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 4 | 7. 广播（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 1. ID（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 2. 操作（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 3. 消耗（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 4. 冷却（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 5. 目标（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 5 | 6. 效果（H1；R2-3） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 6 | 1. 参数（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 6 | 2. 值（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| interventions / Table 6 | 3. 推导（H1；R2-6） | REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS | applyIntervention | convex/aiTown/referenceExecution.test.ts | BattleRoyalePanel 导演台与私人情报 |
+| logs / Table 1 | 1. 分类（H1；R2-22） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 1 | 2. event_type（H1；R2-22） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 1 | 3. 全局日志（H1；R2-22） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 1 | 4. 地图日志（H1；R2-22） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 1 | 5. 角色日志（H1；R2-22） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 2 | 1. event_type（H1；R2-13） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 2 | 2. 模板（H1；R2-13） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 2 | 3. 示例（H1；R2-13） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 3 | 1. event_type（H1；R2-7） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 3 | 2. 模板（H1；R2-7） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 4 | 1. event_type（H1；R2-8） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
+| logs / Table 4 | 2. 模板（H1；R2-8） | REFERENCE_LOG_* / referenceLog | pushEvent / referenceLog | data/referenceExecution.test.ts | BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流 |
 | globalConfig / 00_说明 | 1. 游戏全局配置表 game_config v0.1（H1；R2-5） | REFERENCE_GLOBAL_CONFIG / BATTLE_CONFIG | 全部规则执行入口 | data/referenceTraceability.test.ts | HUD / 角色抽屉 |
 | globalConfig / 01_全局配置 | 1. config_key（H1；R2-69） | REFERENCE_GLOBAL_CONFIG / BATTLE_CONFIG | 全部规则执行入口 | data/referenceTraceability.test.ts | HUD / 角色抽屉 |
 | globalConfig / 01_全局配置 | 2. value（H1；R2-69） | REFERENCE_GLOBAL_CONFIG / BATTLE_CONFIG | 全部规则执行入口 | data/referenceTraceability.test.ts | HUD / 角色抽屉 |
@@ -363,50 +363,50 @@
 | playerState / 03_派生规则 | 1. rule_id（H1；R2-8） | battleStats / battleState | ensureBattleState / tickMatchRules | data/referenceTraceability.test.ts | BattleCharacterDrawer |
 | playerState / 03_派生规则 | 2. trigger（H1；R2-8） | battleStats / battleState | ensureBattleState / tickMatchRules | data/referenceTraceability.test.ts | BattleCharacterDrawer |
 | playerState / 03_派生规则 | 3. effect（H1；R2-8） | battleStats / battleState | ensureBattleState / tickMatchRules | data/referenceTraceability.test.ts | BattleCharacterDrawer |
-| scores / 00_热点倍率规则 | 1. 项（H3；R4-10） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 00_热点倍率规则 | 2. 说明（H3；R4-10） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 1. event_id（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 2. event_name（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 3. base_score（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 4. condition（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 5. heat_multiplier_applies（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 6. heat_anchor（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 7. is_combo_eligible（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 01_加分事件 | 8. notes（H1；R2-13） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 1. event_id（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 2. event_name（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 3. base_score（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 4. condition（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 5. heat_multiplier_applies（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 6. heat_anchor（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 7. is_combo_eligible（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 02_扣分事件 | 8. notes（H1；R2-4） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 03_连击 | 1. combo_id（H1；R2-3） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 03_连击 | 2. window_sec（H1；R2-3） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 03_连击 | 3. min_events（H1；R2-3） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 03_连击 | 4. multiplier（H1；R2-3） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 03_连击 | 5. notes（H1；R2-3） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 04_通关评级 | 1. rating（H1；R2-5） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 04_通关评级 | 2. heat_min（H1；R2-5） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 04_通关评级 | 3. heat_max（H1；R2-5） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 04_通关评级 | 4. reward（H1；R2-5） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 1. mission_id（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 2. name（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 3. condition（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 4. base_score（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 5. heat_multiplier_applies（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 6. heat_anchor（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 05_隐藏任务 | 7. notes（H1；R2-7） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 06_主线 | 1. mission_id（H1；R2-2） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 06_主线 | 2. name（H1；R2-2） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 06_主线 | 3. condition（H1；R2-2） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 06_主线 | 4. notes（H1；R2-2） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 1. 场景（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 2. base（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 3. 角色热点（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 4. 倍率（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 5. actual（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
-| scores / 07_结算示例 | 6. 说明（H1；R2-6） | SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS | awardPopularity / completeMission | data/referenceTraceability.test.ts | LiveBattleHud 热度与任务 |
+| scores / 00_热点倍率规则 | 1. 项（H3；R4-10） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 00_热点倍率规则 | 2. 说明（H3；R4-10） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 1. event_id（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 2. event_name（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 3. base_score（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 4. condition（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 5. heat_multiplier_applies（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 6. heat_anchor（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 7. is_combo_eligible（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 01_加分事件 | 8. notes（H1；R2-13） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 1. event_id（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 2. event_name（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 3. base_score（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 4. condition（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 5. heat_multiplier_applies（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 6. heat_anchor（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 7. is_combo_eligible（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 02_扣分事件 | 8. notes（H1；R2-4） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 03_连击 | 1. combo_id（H1；R2-3） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 03_连击 | 2. window_sec（H1；R2-3） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 03_连击 | 3. min_events（H1；R2-3） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 03_连击 | 4. multiplier（H1；R2-3） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 03_连击 | 5. notes（H1；R2-3） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 04_通关评级 | 1. rating（H1；R2-5） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 04_通关评级 | 2. heat_min（H1；R2-5） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 04_通关评级 | 3. heat_max（H1；R2-5） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 04_通关评级 | 4. reward（H1；R2-5） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 1. mission_id（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 2. name（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 3. condition（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 4. base_score（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 5. heat_multiplier_applies（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 6. heat_anchor（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 05_隐藏任务 | 7. notes（H1；R2-7） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 06_主线 | 1. mission_id（H1；R2-2） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 06_主线 | 2. name（H1；R2-2） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 06_主线 | 3. condition（H1；R2-2） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 06_主线 | 4. notes（H1；R2-2） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 1. 场景（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 2. base（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 3. 角色热点（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 4. 倍率（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 5. actual（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
+| scores / 07_结算示例 | 6. 说明（H1；R2-6） | REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS | awardReferenceScore / scoreAward / completeMission | data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts | LiveBattleHud 热度、倍率与任务 |
 | art / 00_说明 | 1. 项（H4；R5-11） | REFERENCE_ART_ASSETS / public/assets/reference | CSS 与 React 资产引用；合成参考图仅审计 | data/referenceTraceability.test.ts | 地图、头像、事件图标；不可拆合成图标注为参考 |
 | art / 00_说明 | 2. 内容（H4；R5-11） | REFERENCE_ART_ASSETS / public/assets/reference | CSS 与 React 资产引用；合成参考图仅审计 | data/referenceTraceability.test.ts | 地图、头像、事件图标；不可拆合成图标注为参考 |
 | art / 01_UI对照参考图 | 1. block_id（H1；R2-16） | REFERENCE_ART_ASSETS / public/assets/reference | CSS 与 React 资产引用；合成参考图仅审计 | data/referenceTraceability.test.ts | 地图、头像、事件图标；不可拆合成图标注为参考 |

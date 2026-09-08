@@ -52,6 +52,7 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
         {auditedAction?.reason && <p className={auditedAction.accepted ? undefined : 'drawer-warning'}>{auditedAction.accepted ? auditedAction.reason : `回退：${auditedAction.reason}`}</p>}
       </DrawerSection>
       <DrawerSection title="行动日志">
+        {(game.world.battle?.feed ?? []).filter(event => event.characterText && (event.actor === player.id || event.target === player.id) && (!replayTime || event.ts <= replayTime)).slice(0, 8).map(event => <p key={`log-${event.id}`}>{event.characterText}</p>)}
         {recentActions.length ? recentActions.map((entry) => <p key={entry.id}>{entry.source === 'model' ? '模型' : '规则'} · {displayAction(entry.action)}{storyChoiceLabel(entry.storyEventId, entry.storyApproach)} · {entry.accepted ? '已执行' : `拒绝：${entry.reason ?? '未知原因'}`}</p>) : <p>暂无已记录行动</p>}
       </DrawerSection>
       <DrawerSection title="最近交谈">
@@ -64,7 +65,7 @@ export default function BattleCharacterDrawer({ game, playerId, replayFrame, rep
       <DrawerSection title="公开关系">
         {relationships.length ? relationships.map((edge) => <p key={edge.id}>{relationshipLabel(edge.type)} · 强度 {edge.strength}{edge.lastReason ? ` · ${edge.lastReason}` : ''}</p>) : <p>暂无公开关系</p>}
       </DrawerSection>
-      <DrawerSection title="线索与任务"><p>真相线索 {replayFrame?.truthClues.length ?? game.world.battle?.truthClues?.length ?? 0}/3</p></DrawerSection>
+      <DrawerSection title="线索与任务"><p>真相线索 {replayFrame?.truthClues.length ?? game.world.battle?.truthClues?.length ?? 0}/3</p><p>四维加成：+{stats.attributeBonus ?? 0}</p>{!replayTime && stats.intel?.map(entry => <p key={entry.source}><strong>{entry.source}</strong>：{entry.text}</p>)}{game.world.battle?.settlementReward && <p>本局称号：{game.world.battle.settlementReward}</p>}</DrawerSection>
       <DrawerSection title="区域剧情">{areaStories.length ? areaStories.map(({ event, count }) => <p key={event.id}>{event.title} · {count}/{event.maxTriggers} 次</p>) : <p>当前区域暂无特殊剧情</p>}</DrawerSection>
     </aside>
   );

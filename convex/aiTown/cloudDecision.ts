@@ -120,6 +120,7 @@ export function buildDecisionPrompt(snapshot: DecisionContext, playerId: string)
   const characterPersona = personaForCharacter(stats.characterId);
   const candidates = snapshot.world.players
     .filter((candidate) => candidate.id !== playerId && candidate.battle && !candidate.battle.eliminated)
+    .filter(candidate => candidate.battle?.areaId === stats.areaId || !snapshot.world.players.some(other => other.battle?.areaId === candidate.battle?.areaId && other.battle?.itemEffects?.some(effect => effect.key === 'stealth_zone' && (effect.until === undefined || effect.until > Date.now()))))
     .map((candidate) => ({
       id: candidate.id,
       name: nameFor(candidate.id),
@@ -132,7 +133,9 @@ export function buildDecisionPrompt(snapshot: DecisionContext, playerId: string)
       alliance: stats.alliance === candidate.id,
     }));
   const relationships = (snapshot.world.battle?.relationshipEdges ?? [])
+    .filter(edge => !edge.hidden)
     .filter((edge) => edge.a === stats.characterId || edge.b === stats.characterId)
+    .filter(() => !stats.itemEffects?.some(effect => effect.key === 'disguise' && (effect.until === undefined || effect.until > Date.now())))
     .map((edge) => ({ with: edge.a === stats.characterId ? edge.b : edge.a, type: edge.type, strength: edge.strength, hidden: edge.hidden }));
   const availableStories = AREA_SPECIAL_EVENTS
     .filter((event) => event.areaId === stats.areaId)
@@ -169,6 +172,8 @@ export function buildDecisionPrompt(snapshot: DecisionContext, playerId: string)
     },
     self: { areaId: stats.areaId, hp: Math.ceil(stats.hp), maxHp: stats.maxHp, stamina: Math.ceil(stats.stamina ?? 0), satiety: Math.ceil(stats.satiety ?? 0), zoneTime: Math.ceil(stats.zoneTime ?? 0), stress: Math.ceil(stats.stress ?? 0), stressThreshold: stats.stressThreshold, weapon: stats.weapon, medkits: stats.medkits, materials: stats.coins, inventory: stats.inventory, alliance: stats.alliance },
     openAreas: snapshot.world.battle?.openAreas,
+    privateIntel: stats.intel,
+    attributeBonus: stats.attributeBonus ?? 0,
     zoneClosesAt: snapshot.world.battle?.zoneClosesAt,
     relationships,
     adjacentAreas: adjacentAreaIds(stats.areaId ?? 'A01'),

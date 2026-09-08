@@ -4,6 +4,7 @@ import snapshot from './referenceTables.generated.json';
 import { BATTLE_CONFIG, GLOBAL_RARE_ITEMS, HIDDEN_MISSIONS, ITEM_DEFINITIONS, RELATION_GENERATION } from './battleRoyaleConfig';
 import { REFERENCE_ITEMS, REFERENCE_SOURCE, REFERENCE_TABLE_COUNTS } from './referenceRuntime';
 import { defaultBattleState, defaultRelationshipEdges, EXECUTABLE_ITEM_EFFECT_KEYS } from '../convex/aiTown/battleRoyale';
+import fs from 'node:fs';
 
 describe('reference Excel column traceability', () => {
   test('pins and covers the complete reference snapshot', () => {
@@ -15,7 +16,10 @@ describe('reference Excel column traceability', () => {
     }, 0);
     expect(trace.sourceCommit).toBe(REFERENCE_SOURCE.commit);
     expect(trace.entries).toHaveLength(nonemptyColumns);
-    for (const entry of trace.entries) expect(entry).toMatchObject({ config: expect.any(String), executor: expect.any(String), test: 'data/referenceTraceability.test.ts', ui: expect.any(String) });
+    for (const entry of trace.entries) {
+      expect(entry).toMatchObject({ config: expect.any(String), executor: expect.any(String), test: expect.any(String), ui: expect.any(String) });
+      for (const testPath of entry.test.split(' + ')) expect(fs.existsSync(testPath)).toBe(true);
+    }
   });
 
   test('accounts for every non-Git artifact in the reference repository', () => {

@@ -14,6 +14,8 @@ import {
   REFERENCE_RATINGS,
   REFERENCE_RUNTIME_CHARACTERS,
   REFERENCE_SCORE_EVENTS,
+  REFERENCE_INTERVENTIONS,
+  REFERENCE_CHARACTER_STORIES,
   referenceNumber,
 } from './referenceRuntime';
 
@@ -136,6 +138,7 @@ export const BATTLE_CONFIG = {
     nightAmbushBonus: referenceNumber('night_ambush_bonus_pct') / 100,
   },
   weapons: {
+    ...Object.fromEntries(REFERENCE_ITEMS.filter(item => ['melee_damage', 'ranged_damage'].includes(item.effectKey)).map(item => [item.name, { power: item.effectValue, range: item.effectKey === 'ranged_damage' ? 4.5 : 1.4, cost: 0 }])),
     Fists: { power: 8, range: 1.4, cost: 0 },
     Pistol: { power: 20, range: 3.2, cost: 80 },
     Shotgun: { power: 28, range: 2.6, cost: 140 },
@@ -295,7 +298,7 @@ export function itemDefinition(item: string): BattleItemDefinition {
 
 export type BattleCharacterProfile = (typeof BATTLE_CONFIG.characters)[number];
 
-export const INTERVENTION_OPERATIONS = [
+const BASE_INTERVENTION_OPERATIONS = [
   { id: 'ENV_01', name: '制造障碍', category: '环境', cost: 3, cooldownMs: 60000, target: 'area', description: '封锁指定区域出口 90 秒。' },
   { id: 'ENV_02', name: '极端天气', category: '环境', cost: 5, cooldownMs: 180000, target: 'area', description: '区域内角色持续承受极端天气伤害。' },
   { id: 'ENV_03', name: '提前关闭', category: '环境', cost: 5, cooldownMs: 0, target: 'global', description: '立即触发一轮禁区关闭。' },
@@ -332,7 +335,22 @@ export const INTERVENTION_OPERATIONS = [
   { id: 'TRU_01', name: '开启真相之间', category: '剧情', cost: 5, cooldownMs: 0, target: 'player', description: 'C12 集齐线索后开启真相结局。' },
 ] as const;
 
-export const CHARACTER_STORIES: Record<string, { areaId: string; item: string; title: string; score: number; effect: string }> = {
+export const INTERVENTION_OPERATIONS = BASE_INTERVENTION_OPERATIONS.map(operation => {
+  const row = REFERENCE_INTERVENTIONS.find(row => row.ID === operation.id);
+  const cooldown = String(row?.['冷却'] ?? '');
+  const maxUses = /每局\s*(\d+)\s*次/.exec(cooldown);
+  return { ...operation,
+    target: operation.id === 'RUL_04' ? 'player' : operation.id === 'INF_04' ? 'pair' : operation.id === 'INF_05' ? 'player' : operation.target,
+    name: row ? String(row['操作']) : operation.name,
+    cost: row ? Number(row['消耗']) : operation.cost,
+    cooldownMs: row ? (/^\d+s$/.test(cooldown) ? Number(cooldown.slice(0, -1)) * 1000 : 0) : operation.cooldownMs,
+    description: row ? String(row['效果']) : operation.description,
+    maxUses: maxUses ? Number(maxUses[1]) : undefined,
+    broadcast: row ? String(row['广播'] ?? '否') : '是',
+  };
+});
+
+const CHARACTER_STORY_BINDINGS: Record<string, { areaId: string; item: string; title: string; score: number; effect: string }> = {
   C01: { areaId: 'A01', item: '军籍牌', title: '故地', score: 15, effect: 'armor' },
   C02: { areaId: 'A02', item: '演播档案带', title: '镜头背后', score: 15, effect: 'clue' },
   C03: { areaId: 'A03', item: '策略手稿', title: '棋局', score: 10, effect: 'coins' },
@@ -346,6 +364,11 @@ export const CHARACTER_STORIES: Record<string, { areaId: string; item: string; t
   C11: { areaId: 'A11', item: '案件卷宗', title: '未结的案子', score: 20, effect: 'clue' },
   C12: { areaId: 'A12', item: '空白身份卡', title: '空', score: 10, effect: 'truthPath' },
 };
+export const CHARACTER_STORIES = Object.fromEntries(REFERENCE_CHARACTER_STORIES.map(row => {
+  const id = String(row['角色']).split(' ')[0];
+  const condition = String(row['触发条件']);
+  return [id, { ...CHARACTER_STORY_BINDINGS[id], areaId: /A\d+/.exec(condition)![0], item: /「([^」]+)」/.exec(condition)![1], title: String(row['剧情事件名']), score: Number(String(row['热度奖励']).replace('+', '')), description: String(row['效果']), hiddenProgress: String(row['隐藏任务推进']) }];
+}));
 
 export function availableAreaItemsFor(characterId: string | undefined, areaId: string) {
   const characterStoryItems = new Set(Object.values(CHARACTER_STORIES).map((story) => story.item));

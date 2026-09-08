@@ -2146,9 +2146,9 @@
       "headerRow": 3,
       "dataRows": "4-9",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2158,9 +2158,9 @@
       "headerRow": 3,
       "dataRows": "4-9",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2170,9 +2170,9 @@
       "headerRow": 1,
       "dataRows": "2-17",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2182,9 +2182,9 @@
       "headerRow": 1,
       "dataRows": "2-17",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2194,9 +2194,9 @@
       "headerRow": 1,
       "dataRows": "2-17",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2206,9 +2206,9 @@
       "headerRow": 1,
       "dataRows": "2-17",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2218,9 +2218,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2230,9 +2230,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2242,9 +2242,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2254,9 +2254,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2266,9 +2266,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2278,9 +2278,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2290,9 +2290,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2302,9 +2302,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2314,9 +2314,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2326,9 +2326,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2338,9 +2338,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2350,9 +2350,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2362,9 +2362,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2374,9 +2374,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2386,9 +2386,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2398,9 +2398,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2410,9 +2410,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2422,9 +2422,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2434,9 +2434,9 @@
       "headerRow": 1,
       "dataRows": "2-69",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2446,9 +2446,9 @@
       "headerRow": 1,
       "dataRows": "2-64",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2458,9 +2458,9 @@
       "headerRow": 1,
       "dataRows": "2-64",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2470,9 +2470,9 @@
       "headerRow": 1,
       "dataRows": "2-64",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2482,9 +2482,9 @@
       "headerRow": 1,
       "dataRows": "2-64",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2494,9 +2494,9 @@
       "headerRow": 1,
       "dataRows": "2-64",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2506,9 +2506,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2518,9 +2518,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2530,9 +2530,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2542,9 +2542,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2554,9 +2554,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2566,9 +2566,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "items",
@@ -2578,9 +2578,9 @@
       "headerRow": 1,
       "dataRows": "2-6",
       "config": "REFERENCE_ITEMS / ITEM_DEFINITIONS",
-      "executor": "performSearch / applyBattleItemEffect",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 物品效果"
+      "executor": "loot / applyBattleItemEffect / refreshItemIntel / attack",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 物品状态与情报 / PixiBattleEffects"
     },
     {
       "workbook": "zoneRules",
@@ -2889,10 +2889,10 @@
       "label": "角色ID",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2901,10 +2901,10 @@
       "label": "代号",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2913,10 +2913,10 @@
       "label": "角色名",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2925,10 +2925,10 @@
       "label": "对应区域",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2937,10 +2937,10 @@
       "label": "区域名称",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2949,10 +2949,10 @@
       "label": "特殊区域",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2961,10 +2961,10 @@
       "label": "角色",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2973,10 +2973,10 @@
       "label": "触发条件",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2985,10 +2985,10 @@
       "label": "剧情事件名",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -2997,10 +2997,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -3009,10 +3009,10 @@
       "label": "热度奖励",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "characterAreas",
@@ -3021,10 +3021,10 @@
       "label": "隐藏任务推进",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "CHARACTER_STORIES / BATTLE_CONFIG.areas",
+      "config": "REFERENCE_CHARACTER_STORIES / CHARACTER_STORIES",
       "executor": "triggerCharacterStory / moveToBattleArea",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleCharacterDrawer 区域剧情"
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleCharacterDrawer 区域剧情与私人情报"
     },
     {
       "workbook": "adjacency",
@@ -3393,10 +3393,10 @@
       "label": "ID",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3405,10 +3405,10 @@
       "label": "操作",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3417,10 +3417,10 @@
       "label": "消耗",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3429,10 +3429,10 @@
       "label": "冷却",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3441,10 +3441,10 @@
       "label": "目标",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3453,10 +3453,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3465,10 +3465,10 @@
       "label": "广播",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3477,10 +3477,10 @@
       "label": "ID",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3489,10 +3489,10 @@
       "label": "操作",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3501,10 +3501,10 @@
       "label": "消耗",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3513,10 +3513,10 @@
       "label": "冷却",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3525,10 +3525,10 @@
       "label": "目标",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3537,10 +3537,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3549,10 +3549,10 @@
       "label": "广播",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3561,10 +3561,10 @@
       "label": "ID",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3573,10 +3573,10 @@
       "label": "操作",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3585,10 +3585,10 @@
       "label": "消耗",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3597,10 +3597,10 @@
       "label": "冷却",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3609,10 +3609,10 @@
       "label": "目标",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3621,10 +3621,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3633,10 +3633,10 @@
       "label": "广播",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3645,10 +3645,10 @@
       "label": "ID",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3657,10 +3657,10 @@
       "label": "操作",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3669,10 +3669,10 @@
       "label": "消耗",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3681,10 +3681,10 @@
       "label": "冷却",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3693,10 +3693,10 @@
       "label": "目标",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3705,10 +3705,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3717,10 +3717,10 @@
       "label": "广播",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3729,10 +3729,10 @@
       "label": "ID",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3741,10 +3741,10 @@
       "label": "操作",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3753,10 +3753,10 @@
       "label": "消耗",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3765,10 +3765,10 @@
       "label": "冷却",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3777,10 +3777,10 @@
       "label": "目标",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3789,10 +3789,10 @@
       "label": "效果",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3801,10 +3801,10 @@
       "label": "参数",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3813,10 +3813,10 @@
       "label": "值",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "interventions",
@@ -3825,10 +3825,10 @@
       "label": "推导",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "INTERVENTION_OPERATIONS",
-      "executor": "performIntervention",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "BattleRoyalePanel 导演台"
+      "config": "REFERENCE_INTERVENTIONS / INTERVENTION_OPERATIONS",
+      "executor": "applyIntervention",
+      "test": "convex/aiTown/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 导演台与私人情报"
     },
     {
       "workbook": "logs",
@@ -3837,10 +3837,10 @@
       "label": "分类",
       "headerRow": 1,
       "dataRows": "2-22",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3849,10 +3849,10 @@
       "label": "event_type",
       "headerRow": 1,
       "dataRows": "2-22",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3861,10 +3861,10 @@
       "label": "全局日志",
       "headerRow": 1,
       "dataRows": "2-22",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3873,10 +3873,10 @@
       "label": "地图日志",
       "headerRow": 1,
       "dataRows": "2-22",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3885,10 +3885,10 @@
       "label": "角色日志",
       "headerRow": 1,
       "dataRows": "2-22",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3897,10 +3897,10 @@
       "label": "event_type",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3909,10 +3909,10 @@
       "label": "模板",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3921,10 +3921,10 @@
       "label": "示例",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3933,10 +3933,10 @@
       "label": "event_type",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3945,10 +3945,10 @@
       "label": "模板",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3957,10 +3957,10 @@
       "label": "event_type",
       "headerRow": 1,
       "dataRows": "2-8",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "logs",
@@ -3969,10 +3969,10 @@
       "label": "模板",
       "headerRow": 1,
       "dataRows": "2-8",
-      "config": "REFERENCE_LOG_*",
-      "executor": "pushEvent / recordBattleDialogue",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 事件流"
+      "config": "REFERENCE_LOG_* / referenceLog",
+      "executor": "pushEvent / referenceLog",
+      "test": "data/referenceExecution.test.ts",
+      "ui": "BattleRoyalePanel 全局流 / Pixi 地图流 / BattleCharacterDrawer 角色流"
     },
     {
       "workbook": "globalConfig",
@@ -4293,10 +4293,10 @@
       "label": "项",
       "headerRow": 3,
       "dataRows": "4-10",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4305,10 +4305,10 @@
       "label": "说明",
       "headerRow": 3,
       "dataRows": "4-10",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4317,10 +4317,10 @@
       "label": "event_id",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4329,10 +4329,10 @@
       "label": "event_name",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4341,10 +4341,10 @@
       "label": "base_score",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4353,10 +4353,10 @@
       "label": "condition",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4365,10 +4365,10 @@
       "label": "heat_multiplier_applies",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4377,10 +4377,10 @@
       "label": "heat_anchor",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4389,10 +4389,10 @@
       "label": "is_combo_eligible",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4401,10 +4401,10 @@
       "label": "notes",
       "headerRow": 1,
       "dataRows": "2-13",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4413,10 +4413,10 @@
       "label": "event_id",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4425,10 +4425,10 @@
       "label": "event_name",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4437,10 +4437,10 @@
       "label": "base_score",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4449,10 +4449,10 @@
       "label": "condition",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4461,10 +4461,10 @@
       "label": "heat_multiplier_applies",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4473,10 +4473,10 @@
       "label": "heat_anchor",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4485,10 +4485,10 @@
       "label": "is_combo_eligible",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4497,10 +4497,10 @@
       "label": "notes",
       "headerRow": 1,
       "dataRows": "2-4",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4509,10 +4509,10 @@
       "label": "combo_id",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4521,10 +4521,10 @@
       "label": "window_sec",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4533,10 +4533,10 @@
       "label": "min_events",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4545,10 +4545,10 @@
       "label": "multiplier",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4557,10 +4557,10 @@
       "label": "notes",
       "headerRow": 1,
       "dataRows": "2-3",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4569,10 +4569,10 @@
       "label": "rating",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4581,10 +4581,10 @@
       "label": "heat_min",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4593,10 +4593,10 @@
       "label": "heat_max",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4605,10 +4605,10 @@
       "label": "reward",
       "headerRow": 1,
       "dataRows": "2-5",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4617,10 +4617,10 @@
       "label": "mission_id",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4629,10 +4629,10 @@
       "label": "name",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4641,10 +4641,10 @@
       "label": "condition",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4653,10 +4653,10 @@
       "label": "base_score",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4665,10 +4665,10 @@
       "label": "heat_multiplier_applies",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4677,10 +4677,10 @@
       "label": "heat_anchor",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4689,10 +4689,10 @@
       "label": "notes",
       "headerRow": 1,
       "dataRows": "2-7",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4701,10 +4701,10 @@
       "label": "mission_id",
       "headerRow": 1,
       "dataRows": "2-2",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4713,10 +4713,10 @@
       "label": "name",
       "headerRow": 1,
       "dataRows": "2-2",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4725,10 +4725,10 @@
       "label": "condition",
       "headerRow": 1,
       "dataRows": "2-2",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4737,10 +4737,10 @@
       "label": "notes",
       "headerRow": 1,
       "dataRows": "2-2",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4749,10 +4749,10 @@
       "label": "场景",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4761,10 +4761,10 @@
       "label": "base",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4773,10 +4773,10 @@
       "label": "角色热点",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4785,10 +4785,10 @@
       "label": "倍率",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4797,10 +4797,10 @@
       "label": "actual",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "scores",
@@ -4809,10 +4809,10 @@
       "label": "说明",
       "headerRow": 1,
       "dataRows": "2-6",
-      "config": "SCORE_RULES / COMBO_RULES / HIDDEN_MISSIONS",
-      "executor": "awardPopularity / completeMission",
-      "test": "data/referenceTraceability.test.ts",
-      "ui": "LiveBattleHud 热度与任务"
+      "config": "REFERENCE_SCORE_EVENTS / SCORE_EVENTS / COMBO_RULES / HIDDEN_MISSIONS",
+      "executor": "awardReferenceScore / scoreAward / completeMission",
+      "test": "data/referenceExecution.test.ts + convex/aiTown/referenceExecution.test.ts",
+      "ui": "LiveBattleHud 热度、倍率与任务"
     },
     {
       "workbook": "art",

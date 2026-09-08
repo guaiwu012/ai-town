@@ -8,6 +8,16 @@ import { GameId } from './ids';
 import { Player } from './player';
 import { WorldMap } from './worldMap';
 import { isBattleArenaPositionWalkable } from '../../data/battleArena';
+import { SUPPLEMENTAL_RULES } from '../../data/referenceExecution';
+
+export function battleMovementMultiplier(player: Pick<Player, 'battle'>, now: number) {
+  const stats = player.battle;
+  const effects = (stats?.itemEffects ?? []).filter(effect => effect.until === undefined || effect.until > now);
+  const speedBonus = effects.filter(effect => effect.key === 'move_speed_pct').reduce((sum, effect) => sum + effect.value, 0);
+  const fatigue = effects.some(effect => effect.key === 'fatigue') ? 0.2 : 0;
+  const pain = (stats?.painUntil ?? 0) > now ? SUPPLEMENTAL_RULES.pain.movementPenalty : 0;
+  return Math.max(0.1, 1 + speedBonus / 100 - fatigue - pain);
+}
 
 type PathCandidate = {
   position: Point;
@@ -99,7 +109,7 @@ export function findRoute(game: Game, now: number, player: Player, destination: 
         position,
         facing,
         // Movement speed is in tiles per second.
-        t: current.t + (segmentLength / movementSpeed) * 1000,
+        t: current.t + (segmentLength / (movementSpeed * battleMovementMultiplier(player, now))) * 1000,
         length,
         cost: length + remaining,
         prev: current,

@@ -96,7 +96,7 @@ export default function BattleRoyalePanel({
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
   const storyKinds = new Set(['story', 'areaStory', 'globalStory', 'mission', 'truth', 'clue']);
-  const eventFeed = feedChannel === 'dialogue' ? (battle?.dialogueLog ?? []).slice(0, 6).map((entry) => ({ ...entry, kind: 'dialogue', text: entry.text })) : (battle?.feed ?? []).filter((event) => feedChannel === 'story' ? storyKinds.has(event.kind) : !storyKinds.has(event.kind) && event.kind !== 'dialogue').slice(0, 6);
+  const eventFeed = feedChannel === 'dialogue' ? (battle?.dialogueLog ?? []).slice(0, 6).map((entry) => ({ ...entry, kind: 'dialogue', text: entry.text })) : (battle?.feed ?? []).filter(event => !event.eventType || event.globalText !== undefined).filter((event) => feedChannel === 'story' ? storyKinds.has(event.kind) : !storyKinds.has(event.kind) && event.kind !== 'dialogue').slice(0, 6).map(event => ({ ...event, text: event.globalText ?? event.text }));
   const zoneCountdownSeconds = Math.max(0, Math.ceil(((battle?.zoneClosesAt ?? Date.now()) - Date.now()) / 1000));
   const heatTrend = battle?.heatHistory?.length ? battle.heatHistory : [{ ts: Date.now(), value: heat }]; const heatTrendMax = Math.max(1, ...heatTrend.map((point) => point.value));
 
@@ -236,7 +236,7 @@ export default function BattleRoyalePanel({
                   <button className="overview-area-watch" aria-label={`切入${displayAreaName(area.id)}直播镜头`} title={`切入${displayAreaName(area.id)}直播镜头`} onClick={() => onFocusArea(area.id)}>◎</button>
                 </div>
                 <div className="overview-area-resource">资源 {resource?.remaining ?? '--'}/{resource?.max ?? '--'}</div>
-                {(battle?.feed ?? []).some((event) => event.areaId === area.id && Date.now() - event.ts < 10000) && <div className="overview-alert" title="此区域刚发生事件">!</div>}
+                {(battle?.feed ?? []).some((event) => event.mapText && event.areaId === area.id && Date.now() - event.ts < 10000) && <div className="overview-alert" title="此区域刚发生事件">!</div>}
                 {areaLock && <div className="overview-area-lock">笼门封锁 {Math.ceil((areaLock.until - Date.now()) / 1000)} 秒</div>}
                 <div className="overview-area-agents">
                   {occupants.map((player) => {
@@ -394,6 +394,7 @@ export default function BattleRoyalePanel({
       </aside>
 
       <div className="overview-feed arena-panel min-h-0 overflow-hidden p-3">
+        {!!battle?.organizerIntel?.length && <details className="max-h-24 overflow-auto text-xs text-cyan-100"><summary>主办方侦察档案（角色不可见）</summary>{battle.organizerIntel.map((line, index) => <p key={index}>{line}</p>)}</details>}
         <div className="mb-1 flex items-center justify-between">
           <div className="flex gap-1">{(['public', 'story', 'dialogue'] as const).map((channel) => <button key={channel} className={`arena-feed-tag ${feedChannel === channel ? 'text-amber-200' : ''}`} onClick={() => setFeedChannel(channel)}>{channel === 'public' ? '公屏' : channel === 'story' ? '剧情' : '对话'}</button>)}</div>
           <span className="text-[10px] uppercase tracking-wider text-slate-500">三频道日志</span>

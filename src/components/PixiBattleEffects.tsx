@@ -2,6 +2,8 @@ import { Container, Graphics, Text } from '@pixi/react';
 import { useEffect, useMemo, useState } from 'react';
 import { Graphics as PixiGraphics, TextStyle } from 'pixi.js';
 import { ServerGame } from '../hooks/serverGame';
+import { itemVisual } from '../../data/referenceExecution';
+import { battleAreaSpawnPoints } from '../../data/battleArena';
 
 const BULLET_MS = 520;
 const EFFECT_MS = 1650;
@@ -31,6 +33,38 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
 
   const draw = (g: PixiGraphics) => {
     g.clear();
+    for (const player of game.world.players.values()) {
+      if (!player.battle || player.battle.eliminated) continue;
+      const effects = (player.battle.itemEffects ?? []).filter(effect => effect.until === undefined || effect.until > now);
+      const x = player.position.x * tileDim + tileDim / 2; const y = player.position.y * tileDim;
+      effects.slice(0, 4).forEach((effect, index) => { g.lineStyle(1.5, itemVisual(effect.key).color, 0.35 + Math.sin(now / 250 + index) * 0.15); g.drawCircle(x, y, 10 + index * 3); });
+      if ((player.battle.smokeUntil ?? 0) > now) { g.beginFill(0xaabbcc, 0.3); g.drawCircle(x, y, 22); g.endFill(); }
+      if ((player.battle.stunnedUntil ?? 0) > now) { g.lineStyle(2, 0xffdc55, 0.9); g.drawEllipse(x, y - 15, 12, 4); }
+    }
+    for (const event of events) {
+      const age = now - event.ts;
+      if (!event.effectKey || !event.to || age < 0 || age >= EFFECT_MS) continue;
+      const visual = itemVisual(event.effectKey);
+      const progress = age / EFFECT_MS;
+      const alpha = 1 - progress;
+      const x = event.to.x * tileDim + tileDim / 2;
+      const y = event.to.y * tileDim;
+      g.lineStyle(3, visual.color, alpha);
+      if (visual.shape === 'cross') {
+        for (let i = 0; i < 3; i++) {
+          const px = x + (i - 1) * 12; const py = y - progress * 30 - i * 7;
+          g.moveTo(px - 4, py); g.lineTo(px + 4, py); g.moveTo(px, py - 4); g.lineTo(px, py + 4);
+        }
+      } else if (visual.shape === 'smoke') {
+        g.beginFill(visual.color, alpha * 0.4);
+        for (let i = 0; i < 5; i++) g.drawCircle(x + Math.cos(i * 1.26) * progress * 24, y + Math.sin(i * 1.26) * progress * 16, 8 + progress * 20);
+        g.endFill();
+      } else {
+        const radius = 5 + progress * 32;
+        g.drawCircle(x, y, radius);
+        if (visual.shape === 'rays') for (let i = 0; i < 8; i++) { const angle = i * Math.PI / 4; g.moveTo(x + Math.cos(angle) * radius, y + Math.sin(angle) * radius); g.lineTo(x + Math.cos(angle) * (radius + 8), y + Math.sin(angle) * (radius + 8)); }
+      }
+    }
     for (const event of activeShots) {
       if (!event.from || !event.to) {
         continue;
@@ -121,6 +155,13 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
   return (
     <Container>
       <Graphics draw={draw} />
+      {events.filter(event => event.effectKey && event.to && now >= event.ts && now - event.ts < LABEL_MS).map(event => <Text key={`item-${event.id}`} x={event.to!.x * tileDim + tileDim / 2} y={event.to!.y * tileDim - 20 - (now - event.ts) / 100} text={`${event.itemName ?? ''} · ${itemVisual(event.effectKey!).label}`} anchor={0.5} alpha={1 - (now - event.ts) / LABEL_MS} style={new TextStyle({ fill: itemVisual(event.effectKey!).color, fontSize: 12, stroke: '#182033', strokeThickness: 3 })} />)}
+      {events.filter(event => event.mapText && event.areaId && now >= event.ts && now - event.ts < LABEL_MS && !event.effectKey).slice(0, 4).map(event => {
+        const actor = [...game.world.players.values()].find(player => player.id === event.actor);
+        const position = actor?.position ?? battleAreaSpawnPoints(event.areaId!, game.worldMap.width, game.worldMap.height)[0];
+        if (!position) return null;
+        return <Text key={`map-${event.id}`} x={position.x * tileDim} y={position.y * tileDim - 35} text={event.mapText} anchor={0.5} alpha={1 - (now - event.ts) / LABEL_MS} style={new TextStyle({ fill: '#ffffff', fontSize: 11, stroke: '#182033', strokeThickness: 3 })} />;
+      })}
       {activeShots.map((event) => {
         if (!event.to) {
           return null;
