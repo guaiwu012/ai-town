@@ -1069,8 +1069,7 @@ p[contenteditable='true']:empty::before {
   background: rgba(9, 29, 45, 0.82);
   padding: 0.75rem;
 }
-.support-chain-track,
-.support-stake {
+.support-chain-track {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -1085,9 +1084,78 @@ p[contenteditable='true']:empty::before {
 .support-chain-track .is-current {
   color: #67dfbf;
 }
+.support-order-settings {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.8fr) minmax(18rem, 1.2fr);
+  gap: 0.75rem;
+  margin-top: 0.8rem;
+}
+.support-order-settings.is-single {
+  grid-template-columns: minmax(18rem, 1fr);
+}
+.support-target-field,
+.support-stake-field {
+  display: grid;
+  align-content: start;
+  gap: 0.45rem;
+  min-width: 0;
+}
+.support-field-label {
+  color: #a9c2c8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.support-target-field {
+  position: relative;
+}
+.support-target-field::after {
+  content: '';
+  position: absolute;
+  right: 0.9rem;
+  bottom: 1.15rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-right: 2px solid #65dfcd;
+  border-bottom: 2px solid #65dfcd;
+  pointer-events: none;
+  transform: translateY(50%) rotate(45deg);
+}
+.support-target-field select {
+  width: 100%;
+  min-height: 2.9rem;
+  appearance: none;
+  border: 1px solid rgba(67, 105, 126, 0.94);
+  border-radius: 0;
+  outline: none;
+  background: linear-gradient(180deg, rgba(18, 43, 61, 0.98), rgba(7, 24, 39, 0.98));
+  color: #e5efed;
+  color-scheme: dark;
+  padding: 0.65rem 2.65rem 0.65rem 0.85rem;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.support-target-field select:hover {
+  border-color: rgba(45, 224, 199, 0.82);
+}
+.support-target-field select:focus-visible {
+  border-color: #2de0c7;
+  box-shadow: 0 0 0 2px rgba(45, 224, 199, 0.22), inset 0 -2px #2de0c7;
+}
+.support-target-field option {
+  background: #091d2d;
+  color: #e5efed;
+}
+.support-stake {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(4rem, 1fr));
+  gap: 0.5rem;
+}
 .support-stake > button {
-  min-width: 3.5rem;
+  min-height: 2.9rem;
   padding: 0.45rem 0.65rem;
+  font-weight: 700;
 }
 .support-order-forecast,
 .support-task-list article,
@@ -1125,6 +1193,8 @@ p[contenteditable='true']:empty::before {
   .support-doctrine-grid,
   .support-order-kinds,
   .support-persona-grid { grid-template-columns: 1fr; }
+  .support-order-settings,
+  .support-order-settings.is-single { grid-template-columns: 1fr; }
 }
 .focus-card {
   max-width: min(470px, 65vw);

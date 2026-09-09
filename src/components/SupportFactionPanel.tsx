@@ -247,8 +247,16 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
           <div className="support-order-kinds">
             {supportOrderKinds.map((item) => <button key={item.id} className={orderKind === item.id ? 'is-active' : ''} onClick={() => setOrderKind(item.id)}><b>{item.name}</b><small>{item.description}</small></button>)}
           </div>
-          {(orderKind === 'hunt' || orderKind === 'ally') && <label>任务目标<select value={orderTargetId} onChange={(event) => setOrderTargetId(event.target.value)}>{otherAlive.map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name ?? player.id}</option>)}</select></label>}
-          <div className="support-stake"><span>投入点数</span>{[1, 3, 5].map((value) => <button key={value} className={stake === value ? 'is-active' : ''} onClick={() => setStake(value)}>{value} 点</button>)}</div>
+          <div className={`support-order-settings ${(orderKind === 'hunt' || orderKind === 'ally') ? '' : 'is-single'}`}>
+            {(orderKind === 'hunt' || orderKind === 'ally') && <label className="support-target-field">
+              <span className="support-field-label">任务目标</span>
+              <select aria-label="选择任务目标" value={orderTargetId} onChange={(event) => setOrderTargetId(event.target.value)}>{otherAlive.map((player) => <option key={player.id} value={player.id}>{game.playerDescriptions.get(player.id)?.name ?? player.id}</option>)}</select>
+            </label>}
+            <div className="support-stake-field">
+              <span className="support-field-label">投入点数</span>
+              <div className="support-stake">{[1, 3, 5].map((value) => <button key={value} type="button" aria-pressed={stake === value} className={stake === value ? 'is-active' : ''} onClick={() => setStake(value)}>{value} 点</button>)}</div>
+            </div>
+          </div>
           {estimate && <div className="support-order-forecast"><span>预计接受 <b>{Math.round(estimate.chance * 100)}%</b></span><span>行动风险 <b>{estimate.risk}</b></span><span>成功返还 <b>{estimate.reward} 点</b></span></div>}
           <button className="live-hud-button live-hud-primary support-issue" disabled={!doctrine || pending || Boolean(activeOrder) || cooldownSeconds > 0 || Boolean(target.battle?.eliminated) || (battle?.interventionPoints ?? 0) < stake} onClick={issueOrder}>
             {pending ? '等待回应…' : !doctrine ? '先选择阵营路线' : activeOrder ? '角色正在执行任务' : cooldownSeconds > 0 ? `冷却 ${cooldownSeconds}s` : `发布任务 · ${stake} 点`}
