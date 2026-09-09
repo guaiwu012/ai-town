@@ -101,7 +101,7 @@ export default function LiveBattleHud({
 
       <section className="live-tactical-strip pointer-events-auto">
         <div className="live-pulse"><i />直播态势</div>
-        <div><small>热度</small><strong>{popularity}</strong></div>
+        <div><small>热度</small><strong>{popularity} · {battle?.popularityRating ?? 'C'}级</strong></div>
         <div><small>禁区收缩</small><strong>{zoneClosesAt ? formatCountdown(Math.max(0, Math.ceil((zoneClosesAt - displayedNow) / 1000))) : '--'}</strong></div>
         <div><small>封锁区域</small><strong className={areaLocks.some((lock) => lock.until > displayedNow) ? 'is-alert' : ''}>{areaLocks.filter((lock) => lock.until > displayedNow).length}</strong></div>
         <div><small>镜头区域</small><strong>{areaName(focusAreaId ?? stats?.areaId)}</strong></div>

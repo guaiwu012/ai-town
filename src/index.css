@@ -667,6 +667,102 @@ p[contenteditable='true']:empty::before {
   to { transform: translateX(calc(-100vw - 100%)); }
 }
 
+.popularity-rank-up {
+  --rank-accent: #55dbc0;
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(6, 28, 38, 0.8), rgba(1, 7, 13, 0.2) 48%, rgba(1, 5, 10, 0.74));
+  animation: rank-overlay-enter 3.2s ease-out forwards;
+}
+.popularity-rank-up.is-b { --rank-accent: #55dbc0; }
+.popularity-rank-up.is-a { --rank-accent: #f0bb55; }
+.popularity-rank-up.is-s { --rank-accent: #ff615f; }
+.popularity-rank-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  color: #f7f2e9;
+  text-align: center;
+  text-shadow: 0 0 1.6rem rgba(0, 0, 0, 0.85);
+  animation: rank-copy-enter 3.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+.popularity-rank-copy small {
+  color: var(--rank-accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+}
+.popularity-rank-letter {
+  margin-top: 0.35rem;
+  color: var(--rank-accent);
+  font-family: var(--font-display);
+  font-size: clamp(8rem, 24vw, 17rem);
+  font-weight: 800;
+  line-height: 0.82;
+  text-shadow: 0 0 0.22rem #fff, 0 0 2rem var(--rank-accent), 0 0 6rem var(--rank-accent);
+}
+.popularity-rank-copy h2 {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4vw, 3rem);
+  letter-spacing: 0.08em;
+}
+.popularity-rank-copy p { margin: 0.3rem 0 0; color: #cad9d6; }
+.popularity-rank-copy strong {
+  margin-top: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--rank-accent) 70%, transparent);
+  background: rgba(3, 14, 23, 0.74);
+  padding: 0.35rem 0.8rem;
+  color: var(--rank-accent);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+.popularity-rank-burst,
+.popularity-rank-burst i {
+  position: absolute;
+  border: 1px solid var(--rank-accent);
+  border-radius: 50%;
+}
+.popularity-rank-burst {
+  width: min(54rem, 78vw);
+  aspect-ratio: 1;
+  box-shadow: 0 0 5rem color-mix(in srgb, var(--rank-accent) 28%, transparent), inset 0 0 5rem color-mix(in srgb, var(--rank-accent) 16%, transparent);
+  animation: rank-burst 2.5s ease-out forwards;
+}
+.popularity-rank-burst i { inset: 12%; opacity: 0.48; }
+.popularity-rank-burst i:nth-child(2) { inset: 25%; opacity: 0.34; }
+.popularity-rank-burst i:nth-child(3) { inset: 39%; opacity: 0.26; }
+.popularity-rank-scan {
+  position: absolute;
+  inset: -25% 0;
+  background: linear-gradient(180deg, transparent 42%, color-mix(in srgb, var(--rank-accent) 36%, transparent) 50%, transparent 58%);
+  animation: rank-scan 1.15s linear 2;
+}
+@keyframes rank-overlay-enter {
+  0% { opacity: 0; }
+  12%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes rank-copy-enter {
+  0% { opacity: 0; transform: scale(1.35); filter: blur(0.8rem); }
+  18%, 76% { opacity: 1; transform: scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+@keyframes rank-burst {
+  0% { opacity: 0; transform: scale(0.2) rotate(-12deg); }
+  22% { opacity: 0.85; }
+  100% { opacity: 0; transform: scale(1.5) rotate(8deg); }
+}
+@keyframes rank-scan {
+  from { transform: translateY(-55%); }
+  to { transform: translateY(55%); }
+}
+
 .overview-console {
   color: #e8dfd5;
   background: rgba(3, 12, 23, 0.78);
@@ -1578,6 +1674,14 @@ p[contenteditable='true']:empty::before {
   @keyframes audience-danmaku-reduced {
     0%, 100% { opacity: 0; }
     12%, 82% { opacity: 1; }
+  }
+  .popularity-rank-up,
+  .popularity-rank-copy {
+    animation-duration: 1.6s;
+  }
+  .popularity-rank-burst,
+  .popularity-rank-scan {
+    display: none;
   }
 }
 

@@ -25,6 +25,7 @@ import GameLoadingScreen from './GameLoadingScreen.tsx';
 import { useBattleAudio } from '../hooks/useBattleAudio.ts';
 import SupportOnboarding, { supportGuideSeen } from './SupportOnboarding.tsx';
 import AudienceDanmaku from './AudienceDanmaku.tsx';
+import PopularityRankUp from './PopularityRankUp.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 const DANMAKU_PREFERENCE_KEY = 'ai-town-audience-danmaku-enabled';
@@ -173,6 +174,10 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
         {viewMode === 'live' && !replayActive && <BattleBroadcastToasts feed={game.world.battle?.feed} />}
         {viewMode === 'live' && !replayActive && <AudienceDanmaku enabled={danmakuEnabled} feed={game.world.battle?.feed} />}
         <DecisionDriver worldId={worldId} game={game} enabled={!replayActive} />
+        <PopularityRankUp
+          popularity={game.world.battle?.popularity ?? 0}
+          rank={game.world.battle?.popularityRating ?? 'C'}
+        />
         {viewMode === 'live' ? <>
           <LiveBattleHud
             game={game}
