@@ -9,6 +9,7 @@ import { SupportDoctrine, SupportOrderKind, supportChainSteps, supportDoctrines,
 
 type SupportSave = {
   characterId?: string;
+  selections: Record<string, string>;
   reputation: number;
   claimed: Record<string, string[]>;
   doctrines: Record<string, SupportDoctrine>;
@@ -21,17 +22,24 @@ const STORAGE_KEY = 'ai-battle-support-v1';
 
 function loadSave(): SupportSave {
   try {
-    return { reputation: 0, claimed: {}, doctrines: {}, settledOrders: [], streak: 0, lastSuccessAt: 0, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') };
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<SupportSave>;
+    return { reputation: 0, claimed: {}, doctrines: {}, settledOrders: [], streak: 0, lastSuccessAt: 0, ...stored, selections: stored.selections ?? {} };
   } catch {
-    return { reputation: 0, claimed: {}, doctrines: {}, settledOrders: [], streak: 0, lastSuccessAt: 0 };
+    return { reputation: 0, selections: {}, claimed: {}, doctrines: {}, settledOrders: [], streak: 0, lastSuccessAt: 0 };
   }
 }
 
-export default function SupportFactionPanel({ worldId, game, onClose, onFollow }: {
+export function supportCharacterForMatch(matchKey: string) {
+  return loadSave().selections[matchKey];
+}
+
+export default function SupportFactionPanel({ worldId, game, onClose, onFollow, selectionRequired = false, onSelected }: {
   worldId: Id<'worlds'>;
   game: ServerGame;
   onClose: () => void;
   onFollow: (playerId: GameId<'players'>) => void;
+  selectionRequired?: boolean;
+  onSelected?: (characterId: string) => void;
 }) {
   const sendInput = useMutation(api.aiTown.main.sendInput);
   const [save, setSave] = useState(loadSave);
@@ -41,10 +49,12 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
   const [orderKind, setOrderKind] = useState<SupportOrderKind>('hunt');
   const [orderTargetId, setOrderTargetId] = useState<string>('');
   const [stake, setStake] = useState(3);
+  const [loadedOpportunityId, setLoadedOpportunityId] = useState<string>();
   const battle = game.world.battle;
   const matchKey = String(battle?.seed ?? battle?.started ?? 'match');
   const players = useMemo(() => [...game.world.players.values()].filter((player) => player.battle), [game]);
-  const target = players.find((player) => player.battle?.characterId === save.characterId);
+  const selectedCharacterId = save.selections[matchKey];
+  const target = players.find((player) => player.battle?.characterId === selectedCharacterId);
   const otherAlive = players.filter((player) => !player.battle?.eliminated && player.id !== target?.id);
   const claimed = save.claimed[matchKey] ?? [];
   const doctrine = save.doctrines[matchKey];
@@ -115,8 +125,15 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   };
   const join = (characterId: string) => {
-    updateSave({ ...save, characterId, reputation: save.characterId ? save.reputation : save.reputation + 30 });
-    setNotice(save.characterId ? '应援角色已更换。' : '加入成功，获得 30 点创始应援声望。');
+    if (selectedCharacterId) return;
+    updateSave({
+      ...save,
+      characterId,
+      selections: { ...save.selections, [matchKey]: characterId },
+      reputation: save.characterId ? save.reputation : save.reputation + 30,
+    });
+    setNotice('应援角色已锁定，本局无法更换。');
+    onSelected?.(characterId);
   };
   const selectDoctrine = (next: SupportDoctrine) => {
     if (orders.some((order) => order.playerId === target?.id)) return;
@@ -160,6 +177,7 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
     setNotice(`任务结算，阵营声望 +${reward}。`);
   };
   const chooseOpportunity = (opportunity: typeof opportunities[number]) => {
+    setLoadedOpportunityId(opportunity.id);
     setOrderKind(opportunity.kind);
     setStake(opportunity.recommendedStake);
     if (opportunity.targetPlayerId) setOrderTargetId(opportunity.targetPlayerId);
@@ -185,11 +203,11 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
   return <div className="support-overlay pointer-events-auto" role="dialog" aria-modal="true" aria-label="角色应援与阵营经营">
     <section className="support-panel">
       <header className="support-header">
-        <div><small>观众阵营</small><h2>应援作战室</h2><p>选择一个角色，以干预点发布任务；角色会按自己的性格回应并执行。</p></div>
-        <button className="live-hud-button" onClick={onClose}>关闭</button>
+        <div><small>{selectionRequired ? '开局应援选择' : '观众阵营'}</small><h2>{selectionRequired ? '选择本局应援角色' : '应援作战室'}</h2><p>{selectionRequired ? '每局只能选择一名角色。角色淘汰后，你可以重新开局或继续观看。' : '以干预点发布任务；角色会按自己的性格回应并执行。'}</p></div>
+        {!selectionRequired && <button className="live-hud-button" onClick={onClose}>关闭</button>}
       </header>
       {!target ? <>
-        <div className="support-section-title"><b>选择你的应援角色</b><span>首次加入赠送 30 声望</span></div>
+        <div className="support-section-title"><b>选择你的应援角色</b><span>选定后本局不可更换</span></div>
         <div className="support-roster">
           {BATTLE_CONFIG.characters.map((character) => {
             const player = players.find((candidate) => candidate.battle?.characterId === character.id);
@@ -208,19 +226,22 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow }
         </div>
         <div className="support-actions">
           <button className="live-hud-button" onClick={() => onFollow(target.id)}>跟随直播镜头</button>
-          <button className="live-hud-button" onClick={() => updateSave({ ...save, characterId: undefined })}>更换应援角色</button>
+          <span className="support-lock-badge">本局应援已锁定</span>
           <span className="support-points">可用干预点 <b>{battle?.interventionPoints ?? 0}</b></span>
         </div>
         <div className="support-progress"><span style={{ width: `${level.next ? Math.min(100, save.reputation / level.next * 100) : 100}%` }} /></div>
 
         <div className="support-section-title"><b>直播机会</b><span>根据当前战况实时推荐</span></div>
         <div className="support-opportunity-grid">
-          {opportunities.map((opportunity, index) => <button key={opportunity.id} className={index === 0 ? 'is-recommended' : ''} onClick={() => chooseOpportunity(opportunity)} disabled={Boolean(activeOrder)}>
-            <span><i data-urgency={opportunity.urgency}>{opportunity.urgency}优先</i>{index === 0 && <em>连携推荐</em>}</span>
+          {opportunities.map((opportunity, index) => {
+            const loaded = loadedOpportunityId === opportunity.id;
+            return <button key={opportunity.id} aria-pressed={loaded} className={`${index === 0 ? 'is-recommended' : ''} ${loaded ? 'is-loaded' : ''}`} onClick={() => chooseOpportunity(opportunity)} disabled={Boolean(activeOrder)}>
+            <span><i data-urgency={opportunity.urgency}>{opportunity.urgency}优先</i>{index === 0 && <em>连携推荐</em>}{loaded && <em className="support-opportunity-loaded">已装载</em>}</span>
             <b>{opportunity.title}</b>
             <small>{opportunity.description}</small>
             <strong>装载任务 · 建议 {opportunity.recommendedStake} 点</strong>
-          </button>)}
+          </button>;
+          })}
         </div>
 
         <div className="support-section-title"><b>1. 选择本局阵营路线</b><span>{doctrine ? '首次发布任务后锁定' : '路线影响接受率与任务奖励'}</span></div>

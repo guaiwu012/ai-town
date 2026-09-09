@@ -6,7 +6,12 @@ import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import type { SelectElement } from './Player';
-import { BATTLE_CONFIG, INTERVENTION_OPERATIONS, POPULARITY_PROGRESSION, popularityRatingFor } from '../../data/battleRoyaleConfig';
+import {
+  BATTLE_CONFIG,
+  INTERVENTION_OPERATIONS,
+  POPULARITY_PROGRESSION,
+  popularityRatingFor,
+} from '../../data/battleRoyaleConfig';
 import {
   AccessibleDialog,
   EventIcon,
@@ -18,6 +23,7 @@ import {
 import {
   AreaStatusMarker,
   OverviewSummary,
+  OverviewTerrainBoundaries,
   OverviewTabs,
   type AreaOverview,
   type OverviewTab,
@@ -116,11 +122,12 @@ export default function BattleRoyalePanel({
   const activeAreaLocks = (battle?.areaLocks ?? []).filter((lock) => lock.until > Date.now());
   const activeTask = battle?.hiddenMissions?.[0];
   const fullEventFeed = battle?.feed ?? [];
-  const eventFeed = fullEventFeed.slice(0, 1);
-  const interventionOperations = INTERVENTION_OPERATIONS.filter((operation) => operation.id !== 'TRU_01');
+  const interventionOperations = INTERVENTION_OPERATIONS.filter(
+    (operation) => operation.id !== 'TRU_01',
+  );
   const visibleInterventionOperations = showAllInterventions
     ? interventionOperations
-    : interventionOperations.slice(0, 2);
+    : interventionOperations.slice(0, 4);
   const filteredEventFeed = fullEventFeed.filter(
     (event) => logFilter === 'all' || categoryForEvent(event.kind) === logFilter,
   );
@@ -286,6 +293,15 @@ export default function BattleRoyalePanel({
             <strong>禁区 {formatCountdown(zoneCountdownSeconds)}</strong>
           </div>
           <div className="overview-match-actions">
+            <button className="live-hud-button" onClick={() => setLogsOpen(true)}>
+              战报
+            </button>
+            <button
+              className="live-hud-button overview-intervention-entry"
+              onClick={() => setOverviewTab('intervention')}
+            >
+              主办方干预
+            </button>
             <button className="live-hud-button" onClick={onBackToLive}>
               返回直播
             </button>
@@ -301,6 +317,7 @@ export default function BattleRoyalePanel({
         <div className="overview-map arena-panel relative min-h-0 p-2">
           <div className="overview-map-frame commercial-map-frame">
             <img src="/ai-town/assets/reference/battle-arena-map.png" alt="AI 大逃杀战场总览地图" />
+            <OverviewTerrainBoundaries areas={areaOverviews} targetedAreaId={targetAreaId} />
             {areaOverviews.map((area) => (
               <div
                 key={area.id}
@@ -400,7 +417,11 @@ export default function BattleRoyalePanel({
                   {battle?.decisionDriverStatus ?? '规则 AI 接管'} · 模型决策{' '}
                   {battle?.decisionCount ?? 0}/{battle?.decisionMax ?? 240}
                 </div>
-                {showAllInterventions && <div className="intervention-target-grid">
+                <div className="intervention-map-hint">
+                  <strong>先点地图选区域</strong>
+                  <span>再选择角色并执行干预</span>
+                </div>
+                <div className="intervention-target-grid">
                   <label>
                     角色目标
                     <select
@@ -416,51 +437,57 @@ export default function BattleRoyalePanel({
                         ))}
                     </select>
                   </label>
-                  <label>
-                    第二角色
-                    <select
-                      value={secondTargetPlayerId ?? ''}
-                      onChange={(event) => setSecondTargetPlayerId(event.target.value || undefined)}
-                    >
-                      <option value="">选择结盟对象</option>
-                      {players
-                        .filter(
-                          (player) =>
-                            !player.battle?.eliminated && player.id !== interventionTarget?.id,
-                        )
-                        .map((player) => (
-                          <option key={player.id} value={player.id}>
-                            {game.playerDescriptions.get(player.id)?.name}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                </div>}
+                  {showAllInterventions && (
+                    <label>
+                      第二角色
+                      <select
+                        value={secondTargetPlayerId ?? ''}
+                        onChange={(event) =>
+                          setSecondTargetPlayerId(event.target.value || undefined)
+                        }
+                      >
+                        <option value="">选择结盟对象</option>
+                        {players
+                          .filter(
+                            (player) =>
+                              !player.battle?.eliminated && player.id !== interventionTarget?.id,
+                          )
+                          .map((player) => (
+                            <option key={player.id} value={player.id}>
+                              {game.playerDescriptions.get(player.id)?.name}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
+                  )}
+                </div>
                 <div className="target-area-readout">
-                  角色目标 <strong>{game.playerDescriptions.get(interventionTarget?.id as GameId<'players'>)?.name ?? '未选择'}</strong>
+                  角色目标{' '}
+                  <strong>
+                    {game.playerDescriptions.get(interventionTarget?.id as GameId<'players'>)
+                      ?.name ?? '未选择'}
+                  </strong>
                   <span>·</span>
                   地图目标 <strong>{displayAreaName(targetAreaId)}</strong>
                 </div>
                 <div className="intervention-operation-grid">
-                  {visibleInterventionOperations.map(
-                    (operation) => {
-                      const needsPair = operation.target === 'pair';
-                      return (
-                        <button
-                          key={operation.id}
-                          className="arena-action disabled:opacity-40"
-                          disabled={
-                            pending ||
-                            (battle?.interventionPoints ?? 0) < operation.cost ||
-                            (needsPair && !secondTargetPlayerId)
-                          }
-                          onClick={() => void intervene(operation.id)}
-                        >
-                          {operation.name} · {operation.cost}点
-                        </button>
-                      );
-                    },
-                  )}
+                  {visibleInterventionOperations.map((operation) => {
+                    const needsPair = operation.target === 'pair';
+                    return (
+                      <button
+                        key={operation.id}
+                        className="arena-action disabled:opacity-40"
+                        disabled={
+                          pending ||
+                          (battle?.interventionPoints ?? 0) < operation.cost ||
+                          (needsPair && !secondTargetPlayerId)
+                        }
+                        onClick={() => void intervene(operation.id)}
+                      >
+                        {operation.name} · {operation.cost}点
+                      </button>
+                    );
+                  })}
                 </div>
                 <button
                   className="console-text-button intervention-more-toggle"
@@ -488,10 +515,16 @@ export default function BattleRoyalePanel({
                   <span>主线任务</span>
                   <strong>达到 S 级直播热度</strong>
                   <p>
-                    当前 {heatGrade} 级 · 热度 {heat}/{POPULARITY_PROGRESSION.sHeat} · 已投入 {battle?.interventionSpentTotal ?? 0}/{POPULARITY_PROGRESSION.sInterventionSpent} 点
+                    当前 {heatGrade} 级 · 热度 {heat}/{POPULARITY_PROGRESSION.sHeat} · 已投入{' '}
+                    {battle?.interventionSpentTotal ?? 0}/
+                    {POPULARITY_PROGRESSION.sInterventionSpent} 点
                   </p>
                   <div className="task-progress">
-                    <i style={{ width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%` }} />
+                    <i
+                      style={{
+                        width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%`,
+                      }}
+                    />
                   </div>
                 </div>
                 <div className="task-summary-card">
@@ -542,27 +575,6 @@ export default function BattleRoyalePanel({
             )}
           </OverviewTabs>
         </aside>
-
-        <div className="overview-feed commercial-event-ticker arena-panel min-h-0 overflow-hidden">
-          <div className="ticker-heading">
-            <h3>最新战报</h3>
-            <button className="console-text-button" onClick={() => setLogsOpen(true)}>
-              查看全部
-            </button>
-          </div>
-          <div className="ticker-events" aria-live="polite">
-            {eventFeed.length === 0 && (
-              <div className="py-2 text-xs text-slate-500">等待第一条直播事件...</div>
-            )}
-            {eventFeed.map((event) => (
-              <div key={event.id} className="arena-feed-row ticker-event">
-                <EventIcon kind={event.kind} />
-                <span className="arena-feed-tag shrink-0">[{displayEventKind(event.kind)}]</span>
-                <span className="truncate text-slate-200">{displayEventText(event.text)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       <AccessibleDialog
@@ -577,10 +589,13 @@ export default function BattleRoyalePanel({
             <span>主线任务</span>
             <h3>达到 S 级直播热度</h3>
             <p>
-              当前 {heatGrade} 级 · 热度 {heat} / {POPULARITY_PROGRESSION.sHeat} · 干预投入 {battle?.interventionSpentTotal ?? 0} / {POPULARITY_PROGRESSION.sInterventionSpent}
+              当前 {heatGrade} 级 · 热度 {heat} / {POPULARITY_PROGRESSION.sHeat} · 干预投入{' '}
+              {battle?.interventionSpentTotal ?? 0} / {POPULARITY_PROGRESSION.sInterventionSpent}
             </p>
             <div className="task-progress">
-              <i style={{ width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%` }} />
+              <i
+                style={{ width: `${Math.min(100, (heat / POPULARITY_PROGRESSION.sHeat) * 100)}%` }}
+              />
             </div>
           </article>
           <article className="task-card">
@@ -780,18 +795,18 @@ function Stat({ label, value }: { label: string; value: string | number }) {
 
 function mapPositionForArea(areaId: string) {
   const positions: Record<string, { left: string; top: string }> = {
-    A01: { left: '17%', top: '19%' },
-    A02: { left: '8%', top: '49%' },
-    A03: { left: '36%', top: '86%' },
-    A04: { left: '70%', top: '45%' },
-    A05: { left: '79%', top: '79%' },
-    A06: { left: '79%', top: '16%' },
-    A07: { left: '77%', top: '39%' },
-    A08: { left: '47%', top: '45%' },
-    A09: { left: '26%', top: '58%' },
-    A10: { left: '52%', top: '18%' },
-    A11: { left: '60%', top: '77%' },
-    A12: { left: '21%', top: '8%' },
+    A01: { left: '27%', top: '18%' },
+    A02: { left: '20%', top: '77%' },
+    A03: { left: '39%', top: '76%' },
+    A04: { left: '89%', top: '66%' },
+    A05: { left: '73%', top: '80%' },
+    A06: { left: '75%', top: '22%' },
+    A07: { left: '84%', top: '42%' },
+    A08: { left: '50%', top: '43%' },
+    A09: { left: '22%', top: '46%' },
+    A10: { left: '54%', top: '15%' },
+    A11: { left: '56%', top: '79%' },
+    A12: { left: '10%', top: '24%' },
   };
   return positions[areaId] ?? { left: '50%', top: '50%' };
 }
@@ -831,42 +846,6 @@ function formatCountdown(totalSeconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
-}
-
-function displayEventKind(kind: string) {
-  return (
-    (
-      {
-        system: '系统',
-        attack: '战斗',
-        eliminate: '淘汰',
-        zone: '禁区',
-        loot: '搜索',
-        buy: '交易',
-        trade: '交易',
-        heal: '治疗',
-        move: '移动',
-        ally: '结盟',
-        alliance: '结盟',
-        betrayal: '背叛',
-        audience: '观众',
-        winner: '胜利',
-        intervention: '主办方',
-        story: '剧情',
-        areaStory: '区域剧情',
-        globalStory: '全局事件',
-        clue: '线索',
-        mission: '任务',
-        truth: '真相',
-        heat: '热度',
-        decision: '决策',
-        reaction: '反应',
-        investigate: '调查',
-        resource: '资源',
-        item: '物品',
-      } as Record<string, string>
-    )[kind] ?? kind
-  );
 }
 
 function interventionEffectLabel(kind: string) {

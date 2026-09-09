@@ -3,7 +3,7 @@ import PixiGame from './PixiGame.tsx';
 
 import { useElementSize } from 'usehooks-ts';
 import { Stage } from '@pixi/react';
-import { ConvexProvider, useConvex, useQuery } from 'convex/react';
+import { ConvexProvider, useConvex, useMutation, useQuery } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import { useWorldHeartbeat } from '../hooks/useWorldHeartbeat.ts';
 import { useHistoricalTime } from '../hooks/useHistoricalTime.ts';
@@ -18,17 +18,17 @@ import BattleCharacterDrawer from './BattleCharacterDrawer.tsx';
 import BattleReplayControls from './BattleReplayControls.tsx';
 import { selectDirectorShot } from '../lib/battleDirector.ts';
 import { replayFrameAt, replayStartTime } from '../lib/battleReplay.ts';
-import BattleStoryCard from './BattleStoryCard.tsx';
 import BattleDialogueBox from './BattleDialogueBox.tsx';
-import SupportFactionPanel from './SupportFactionPanel.tsx';
+import SupportFactionPanel, { supportCharacterForMatch } from './SupportFactionPanel.tsx';
 import GameLoadingScreen from './GameLoadingScreen.tsx';
 import { useBattleAudio } from '../hooks/useBattleAudio.ts';
-import SupportOnboarding, { supportGuideSeen } from './SupportOnboarding.tsx';
 import AudienceDanmaku from './AudienceDanmaku.tsx';
 import PopularityRankUp from './PopularityRankUp.tsx';
+import SupportDefeatModal from './SupportDefeatModal.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 const DANMAKU_PREFERENCE_KEY = 'ai-town-audience-danmaku-enabled';
+const SUPPORT_FAILURE_DISMISSED_KEY = 'ai-town-support-failure-dismissed';
 
 export default function Game() {
   const convex = useConvex();
@@ -42,7 +42,10 @@ export default function Game() {
   const [focusAreaId, setFocusAreaId] = useState<string>();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [supportGuideOpen, setSupportGuideOpen] = useState(() => !supportGuideSeen());
+  const [supportSession, setSupportSession] = useState<{ matchKey: string; characterId?: string }>();
+  const [dismissedSupportFailure, setDismissedSupportFailure] = useState<string>();
+  const [supportRestartPending, setSupportRestartPending] = useState(false);
+  const [supportRestartError, setSupportRestartError] = useState('');
   const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
@@ -55,9 +58,39 @@ export default function Game() {
   const worldStatus = useQuery(api.world.defaultWorldStatus);
   const worldId = worldStatus?.worldId;
   const engineId = worldStatus?.engineId;
+  const resetBattleMutation = useMutation(api.world.resetBattle);
 
   const game = useServerGame(worldId);
   const { audioEnabled, toggleAudio } = useBattleAudio(game);
+  const battleMatchKey = game?.world.battle
+    ? String(game.world.battle.seed ?? game.world.battle.started ?? 'match')
+    : undefined;
+  const supportSelectionReady = Boolean(battleMatchKey && supportSession?.matchKey === battleMatchKey);
+  const supportCharacterId = supportSelectionReady ? supportSession?.characterId : undefined;
+  const supportedPlayer = supportCharacterId && game
+    ? [...game.world.players.values()].find((player) => player.battle?.characterId === supportCharacterId)
+    : undefined;
+  const supportFailed = Boolean(
+    supportSelectionReady &&
+    supportedPlayer?.battle?.eliminated &&
+    dismissedSupportFailure !== battleMatchKey,
+  );
+
+  useEffect(() => {
+    if (!battleMatchKey) return;
+    const characterId = supportCharacterForMatch(battleMatchKey);
+    setSupportSession({ matchKey: battleMatchKey, characterId });
+    setDismissedSupportFailure(
+      window.localStorage.getItem(SUPPORT_FAILURE_DISMISSED_KEY) === battleMatchKey
+        ? battleMatchKey
+        : undefined,
+    );
+    setSupportRestartError('');
+    if (!characterId) {
+      setViewMode('live');
+      setSupportOpen(true);
+    }
+  }, [battleMatchKey]);
 
   const toggleDanmaku = () => {
     setDanmakuEnabled((enabled) => {
@@ -142,6 +175,22 @@ export default function Game() {
     setDirectorCaption('直播准备 · 等待现场');
     directorSwitchRef.current = { at: 0, eventId: -1 };
   };
+  const restartAfterSupportDefeat = async () => {
+    if (!worldId || !battleMatchKey || supportRestartPending) return;
+    setSupportRestartPending(true);
+    setSupportRestartError('');
+    try {
+      await resetBattleMutation({ worldId });
+      window.localStorage.setItem(SUPPORT_FAILURE_DISMISSED_KEY, battleMatchKey);
+      setDismissedSupportFailure(battleMatchKey);
+      setSupportOpen(false);
+      handleMatchReset();
+    } catch (error) {
+      setSupportRestartError(error instanceof Error ? error.message : '重新开局失败，请稍后再试。');
+    } finally {
+      setSupportRestartPending(false);
+    }
+  };
   const replayFrame = replayActive ? replayFrameAt(game.world.battle, replayTime) : undefined;
   const availableReplayStart = replayStartTime(game.world.battle);
   return (
@@ -200,7 +249,6 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             danmakuEnabled={danmakuEnabled}
             onToggleDanmaku={toggleDanmaku}
           />
-          {!replayActive && <BattleStoryCard game={game} />}
           {!replayActive && <BattleDialogueBox game={game} focusPlayerId={focusPlayerId} focusAreaId={focusAreaId} />}
           {replayActive && <BattleReplayControls
             battle={game.world.battle}
@@ -212,10 +260,18 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onJump={(time) => { setReplayTime(time); setReplayActive(true); }}
           />}
           {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} replayFrame={replayFrame} replayTime={replayActive ? replayTime : undefined} onClose={() => setDrawerOpen(false)} />}
-          {supportOpen && <SupportFactionPanel worldId={worldId} game={game} onClose={() => setSupportOpen(false)} onFollow={(playerId) => { followPlayer(playerId, false); setSupportOpen(false); }} />}
-          {supportGuideOpen && !supportOpen && <SupportOnboarding
-            onDismiss={() => setSupportGuideOpen(false)}
-            onStart={() => { setSupportGuideOpen(false); setSupportOpen(true); }}
+          {supportOpen && <SupportFactionPanel
+            worldId={worldId}
+            game={game}
+            selectionRequired={!supportCharacterId}
+            onClose={() => setSupportOpen(false)}
+            onFollow={(playerId) => { followPlayer(playerId, false); setSupportOpen(false); }}
+            onSelected={(characterId) => {
+              setSupportSession({ matchKey: battleMatchKey!, characterId });
+              setSupportOpen(false);
+              const player = [...game.world.players.values()].find((candidate) => candidate.battle?.characterId === characterId);
+              if (player) followPlayer(player.id, false);
+            }}
           />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
@@ -231,6 +287,17 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
             onLaunchModalHandled={() => setLaunchModal(undefined)}
           />
         </div>}
+        {supportFailed && supportedPlayer?.battle?.characterId && <SupportDefeatModal
+          characterId={supportedPlayer.battle.characterId}
+          characterName={game.playerDescriptions.get(supportedPlayer.id)?.name ?? supportedPlayer.id}
+          pending={supportRestartPending}
+          error={supportRestartError}
+          onContinue={() => {
+            if (battleMatchKey) window.localStorage.setItem(SUPPORT_FAILURE_DISMISSED_KEY, battleMatchKey);
+            setDismissedSupportFailure(battleMatchKey);
+          }}
+          onRestart={() => void restartAfterSupportDefeat()}
+        />}
       </div>
     </>
   );

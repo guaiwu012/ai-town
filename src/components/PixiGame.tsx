@@ -19,7 +19,6 @@ import { PixiArenaZones } from './PixiArenaZones.tsx';
 import { BATTLE_ARENA_ZONES } from '../../data/battleArena.ts';
 import { GameId } from '../../convex/aiTown/ids.ts';
 import type { BattleReplayFrame } from '../../convex/aiTown/battleRoyale.ts';
-import PixiBattleSpeech from './PixiBattleSpeech.tsx';
 import { Player as ServerPlayer } from '../../convex/aiTown/player.ts';
 import { Location, locationFields, playerLocation } from '../../convex/aiTown/location.ts';
 import { useHistoricalValue } from '../hooks/useHistoricalValue.ts';
@@ -152,6 +151,7 @@ export const PixiGame = (props: {
         tileDim={tileDim}
         mapWidth={width}
         mapHeight={height}
+        screenHeight={props.height}
       />
       {players.map(
         (p) =>
@@ -173,7 +173,6 @@ export const PixiGame = (props: {
           replayFrame={props.replayFrame?.players.find((frame) => frame.id === p.id)}
         />
       ))}
-      <PixiBattleSpeech game={props.game} enabled={!props.replayMode} />
       {!props.replayMode && <PixiBattleEffects game={props.game} />}
     </PixiViewport>
   );
@@ -190,6 +189,7 @@ function SmoothCameraFollow({
   tileDim,
   mapWidth,
   mapHeight,
+  screenHeight,
 }: {
   viewportRef: MutableRefObject<Viewport | undefined>;
   player?: ServerPlayer;
@@ -201,6 +201,7 @@ function SmoothCameraFollow({
   tileDim: number;
   mapWidth: number;
   mapHeight: number;
+  screenHeight: number;
 }) {
   const historicalLocation = useHistoricalValue<Location>(
     locationFields,
@@ -225,13 +226,22 @@ function SmoothCameraFollow({
     if (!viewport || !target) return;
 
     const center = viewport.center;
-    const dx = target.x - center.x;
-    const dy = target.y - center.y;
+    // The broadcast chrome occupies the top of the screen while the lower
+    // centre remains unobstructed. Keep followed contestants in that visual
+    // centre instead of the geometric centre of the whole viewport.
+    const followsPlayer = Boolean(player || replayPlayer);
+    const screenOffsetY = followsPlayer ? screenHeight * 0.16 : 0;
+    const cameraTarget = new PIXI.Point(
+      target.x,
+      target.y - screenOffsetY / Math.max(viewport.scale.y, 0.01),
+    );
+    const dx = cameraTarget.x - center.x;
+    const dy = cameraTarget.y - center.y;
     if (dx * dx + dy * dy < 0.04) return;
 
     // Frame-rate independent damping keeps following smooth even though Convex
     // publishes positions less frequently than Pixi renders frames.
-    const next = dampCameraPosition(center, target, delta);
+    const next = dampCameraPosition(center, cameraTarget, delta);
     viewport.moveCenter(next.x, next.y);
   });
 

@@ -6,7 +6,7 @@ type BattleBroadcastToastsProps = {
 };
 
 export default function BattleBroadcastToasts({ feed = [] }: BattleBroadcastToastsProps) {
-  const visibleFeed = feed.slice(0, 4);
+  const visibleFeed = feed.slice(0, 3);
   if (visibleFeed.length === 0) {
     return null;
   }
