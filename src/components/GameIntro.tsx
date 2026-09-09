@@ -48,7 +48,7 @@ export default function GameIntro({ onEnter }: { onEnter: () => Promise<void> })
     <video ref={videoRef} className="game-intro-media" src={INTRO_VIDEO} poster={INTRO_POSTER} autoPlay muted={videoMuted} loop playsInline preload="auto" />
     <div className="game-intro-shade" />
     <div className="game-intro-transition" aria-hidden="true"><i /><b /></div>
-    {transitioning && <div className="game-intro-entering"><small>LIVE SIGNAL CONNECTING</small><strong>正在生成新赛局</strong><i /></div>}
+    {transitioning && <div className="game-intro-entering"><small>LIVE SIGNAL CONNECTING</small><strong>正在接入直播信号</strong><i /></div>}
     <button className="game-intro-sound" onClick={toggleVideoSound}>{videoMuted ? '开启片头声音' : '关闭片头声音'}</button>
     <div className="game-intro-content">
       <div className="game-intro-live"><i /> LIVE SIGNAL 07</div>

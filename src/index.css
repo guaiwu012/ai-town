@@ -298,6 +298,150 @@ p[contenteditable='true']:empty::before {
   to { background-position: 0 3.5rem; }
 }
 
+/* Cinematic game introduction. Kept separate from the short server loading state. */
+.game-intro {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  overflow: hidden;
+  background: #06111a;
+  color: #eef5f1;
+}
+.game-intro-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.game-intro-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(2, 8, 14, 0.96) 0%, rgba(2, 8, 14, 0.72) 42%, rgba(2, 8, 14, 0.12) 76%);
+}
+.game-intro-content {
+  position: absolute;
+  left: clamp(1.5rem, 6vw, 6rem);
+  bottom: clamp(2rem, 9vh, 6rem);
+  width: min(620px, calc(100vw - 3rem));
+}
+.game-intro-content > small {
+  color: #78d6ca;
+  font-weight: 700;
+}
+.game-intro-live {
+  margin-bottom: 2.4rem;
+  color: #f4c969;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.game-intro-live i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 0.45rem;
+  background: #ee625c;
+  box-shadow: 0 0 12px #ee625c;
+  animation: live-blink 1.3s steps(2) infinite;
+}
+@keyframes live-blink { 50% { opacity: 0.35; } }
+.game-intro-content h1 {
+  max-width: 14ch;
+  margin: 0.55rem 0 0.8rem;
+  color: #f4e4ca;
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 5vw, 4.6rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+.game-intro-content p {
+  max-width: 38rem;
+  color: #c2cfcc;
+  font-size: clamp(1rem, 1.5vw, 1.18rem);
+  line-height: 1.8;
+}
+.game-intro-actions {
+  display: flex;
+  gap: 0.7rem;
+  margin-top: 1.6rem;
+}
+.game-intro-actions .live-hud-button { min-width: 8rem; }
+.game-intro-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1.2rem;
+}
+.game-intro-dots i { width: 22px; height: 3px; background: #40505a; }
+.game-intro-dots i.is-active { background: #e6bb59; }
+.game-intro-sound {
+  position: absolute;
+  z-index: 3;
+  top: 1.25rem;
+  right: 1.25rem;
+  border: 1px solid rgba(117, 211, 195, 0.7);
+  background: rgba(3, 16, 25, 0.76);
+  padding: 0.48rem 0.7rem;
+  color: #d8eee8;
+  font-size: 0.72rem;
+  backdrop-filter: blur(6px);
+}
+.game-intro-transition {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+.game-intro-transition i {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(113, 255, 231, 0.12) 0 1px, transparent 1px 5px);
+  transform: translateY(-100%);
+}
+.game-intro-transition b { position: absolute; inset: 0; background: #dffff8; opacity: 0; }
+.game-intro-entering {
+  position: absolute;
+  z-index: 9;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(360px, calc(100vw - 3rem));
+  justify-items: center;
+  transform: translate(-50%, -50%);
+  color: #e7f5ef;
+  text-align: center;
+}
+.game-intro-entering small { color: #72d9c5; font-size: 0.66rem; letter-spacing: 0.12em; }
+.game-intro-entering strong { margin-top: 0.45rem; font-family: var(--font-display); font-size: 1.7rem; }
+.game-intro-entering i {
+  width: 100%;
+  height: 2px;
+  margin-top: 0.9rem;
+  background: linear-gradient(90deg, transparent, #68dcc4, transparent);
+  animation: loading-track-scan 1.15s ease-in-out infinite;
+}
+.game-intro-error {
+  margin-top: 0.8rem;
+  border-left: 2px solid #ef776b;
+  background: rgba(75, 17, 22, 0.7);
+  padding: 0.48rem 0.65rem;
+  color: #ffd5cf;
+  font-size: 0.74rem;
+}
+.game-intro.is-transitioning .game-intro-content,
+.game-intro.is-transitioning .game-intro-sound { opacity: 0; transition: opacity 180ms ease; }
+.game-intro.is-transitioning .game-intro-media { transform: scale(1.045); filter: saturate(0.55) contrast(1.35); transition: transform 900ms ease, filter 450ms ease; }
+.game-intro.is-transitioning .game-intro-transition { opacity: 1; }
+.game-intro.is-transitioning .game-intro-transition i { animation: intro-scan 420ms linear 2; }
+.game-intro.is-transitioning .game-intro-transition b { animation: intro-flash 900ms ease-out forwards; }
+@keyframes intro-scan { to { transform: translateY(100%); } }
+@keyframes intro-flash { 0%, 42% { opacity: 0; } 52% { opacity: 0.9; } 72% { opacity: 0.08; } 100% { opacity: 0; } }
+
+@media (max-width: 720px) {
+  .game-intro-shade { background: rgba(2, 8, 14, 0.72); }
+  .game-intro-content { left: 1.25rem; bottom: 2rem; width: calc(100vw - 2.5rem); }
+  .game-intro-live { margin-bottom: 1.5rem; }
+}
+
 .shape-top-left-corner {
   clip-path: polygon(0 0, 100% 0, 0 100%);
 }
