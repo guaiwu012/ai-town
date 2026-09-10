@@ -1,8 +1,11 @@
 export const ACTION_TIMEOUT = 120_000; // more time for local dev
 // export const ACTION_TIMEOUT = 60_000;// normally fine
 
-export const IDLE_WORLD_TIMEOUT = 5 * 60 * 1000;
-export const WORLD_HEARTBEAT_INTERVAL = 60 * 1000;
+// Stop the paid simulation quickly when nobody has the game visible. A visible
+// viewer renews the lease every 30 seconds; after two minutes without a lease
+// the engine and its AI/model work are suspended until a viewer returns.
+export const IDLE_WORLD_TIMEOUT = 2 * 60 * 1000;
+export const WORLD_HEARTBEAT_INTERVAL = 30 * 1000;
 
 export const MAX_STEP = 10 * 60 * 1000;
 export const TICK = 16;

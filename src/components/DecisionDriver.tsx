@@ -29,27 +29,42 @@ export default function DecisionDriver({ worldId, game, enabled = true }: Props)
   useEffect(() => {
     if (!enabled) return;
     const tick = async () => {
+      // A background tab must not keep the world alive or spend model quota.
+      if (document.visibilityState !== 'visible') return;
       const currentGame = gameRef.current;
       const currentBattle = currentGame.world.battle;
       const now = Date.now();
-      const leaseActive = currentBattle?.decisionDriverId === driverId && (currentBattle.decisionDriverUntil ?? 0) > now;
+      const leaseActive =
+        currentBattle?.decisionDriverId === driverId &&
+        (currentBattle.decisionDriverUntil ?? 0) > now;
       if (!leaseActive) {
         await sendInput({ worldId, name: 'claimDecisionDriver', args: { driverId } });
         return;
       }
       await sendInput({ worldId, name: 'heartbeatDecisionDriver', args: { driverId } });
-      if ((currentBattle?.decisionCount ?? 0) >= (currentBattle?.decisionMax ?? BATTLE_CONFIG.match.llmDecisionMaxPerMatch)) return;
+      if (
+        (currentBattle?.decisionCount ?? 0) >=
+        (currentBattle?.decisionMax ?? BATTLE_CONFIG.match.llmDecisionMaxPerMatch)
+      )
+        return;
       const duePlayers = [...currentGame.world.players.values()]
         .filter((player) => player.battle && !player.battle.eliminated)
         .filter((player) => (player.battle?.decisionDueAt ?? 0) <= now)
         .filter((player) => !inFlight.current.has(player.id))
-        .filter((player) => now - (lastRequestedAt.current.get(player.id) ?? 0) >= BATTLE_CONFIG.match.llmDecisionIntervalMs)
+        .filter(
+          (player) =>
+            now - (lastRequestedAt.current.get(player.id) ?? 0) >=
+            BATTLE_CONFIG.match.llmDecisionIntervalMs,
+        )
         .slice(0, Math.max(0, MAX_CONCURRENT_REQUESTS - inFlight.current.size));
       duePlayers.forEach((player) => {
         inFlight.current.add(player.id);
         lastRequestedAt.current.set(player.id, now);
-        void requestCloudDecision({ worldId, driverId, playerId: player.id as GameId<'players'> })
-          .finally(() => inFlight.current.delete(player.id));
+        void requestCloudDecision({
+          worldId,
+          driverId,
+          playerId: player.id as GameId<'players'>,
+        }).finally(() => inFlight.current.delete(player.id));
       });
     };
     void tick();

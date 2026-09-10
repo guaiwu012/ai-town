@@ -622,8 +622,21 @@ export function resetBattleMatch(game: Game, now: number) {
 export function tickBattleRoyale(game: Game, now: number) {
   ensureBattleState(game, now);
   if (game.world.battle!.isPaused || game.world.battle!.phase === 'settlement') return;
-  for (const player of alivePlayers(game)) tickBattleLocomotion(game, now, player);
+  const evacuating = new Set<string>();
+  // Rescue contestants that were already in a closed area before applying the
+  // next zone drain. Zone survival always outranks combat, support, and model AI.
+  for (const player of alivePlayers(game)) {
+    if (evacuateClosedArea(game, now, player)) evacuating.add(player.id);
+  }
   tickMatchRules(game, now);
+  // A rule tick may have closed new areas. Start those evacuations immediately
+  // instead of letting one more combat/decision cycle run inside the red zone.
+  for (const player of alivePlayers(game)) {
+    if (evacuateClosedArea(game, now, player)) evacuating.add(player.id);
+  }
+  for (const player of alivePlayers(game)) {
+    if (!evacuating.has(player.id)) tickBattleLocomotion(game, now, player);
+  }
   updateSupportOrders(game, now);
   const battle = game.world.battle!;
   if (now < battle.lastTick + BATTLE_TICK_MS) {
@@ -651,6 +664,7 @@ export function tickBattleRoyale(game: Game, now: number) {
 
   for (const player of alive) {
     if (player.battle?.eliminated) continue;
+    if (evacuating.has(player.id)) continue;
     const stats = player.battle!;
     if (runCombatReflex(game, now, player)) continue;
     if (runSupportOrderAction(game, now, player)) continue;
@@ -670,6 +684,51 @@ export function tickBattleRoyale(game: Game, now: number) {
       : battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined;
     runAgentBattleAction(game, now, player, fallbackReason);
   }
+}
+
+/** Immediately overrides every other behavior when a contestant is in a closed area. */
+export function evacuateClosedArea(game: Game, now: number, player: Player) {
+  const stats = player.battle;
+  const battle = game.world.battle;
+  if (!stats || stats.eliminated || !battle || battle.openAreas?.includes(stats.areaId ?? 'A01')) return false;
+  const destination = nearestOpenEvacuationArea(game, stats.areaId ?? 'A01');
+  if (!destination) return false;
+
+  delete player.pathfinding;
+  player.speed = 0;
+  stats.combatTargetId = undefined;
+  stats.combatUntil = 0;
+  stats.pendingStoryEventId = undefined;
+  stats.pendingStoryApproach = undefined;
+  if (!moveToBattleArea(game, now, player, destination)) return false;
+  stats.lastDecisionAt = now;
+  stats.lastDecisionAction = 'move';
+  stats.lastDecisionReason = `当前区域已关闭，强制撤往${areaName(destination)}`;
+  stats.lastDecisionStatus = '禁区紧急撤离';
+  stats.nextLocomotionAt = now + 1200;
+  player.activity = {
+    description: `${playerName(game, player)} 正在紧急撤离禁区，前往${areaName(destination)}`,
+    emoji: 'ALERT',
+    until: now + 2500,
+  };
+  return true;
+}
+
+function nearestOpenEvacuationArea(game: Game, startAreaId: string) {
+  const openAreas = new Set((game.world.battle?.openAreas ?? []).filter((areaId) => areaId !== 'S01'));
+  if (!openAreas.size) return undefined;
+  const queue = [startAreaId];
+  const visited = new Set(queue);
+  while (queue.length) {
+    const current = queue.shift()!;
+    for (const neighbor of adjacentAreaIds(current).map(String)) {
+      if (visited.has(neighbor)) continue;
+      if (openAreas.has(neighbor)) return neighbor;
+      visited.add(neighbor);
+      queue.push(neighbor);
+    }
+  }
+  return [...openAreas][0];
 }
 
 function settleBattle(battle: BattleState) {
@@ -2743,10 +2802,12 @@ function relationshipBetween(game: Game, first: Player, second: Player, now = ga
 }
 
 export function moveToBattleArea(game: Game, now: number, player: Player, areaId: string) {
-  if (isAreaLocked(game.world.battle, now, player.battle?.areaId ?? 'A01')) return false;
+  const currentAreaId = player.battle?.areaId ?? 'A01';
+  const isEmergencyEvacuation = !game.world.battle?.openAreas?.includes(currentAreaId);
+  if (!isEmergencyEvacuation && isAreaLocked(game.world.battle, now, currentAreaId)) return false;
   if (areaId === 'S01' && (player.battle?.characterId !== 'C12' || !game.world.battle?.truthUnlocked)) return false;
   if (areaId !== 'S01' && !game.world.battle?.openAreas?.includes(areaId)) return false;
-  if (areaId === 'A09' && itemModifier(player.battle!, 'unlock', now) <= 0) return false;
+  if (!isEmergencyEvacuation && areaId === 'A09' && itemModifier(player.battle!, 'unlock', now) <= 0) return false;
   if (areaId === 'A01' && itemModifier(player.battle!, 'cold_resist', now) <= 0) { player.battle!.hp = Math.max(1, player.battle!.hp - 10); player.battle!.stress = (player.battle!.stress ?? 0) + 5; }
   const candidates = battleAreaNavigationPoints(areaId, game.worldMap.width, game.worldMap.height);
   const destination = candidates.find((candidate) => candidate.x > 0 && candidate.y > 0 && candidate.x < game.worldMap.width - 1 && candidate.y < game.worldMap.height - 1 && !blocked(game, now, candidate, player.id));

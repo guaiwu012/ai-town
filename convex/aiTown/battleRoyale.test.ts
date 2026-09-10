@@ -1,4 +1,4 @@
-import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, moveToBattleArea, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, evacuateClosedArea, moveToBattleArea, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -76,6 +76,35 @@ describe('battle royale host intervention rules', () => {
     expect(player.battle.nextLocomotionAt).toBeGreaterThan(2_000);
     expect(player.activity?.description).toContain('巡查');
     expect(player.activity?.emoji).toBe('ROUTE');
+  });
+
+  it('cancels stale behavior and immediately evacuates a closed area', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    game.world.battle.openAreas = game.world.battle.openAreas.filter((areaId: string) => areaId !== 'A01');
+    game.world.battle.areaLocks = [{ areaId: 'A01', until: 30_000 }];
+    player.pathfinding = { destination: { x: 10, y: 10 }, started: 1_000, state: { kind: 'needsPath' } };
+    player.speed = 0.1;
+    player.battle.combatTargetId = 'p:2';
+    player.battle.combatUntil = 20_000;
+
+    expect(evacuateClosedArea(game, 2_000, player)).toBe(true);
+    expect(game.world.battle.openAreas).toContain(player.battle.areaId);
+    expect(player.battle.areaId).not.toBe('A01');
+    expect(player.pathfinding?.destination).toBeDefined();
+    expect(player.battle.combatTargetId).toBeUndefined();
+    expect(player.battle.lastDecisionStatus).toBe('禁区紧急撤离');
+    expect(player.activity).toMatchObject({ emoji: 'ALERT' });
+  });
+
+  it('allows emergency entry into the final safe area even when normal entry needs an item', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    game.world.battle.openAreas = ['A09'];
+
+    expect(evacuateClosedArea(game, 2_000, player)).toBe(true);
+    expect(player.battle.areaId).toBe('A09');
+    expect(player.pathfinding?.destination).toBeDefined();
   });
 
   it('approaches a nearby hostile instead of freezing outside weapon range', () => {
@@ -976,11 +1005,14 @@ describe('battle royale host intervention rules', () => {
     expect(game.world.battle.zoneClosesAt).toBe(closesAt + 20_000);
   });
 
-  it('consumes zone time instead of health in a closed area', () => {
+  it('evacuates a closed area before consuming zone time', () => {
     const player = createPlayer('p:5', 'C05', 'A05'); const opponent = createPlayer('p:6', 'C06', 'A06'); const game = createGame([player, opponent]);
     game.world.battle.openAreas = game.world.battle.openAreas.filter((id: string) => id !== 'A05'); game.world.battle.zoneClosesAt = 999_999; player.battle.lastZoneDamageAt = 1_000; player.battle.hp = 100; player.battle.zoneTime = 30;
     tickBattleRoyale(game, 4_000);
-    expect(player.battle.hp).toBe(100); expect(player.battle.zoneTime).toBe(27);
+    expect(player.battle.hp).toBe(100);
+    expect(player.battle.zoneTime).toBe(30);
+    expect(game.world.battle.openAreas).toContain(player.battle.areaId);
+    expect(player.battle.lastDecisionStatus).toBe('禁区紧急撤离');
   });
 
   it('blocks safe contestants from entering or pathing across a closed area', () => {

@@ -61,7 +61,11 @@ export default function Game() {
   const resetBattleMutation = useMutation(api.world.resetBattle);
 
   const game = useServerGame(worldId);
-  const { audioEnabled, toggleAudio } = useBattleAudio(game);
+  const { audioEnabled, toggleAudio } = useBattleAudio(game, {
+    focusPlayerId,
+    focusAreaId,
+    active: viewMode === 'live' && !replayActive,
+  });
   const battleMatchKey = game?.world.battle
     ? String(game.world.battle.seed ?? game.world.battle.started ?? 'match')
     : undefined;
