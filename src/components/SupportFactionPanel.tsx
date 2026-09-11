@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation } from 'convex/react';
-import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { BATTLE_CONFIG, SUPPORT_ORDER_COOLDOWN_MS, personaForCharacter } from '../../data/battleRoyaleConfig';
 import { ServerGame } from '../hooks/serverGame';
 import { SupportDoctrine, SupportOrderKind, supportChainSteps, supportDoctrines, supportLevel, supportOpportunities, supportOrderEstimate, supportOrderKinds, supportOrderProgress, supportTasks } from '../lib/supportFaction';
+import type { LocalBattleAction } from '../localBattle/protocol';
 
 type SupportSave = {
   characterId?: string;
@@ -33,15 +31,14 @@ export function supportCharacterForMatch(matchKey: string) {
   return loadSave().selections[matchKey];
 }
 
-export default function SupportFactionPanel({ worldId, game, onClose, onFollow, selectionRequired = false, onSelected }: {
-  worldId: Id<'worlds'>;
+export default function SupportFactionPanel({ game, dispatch, onClose, onFollow, selectionRequired = false, onSelected }: {
   game: ServerGame;
+  dispatch: (name: LocalBattleAction, args?: Record<string, unknown>) => Promise<unknown>;
   onClose: () => void;
   onFollow: (playerId: GameId<'players'>) => void;
   selectionRequired?: boolean;
   onSelected?: (characterId: string) => void;
 }) {
-  const sendInput = useMutation(api.aiTown.main.sendInput);
   const [save, setSave] = useState(loadSave);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState('');
@@ -145,13 +142,13 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow, 
     setPending(true);
     setNotice('正在等待角色回应…');
     try {
-      await sendInput({ worldId, name: 'submitSupportOrder', args: {
+      await dispatch('submitSupportOrder', {
         playerId: target.id,
         kind: orderKind,
         doctrine,
         stake,
         ...((orderKind === 'hunt' || orderKind === 'ally') ? { targetPlayerId: orderTargetId as GameId<'players'> } : {}),
-      } });
+      });
       setNotice('指令已送达，角色回应会在下方显示。');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '任务发布失败。');
@@ -163,7 +160,7 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow, 
     if (!activeOrder || activeOrder.status !== 'countered' || pending) return;
     setPending(true);
     try {
-      await sendInput({ worldId, name: 'acceptSupportCounter', args: { orderId: activeOrder.id } });
+      await dispatch('acceptSupportCounter', { orderId: activeOrder.id });
       setNotice('加码成功，角色开始执行任务。');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '加码失败。');
@@ -187,11 +184,11 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow, 
     if (!target || !doctrine || chainStage < supportChainSteps.length || pending) return;
     setPending(true);
     try {
-      await sendInput({ worldId, name: 'activateSupportFinisher', args: {
+      await dispatch('activateSupportFinisher', {
         playerId: target.id,
         doctrine,
         ...(doctrine === 'hunter' ? { targetPlayerId: orderTargetId as GameId<'players'> } : {}),
-      } });
+      });
       setNotice(`${finisherName(doctrine)}已释放，直播局势发生变化。`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '终结技释放失败。');
@@ -284,11 +281,15 @@ export default function SupportFactionPanel({ worldId, game, onClose, onFollow, 
           </button>
         </div>
 
-        {latestOrder && <section className={`support-order-status is-${latestOrder.status}`}>
-          <div><small>角色回应</small><blockquote>“{latestOrder.response}”</blockquote></div>
-          <div className="support-order-state"><b>{statusName(latestOrder.status)}</b><span>{activeOrder ? `${Math.max(0, Math.ceil((activeOrder.expiresAt - now) / 1000))}s` : latestOrder.result}</span></div>
-          {activeOrder && <div className="support-order-meter"><span style={{ width: `${(orderProgress?.value ?? 0) * 100}%` }} /><em>{orderProgress?.label}</em></div>}
-          {latestOrder.status === 'countered' && <button className="live-hud-button live-hud-primary" disabled={pending || (battle?.interventionPoints ?? 0) < 1} onClick={acceptCounter}>接受加码 · 1 点</button>}
+        {latestOrder && <section className={`support-order-status support-response-card is-${latestOrder.status}`}>
+          <div className="support-response-avatar"><Portrait characterId={target?.battle?.characterId} large /><i /></div>
+          <div className="support-response-body">
+            <div className="support-response-meta"><span>角色回应 · {target ? game.playerDescriptions.get(target.id)?.name ?? target.id : '应援角色'}</span><b>{statusName(latestOrder.status)}</b></div>
+            <blockquote>“{latestOrder.response}”</blockquote>
+            <div className="support-response-result">{activeOrder ? <><span>{orderProgress?.label}</span><strong>{Math.max(0, Math.ceil((activeOrder.expiresAt - now) / 1000))}s</strong></> : <span>{latestOrder.result}</span>}</div>
+            {activeOrder && <div className="support-order-meter"><span style={{ width: `${(orderProgress?.value ?? 0) * 100}%` }} /></div>}
+          </div>
+          {latestOrder.status === 'countered' && <button className="live-hud-button live-hud-primary support-response-action" disabled={pending || (battle?.interventionPoints ?? 0) < 1} onClick={acceptCounter}>接受加码 · 1 点</button>}
         </section>}
 
         {save.streak > 1 && now - save.lastSuccessAt <= 120_000 && <div className="support-streak"><b>{save.streak} 连续成功</b><span>本次阵营声望获得连胜加成，{Math.max(0, 120 - Math.floor((now - save.lastSuccessAt) / 1000))} 秒内完成下一单可续接。</span></div>}

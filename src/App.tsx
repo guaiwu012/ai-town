@@ -10,7 +10,7 @@ export default function Home() {
   };
   return (
     <main className="h-screen w-screen overflow-hidden bg-brown-900 font-body">
-      <Game />
+      <Game active={!introOpen} />
       {introOpen && <GameIntro onEnter={enter} />}
       <ToastContainer position="bottom-right" autoClose={2000} closeOnClick theme="dark" />
     </main>

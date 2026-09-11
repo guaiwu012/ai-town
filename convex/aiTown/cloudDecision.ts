@@ -1,4 +1,4 @@
-import { ActionCtx, action, internalQuery } from '../_generated/server';
+import { ActionCtx, action, internalQuery, query } from '../_generated/server';
 import { v } from 'convex/values';
 import { api, internal } from '../_generated/api';
 import { Doc, Id } from '../_generated/dataModel';
@@ -20,6 +20,13 @@ export type DecisionContext = {
   player: Doc<'worlds'>['players'][number];
   descriptions: Doc<'playerDescriptions'>[];
 };
+
+// The browser reads this once when creating its Worker-owned match. No live
+// subscription or server-side game loop is kept afterward.
+export const runtimeConfig = query({
+  args: {},
+  handler: async () => BATTLE_CONFIG,
+});
 
 export const context = internalQuery({
   args: { worldId: v.id('worlds'), playerId },
@@ -69,6 +76,41 @@ export const request = action({
       const reason = error instanceof Error ? error.message.slice(0, 100) : '云端模型请求失败';
       await reportFailure(ctx, args, reason);
       return { queued: false, reason };
+    }
+  },
+});
+
+// Browser-owned matches send a read-only tactical snapshot. The action remains
+// stateless: it never creates a world, schedules a loop, or writes match state.
+export const requestLocal = action({
+  args: { sessionId: v.string(), playerId: v.string(), snapshot: v.any() },
+  handler: async (_ctx, args): Promise<{ decision?: Decision; reason?: string }> => {
+    const snapshot = args.snapshot as DecisionContext;
+    if (!snapshot || !snapshot.world || !snapshot.player || !Array.isArray(snapshot.world.players)) {
+      return { reason: '本地比赛快照无效' };
+    }
+    if (!args.sessionId || snapshot.world.battle?.sessionId !== args.sessionId) {
+      return { reason: '对局隔离校验失败' };
+    }
+    if (snapshot.world.players.length > BATTLE_CONFIG.match.agentCount) {
+      return { reason: '本地比赛角色数量异常' };
+    }
+    const player = snapshot.world.players.find((candidate) => candidate.id === args.playerId);
+    if (!player?.battle || player.battle.eliminated || snapshot.player.id !== args.playerId) {
+      return { reason: '角色不可决策' };
+    }
+    // Discard any caller-supplied player copy and select the authoritative copy
+    // inside the bounded world snapshot before constructing the prompt.
+    snapshot.player = player;
+    snapshot.descriptions = Array.isArray(snapshot.descriptions)
+      ? snapshot.descriptions.slice(0, BATTLE_CONFIG.match.agentCount)
+      : [];
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) return { reason: '云端 DS 密钥未配置' };
+    try {
+      return { decision: await requestDecision(snapshot, args.playerId, apiKey) };
+    } catch (error) {
+      return { reason: error instanceof Error ? error.message.slice(0, 100) : '云端模型请求失败' };
     }
   },
 });

@@ -107,13 +107,6 @@ export default function LiveBattleHud({
         <div><small>镜头区域</small><strong>{areaName(focusAreaId ?? stats?.areaId)}</strong></div>
       </section>
 
-      {supportOrder && <section className={`live-support-mission pointer-events-auto is-${supportOrder.status}`}>
-        <div className="live-support-mission-head"><span>阵营任务 · {supportTitle}</span><b>{Math.max(0, Math.ceil((supportOrder.expiresAt - displayedNow) / 1000))}s</b></div>
-        <strong>{game.playerDescriptions.get(supportOrder.playerId as GameId<'players'>)?.name ?? '应援角色'}{supportTargetName ? ` → ${supportTargetName}` : ''}</strong>
-        <div className="live-support-mission-meter"><i style={{ width: `${(supportProgress?.value ?? 0) * 100}%` }} /></div>
-        <small>{supportOrder.status === 'countered' ? '角色正在等待阵营加码' : supportProgress?.label}</small>
-      </section>}
-
       <div className="live-hud-bottom pointer-events-auto">
         {focusArea ? <section className="focus-card focus-area-card">
           <div className="focus-card-kicker">区域直播 · 手动锁定</div>
@@ -133,6 +126,12 @@ export default function LiveBattleHud({
           <div className="focus-card-identity"><Portrait characterId={stats?.characterId} /><div><div className="focus-card-kicker">{cameraMode === 'auto' ? directorCaption : '手动锁定 · 选手跟拍'}</div><div className="focus-card-title">{name}</div></div></div>
           {stats && <div className="focus-card-stats flex items-center gap-2"><BattleVitalBattery value={stats.hp} max={stats.maxHp} /><span>{Math.ceil(stats.hp)}/{stats.maxHp} · {displayWeapon(stats.weapon)} · {stats.areaId ?? 'A01'} · {stats.kills} 击杀</span></div>}
           {!replayActive && focus?.activity && focus.activity.until > now && <div className="focus-card-action">{focus.activity.emoji === 'MOVE' && focus.speed <= 0 ? `${name} 正在观察路线` : focus.activity.description}</div>}
+          {supportOrder && focus?.id === supportOrder.playerId && <div className={`focus-support-mission is-${supportOrder.status}`}>
+            <div className="focus-support-mission-head"><span>阵营任务 · {supportTitle}</span><b>{Math.max(0, Math.ceil((supportOrder.expiresAt - displayedNow) / 1000))}s</b></div>
+            <strong>{supportTargetName ? `${supportTitle} → ${supportTargetName}` : supportTitle}</strong>
+            <div className="focus-support-mission-meter"><i style={{ width: `${(supportProgress?.value ?? 0) * 100}%` }} /></div>
+            <small>{supportOrder.status === 'countered' ? '等待阵营加码' : supportProgress?.label}</small>
+          </div>}
           <div className="focus-card-actions">
             <button className="live-hud-button" onClick={onOpenDetails}>角色详情</button>
             {cameraMode === 'locked' && <button className="live-hud-button" onClick={onResumeDirector}>恢复自动导播</button>}

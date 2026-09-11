@@ -9,7 +9,7 @@ const EFFECT_URLS = {
   shotSmall: '/ai-town/assets/audio/sfx/shot-small.ogg',
   shotHeavy: '/ai-town/assets/audio/sfx/shot-heavy.ogg',
   impact: '/ai-town/assets/audio/sfx/impact.ogg',
-  eliminate: '/ai-town/assets/audio/sfx/eliminate.ogg',
+  eliminate: '/ai-town/assets/audio/sfx/eliminate-soft.mp3',
   zone: '/ai-town/assets/audio/sfx/zone.ogg',
   victory: '/ai-town/assets/audio/sfx/victory.mp3',
   ui: '/ai-town/assets/audio/sfx/ui-hover.mp3',
@@ -157,7 +157,7 @@ export function effectUrlsForEvent(kind: string, weapon?: string): BattleAudioCu
       { url: EFFECT_URLS.impact, volume: 0.24, delay: BULLET_TRAVEL_MS },
     ];
   }
-  if (kind === 'eliminate') return [{ url: EFFECT_URLS.eliminate, volume: 0.42, delay: BULLET_TRAVEL_MS }];
+  if (kind === 'eliminate') return [{ url: EFFECT_URLS.eliminate, volume: 0.46, delay: BULLET_TRAVEL_MS }];
   if (kind === 'zone' || kind === 'intervention') return [{ url: EFFECT_URLS.zone, volume: 0.28, delay: 0 }];
   if (kind === 'winner') return [{ url: EFFECT_URLS.victory, volume: 0.5, delay: 0 }];
   if (kind === 'buy' || kind === 'loot' || kind === 'ally') return [{ url: EFFECT_URLS.ui, volume: 0.18, delay: 0 }];

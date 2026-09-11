@@ -19,4 +19,10 @@ describe('battle audio camera synchronization', () => {
     expect(effectUrlsForEvent('attack', 'Rifle')).toHaveLength(2);
     expect(effectUrlsForEvent('attack', 'Rifle')[1]).toMatchObject({ delay: 520 });
   });
+
+  it('uses the softened elimination cue after bullet travel', () => {
+    expect(effectUrlsForEvent('eliminate')).toEqual([
+      expect.objectContaining({ url: expect.stringContaining('eliminate-soft.mp3'), volume: 0.46, delay: 520 }),
+    ]);
+  });
 });

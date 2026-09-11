@@ -668,18 +668,20 @@ export function tickBattleRoyale(game: Game, now: number) {
     const stats = player.battle!;
     if (runCombatReflex(game, now, player)) continue;
     if (runSupportOrderAction(game, now, player)) continue;
-    const llmActive = (battle.decisionDriverUntil ?? 0) > now && (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0);
-    if (llmActive && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
+    const unlimitedLocalDecisions = battle.platform === 'BROWSER_LOCAL';
+    const llmActive = (battle.decisionDriverUntil ?? 0) > now && (unlimitedLocalDecisions || (battle.decisionCount ?? 0) < (battle.decisionMax ?? 0));
+    const modelDecisionDue = (stats.decisionDueAt ?? 0) <= now;
+    if (llmActive && modelDecisionDue && now < (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
       continue;
     }
-    if (llmActive && now >= (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
+    if (llmActive && modelDecisionDue && now >= (stats.decisionDueAt ?? now) + BATTLE_CONFIG.match.llmDecisionTimeoutMs) {
       runAgentBattleAction(game, now, player, '模型决策超时，规则 AI 接管');
       continue;
     }
     if ((stats.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now) {
       continue;
     }
-    const fallbackReason = (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)
+    const fallbackReason = !unlimitedLocalDecisions && (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)
       ? '本局模型额度已用尽，规则 AI 接管'
       : battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined;
     runAgentBattleAction(game, now, player, fallbackReason);
@@ -867,13 +869,15 @@ export function claimDecisionDriver(game: Game, now: number, driverId: string) {
   if (occupied) return { granted: false, status: '已有观众正在驱动 AI' };
   battle.decisionDriverId = driverId;
   battle.decisionDriverUntil = now + BATTLE_CONFIG.match.decisionDriverLeaseMs;
-  battle.decisionDriverStatus = `云端 DeepSeek 驾驶中（剩余 ${(battle.decisionMax ?? 0) - (battle.decisionCount ?? 0)} 次）`;
+  battle.decisionDriverStatus = battle.platform === 'BROWSER_LOCAL'
+    ? 'DeepSeek 正常驾驶 · 本地对局隔离'
+    : `云端 DeepSeek 驾驶中（剩余 ${(battle.decisionMax ?? 0) - (battle.decisionCount ?? 0)} 次）`;
   return { granted: true, expiresAt: battle.decisionDriverUntil, remaining: (battle.decisionMax ?? 0) - (battle.decisionCount ?? 0) };
 }
 
 export function heartbeatDecisionDriver(game: Game, now: number, driverId: string) {
   const battle = game.world.battle!;
-  if (battle.decisionDriverId !== driverId || (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) {
+  if (battle.decisionDriverId !== driverId || (battle.platform !== 'BROWSER_LOCAL' && (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0))) {
     return { active: false };
   }
   battle.decisionDriverUntil = now + BATTLE_CONFIG.match.decisionDriverLeaseMs;
@@ -881,7 +885,7 @@ export function heartbeatDecisionDriver(game: Game, now: number, driverId: strin
 }
 
 export function submitAIDecision(game: Game, now: number, args: {
-  driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyEventId?: string; storyApproach?: string; reason?: string; speech?: string;
+  sessionId?: string; driverId: string; playerId: string; action: string; targetPlayerId?: string; targetAreaId?: string; storyEventId?: string; storyApproach?: string; reason?: string; speech?: string;
 }) {
   ensureBattleState(game, now);
   const battle = game.world.battle!;
@@ -897,8 +901,9 @@ export function submitAIDecision(game: Game, now: number, args: {
     recordReplayAction(game, now, player, args.action, 'model', false, reason, args.targetPlayerId, args.targetAreaId, undefined, args.storyApproach, args.storyEventId);
     return { accepted: false, reason };
   };
+  if (args.sessionId && battle.sessionId !== args.sessionId) return fail('对局隔离校验失败');
   if (battle.decisionDriverId !== args.driverId || (battle.decisionDriverUntil ?? 0) <= now) return fail('驾驶权已失效');
-  if ((battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) return fail('本局模型决策额度已用尽');
+  if (battle.platform !== 'BROWSER_LOCAL' && (battle.decisionCount ?? 0) >= (battle.decisionMax ?? 0)) return fail('本局模型决策额度已用尽');
   if (!player?.battle || player.battle.eliminated) return fail('角色已淘汰');
   if (!BATTLE_ACTIONS.includes(args.action as any)) return fail('动作不在允许列表');
   if (args.action === 'investigate' && !args.storyEventId) return fail('调查必须选择区域剧情');

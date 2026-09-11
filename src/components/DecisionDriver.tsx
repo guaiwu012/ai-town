@@ -1,22 +1,24 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useAction, useMutation } from 'convex/react';
+import { useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
-import { GameId } from '../../convex/aiTown/ids';
 import { BATTLE_CONFIG } from '../../data/battleRoyaleConfig';
 import { ServerGame } from '../hooks/serverGame';
+import type { LocalBattleAction } from '../localBattle/protocol';
 
-const DRIVER_KEY = 'ai-battleground:decision-driver-id';
-const MAX_CONCURRENT_REQUESTS = 2;
+const MAX_CONCURRENT_REQUESTS = 3;
 
-type Props = { worldId: Id<'worlds'>; game: ServerGame; enabled?: boolean };
+type Props = {
+  game: ServerGame;
+  dispatch: (name: LocalBattleAction, args?: Record<string, unknown>) => Promise<unknown>;
+  enabled?: boolean;
+};
 
 // The browser holds only the spectator lease. DeepSeek is called by a Convex
 // Action, where DEEPSEEK_API_KEY remains an environment variable.
-export default function DecisionDriver({ worldId, game, enabled = true }: Props) {
-  const sendInput = useMutation(api.aiTown.main.sendInput);
-  const requestCloudDecision = useAction(api.aiTown.cloudDecision.request);
-  const driverId = useMemo(getDriverId, []);
+export default function DecisionDriver({ game, dispatch, enabled = true }: Props) {
+  const requestCloudDecision = useAction(api.aiTown.cloudDecision.requestLocal);
+  const sessionId = game.world.battle?.sessionId ?? 'initializing';
+  const driverId = useMemo(() => `${sessionId}:${crypto.randomUUID()}`, [sessionId]);
   const inFlight = useRef(new Set<string>());
   const lastRequestedAt = useRef(new Map<string, number>());
   const gameRef = useRef(game);
@@ -38,15 +40,12 @@ export default function DecisionDriver({ worldId, game, enabled = true }: Props)
         currentBattle?.decisionDriverId === driverId &&
         (currentBattle.decisionDriverUntil ?? 0) > now;
       if (!leaseActive) {
-        await sendInput({ worldId, name: 'claimDecisionDriver', args: { driverId } });
+        await dispatch('claimDecisionDriver', { driverId });
         return;
       }
-      await sendInput({ worldId, name: 'heartbeatDecisionDriver', args: { driverId } });
-      if (
-        (currentBattle?.decisionCount ?? 0) >=
-        (currentBattle?.decisionMax ?? BATTLE_CONFIG.match.llmDecisionMaxPerMatch)
-      )
-        return;
+      await dispatch('heartbeatDecisionDriver', { driverId });
+      const currentSessionId = currentBattle?.sessionId;
+      if (!currentSessionId) return;
       const duePlayers = [...currentGame.world.players.values()]
         .filter((player) => player.battle && !player.battle.eliminated)
         .filter((player) => (player.battle?.decisionDueAt ?? 0) <= now)
@@ -60,11 +59,32 @@ export default function DecisionDriver({ worldId, game, enabled = true }: Props)
       duePlayers.forEach((player) => {
         inFlight.current.add(player.id);
         lastRequestedAt.current.set(player.id, now);
-        void requestCloudDecision({
-          worldId,
-          driverId,
-          playerId: player.id as GameId<'players'>,
-        }).finally(() => inFlight.current.delete(player.id));
+        const snapshot = {
+          world: {
+            players: [...currentGame.world.players.values()].map((candidate) => candidate.serialize()),
+            battle: currentBattle && {
+              openAreas: currentBattle.openAreas,
+              zoneClosesAt: currentBattle.zoneClosesAt,
+              relationshipEdges: currentBattle.relationshipEdges,
+              consumedAreaStories: currentBattle.consumedAreaStories,
+              supportOrders: currentBattle.supportOrders,
+            },
+          },
+          player: player.serialize(),
+          descriptions: [...currentGame.playerDescriptions.values()].map((description) => description.serialize()),
+        };
+        void requestCloudDecision({ sessionId: currentSessionId, playerId: player.id, snapshot })
+          .then((result) => gameRef.current.world.battle?.sessionId !== currentSessionId
+            ? undefined
+            : result.decision
+            ? dispatch('submitAIDecision', { sessionId: currentSessionId, driverId, playerId: player.id, ...result.decision })
+            : dispatch('reportAIDecisionFailure', { driverId, playerId: player.id, reason: result.reason ?? '云端模型未返回动作' }))
+          .catch((error) => dispatch('reportAIDecisionFailure', {
+            driverId,
+            playerId: player.id,
+            reason: error instanceof Error ? error.message : '云端模型请求失败',
+          }))
+          .finally(() => inFlight.current.delete(player.id));
       });
     };
     void tick();
@@ -73,15 +93,7 @@ export default function DecisionDriver({ worldId, game, enabled = true }: Props)
       window.clearInterval(timer);
       inFlight.current.clear();
     };
-  }, [driverId, enabled, requestCloudDecision, sendInput, worldId]);
+  }, [dispatch, driverId, enabled, requestCloudDecision]);
 
   return null;
-}
-
-function getDriverId() {
-  const existing = window.localStorage.getItem(DRIVER_KEY);
-  if (existing) return existing;
-  const value = crypto.randomUUID();
-  window.localStorage.setItem(DRIVER_KEY, value);
-  return value;
 }

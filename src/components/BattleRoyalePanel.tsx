@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useMutation } from 'convex/react';
-import { api } from '../../convex/_generated/api';
-import { Id } from '../../convex/_generated/dataModel';
 import { GameId } from '../../convex/aiTown/ids';
 import { ServerGame } from '../hooks/serverGame';
 import type { SelectElement } from './Player';
@@ -28,6 +25,7 @@ import {
   type AreaOverview,
   type OverviewTab,
 } from './overviewCommercial';
+import type { LocalBattleAction } from '../localBattle/protocol';
 
 const MINE_ROWS = 8;
 const MINE_COLS = 8;
@@ -46,8 +44,8 @@ type MineCell = {
 type MineStatus = 'ready' | 'playing' | 'won' | 'lost';
 
 type BattleRoyalePanelProps = {
-  worldId: Id<'worlds'>;
   game: ServerGame;
+  dispatch: (name: LocalBattleAction, args?: Record<string, unknown>) => Promise<unknown>;
   selectedPlayerId?: GameId<'players'>;
   setSelectedElement?: SelectElement;
   onBackToLive: () => void;
@@ -59,8 +57,8 @@ type BattleRoyalePanelProps = {
 };
 
 export default function BattleRoyalePanel({
-  worldId,
   game,
+  dispatch,
   selectedPlayerId,
   setSelectedElement: _setSelectedElement,
   onBackToLive,
@@ -70,8 +68,6 @@ export default function BattleRoyalePanel({
   launchModal,
   onLaunchModalHandled,
 }: BattleRoyalePanelProps) {
-  const sendInput = useMutation(api.aiTown.main.sendInput);
-  const resetBattleMutation = useMutation(api.world.resetBattle);
   const [mineOpen, setMineOpen] = useState(false);
   const [mineBoard, setMineBoard] = useState(() => createMineBoard());
   const [mineStatus, setMineStatus] = useState<MineStatus>('ready');
@@ -226,12 +222,8 @@ export default function BattleRoyalePanel({
   const cashOutMineGame = async () => {
     setPending(true);
     try {
-      await sendInput({
-        worldId,
-        name: 'earnIntervention',
-        args: {
+      await dispatch('earnIntervention', {
           score: liveMineReward,
-        },
       });
       setMineOpen(false);
     } finally {
@@ -245,10 +237,7 @@ export default function BattleRoyalePanel({
     if (!operation) return;
     setPending(true);
     try {
-      await sendInput({
-        worldId,
-        name: 'intervene',
-        args: {
+      await dispatch('intervene', {
           opId,
           targetPlayerId:
             operation.target === 'player' || operation.target === 'pair' || opId === 'TRU_01'
@@ -259,7 +248,6 @@ export default function BattleRoyalePanel({
               ? (secondTargetPlayerId as GameId<'players'> | undefined)
               : undefined,
           targetAreaId: operation.target === 'area' ? targetAreaId : undefined,
-        },
       });
     } finally {
       setPending(false);
@@ -269,9 +257,7 @@ export default function BattleRoyalePanel({
   const resetMatch = async () => {
     setPending(true);
     try {
-      await resetBattleMutation({
-        worldId,
-      });
+      await dispatch('resetBattle');
     } finally {
       setPending(false);
     }
@@ -414,8 +400,8 @@ export default function BattleRoyalePanel({
                   扫雷补充干预点
                 </button>
                 <div className="driver-status">
-                  {battle?.decisionDriverStatus ?? '规则 AI 接管'} · 模型决策{' '}
-                  {battle?.decisionCount ?? 0}/{battle?.decisionMax ?? 240}
+                  {battle?.decisionDriverStatus ?? '规则 AI 接管'}
+                  {battle?.platform !== 'BROWSER_LOCAL' && <> · 模型决策 {battle?.decisionCount ?? 0}/{battle?.decisionMax ?? 240}</>}
                 </div>
                 <div className="intervention-map-hint">
                   <strong>先点地图选区域</strong>

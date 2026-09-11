@@ -705,6 +705,9 @@ p[contenteditable='true']:empty::before {
 .battle-broadcast-stack {
   top: 5.75rem;
 }
+.battle-broadcast-stack > :nth-child(n + 4) {
+  display: none !important;
+}
 
 .audience-danmaku-layer {
   position: absolute;
@@ -1276,6 +1279,81 @@ p[contenteditable='true']:empty::before {
   gap: 0.5rem;
   margin-top: 0.65rem;
 }
+.support-response-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  overflow: hidden;
+  border-color: rgba(45, 224, 199, 0.68);
+  background: linear-gradient(90deg, rgba(24, 76, 78, 0.5), transparent 38%), rgba(5, 23, 37, 0.96);
+  box-shadow: inset 3px 0 #2de0c7;
+}
+.support-response-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 5rem;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #2de0c7);
+}
+.support-response-card.is-success { border-color: rgba(101, 231, 169, 0.78); box-shadow: inset 3px 0 #65e7a9; }
+.support-response-card.is-failed,
+.support-response-card.is-rejected { border-color: rgba(232, 104, 105, 0.72); box-shadow: inset 3px 0 #e86869; }
+.support-response-card.is-countered { border-color: rgba(239, 194, 91, 0.78); box-shadow: inset 3px 0 #efc25b; }
+.support-response-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.support-response-avatar i {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.15rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid #071725;
+  border-radius: 50%;
+  background: #2de0c7;
+  box-shadow: 0 0 0.7rem #2de0c7;
+}
+.support-response-body { min-width: 0; }
+.support-response-meta,
+.support-response-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.support-response-meta span {
+  color: #71dac5;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+.support-response-meta b {
+  border: 1px solid currentColor;
+  color: #8cf0da;
+  padding: 0.15rem 0.42rem;
+  font-size: 0.7rem;
+}
+.support-response-card.is-failed .support-response-meta b,
+.support-response-card.is-rejected .support-response-meta b { color: #ff9297; }
+.support-response-card.is-countered .support-response-meta b { color: #f2ce79; }
+.support-response-body blockquote {
+  margin: 0.38rem 0;
+  color: #f1eadc;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+.support-response-result {
+  color: #9db4bb;
+  font-size: 0.75rem;
+}
+.support-response-result strong { color: #f2ce79; }
+.support-response-action { align-self: end; }
 .support-chain-track > div {
   flex: 1;
   min-width: 10rem;
@@ -1520,6 +1598,13 @@ p[contenteditable='true']:empty::before {
   .support-defeat-actions {
     grid-template-columns: 1fr;
   }
+  .support-response-card {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .support-response-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
 .focus-card {
   max-width: min(470px, 65vw);
@@ -1594,6 +1679,36 @@ p[contenteditable='true']:empty::before {
 }
 .focus-card-action {
   color: #f0c96c;
+}
+.focus-support-mission {
+  display: grid;
+  gap: 0.22rem;
+  margin-top: 0.45rem;
+  border-left: 2px solid #2de0c7;
+  background: rgba(19, 61, 70, 0.42);
+  padding: 0.42rem 0.55rem;
+  font-size: 0.68rem;
+}
+.focus-support-mission.is-countered { border-left-color: #efc25b; }
+.focus-support-mission-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  color: #77dcca;
+}
+.focus-support-mission-head b { color: #f2ce79; }
+.focus-support-mission > strong { color: #edf3ee; }
+.focus-support-mission > small { color: #9eb4bc; }
+.focus-support-mission-meter {
+  overflow: hidden;
+  height: 0.25rem;
+  background: rgba(4, 16, 25, 0.9);
+}
+.focus-support-mission-meter i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #20cdb9, #7be3bd);
 }
 .focus-card-actions {
   display: flex;

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Graphics as PixiGraphics, TextStyle } from 'pixi.js';
 import { ServerGame } from '../hooks/serverGame';
 import { itemVisual } from '../../data/referenceExecution';
-import { battleAreaSpawnPoints } from '../../data/battleArena';
 
 const BULLET_MS = 520;
 const EFFECT_MS = 1650;
@@ -156,12 +155,6 @@ export function PixiBattleEffects({ game }: { game: ServerGame }) {
     <Container>
       <Graphics draw={draw} />
       {events.filter(event => event.effectKey && event.to && now >= event.ts && now - event.ts < LABEL_MS).map(event => <Text key={`item-${event.id}`} x={event.to!.x * tileDim + tileDim / 2} y={event.to!.y * tileDim - 20 - (now - event.ts) / 100} text={`${event.itemName ?? ''} · ${itemVisual(event.effectKey!).label}`} anchor={0.5} alpha={1 - (now - event.ts) / LABEL_MS} style={new TextStyle({ fill: itemVisual(event.effectKey!).color, fontSize: 12, stroke: '#182033', strokeThickness: 3 })} />)}
-      {events.filter(event => event.mapText && event.areaId && now >= event.ts && now - event.ts < LABEL_MS && !event.effectKey).slice(0, 4).map(event => {
-        const actor = [...game.world.players.values()].find(player => player.id === event.actor);
-        const position = actor?.position ?? battleAreaSpawnPoints(event.areaId!, game.worldMap.width, game.worldMap.height)[0];
-        if (!position) return null;
-        return <Text key={`map-${event.id}`} x={position.x * tileDim} y={position.y * tileDim - 35} text={event.mapText} anchor={0.5} alpha={1 - (now - event.ts) / LABEL_MS} style={new TextStyle({ fill: '#ffffff', fontSize: 11, stroke: '#182033', strokeThickness: 3 })} />;
-      })}
       {activeShots.map((event) => {
         if (!event.to) {
           return null;

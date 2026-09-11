@@ -3,13 +3,7 @@ import PixiGame from './PixiGame.tsx';
 
 import { useElementSize } from 'usehooks-ts';
 import { Stage } from '@pixi/react';
-import { ConvexProvider, useConvex, useMutation, useQuery } from 'convex/react';
-import { api } from '../../convex/_generated/api';
-import { useWorldHeartbeat } from '../hooks/useWorldHeartbeat.ts';
-import { useHistoricalTime } from '../hooks/useHistoricalTime.ts';
-import { DebugTimeManager } from './DebugTimeManager.tsx';
 import { GameId } from '../../convex/aiTown/ids.ts';
-import { useServerGame } from '../hooks/serverGame.ts';
 import BattleRoyalePanel from './BattleRoyalePanel.tsx';
 import BattleBroadcastToasts from './BattleBroadcastToasts.tsx';
 import DecisionDriver from './DecisionDriver.tsx';
@@ -25,13 +19,15 @@ import { useBattleAudio } from '../hooks/useBattleAudio.ts';
 import AudienceDanmaku from './AudienceDanmaku.tsx';
 import PopularityRankUp from './PopularityRankUp.tsx';
 import SupportDefeatModal from './SupportDefeatModal.tsx';
+import { useLocalBattleGame } from '../hooks/useLocalBattleGame.ts';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 const DANMAKU_PREFERENCE_KEY = 'ai-town-audience-danmaku-enabled';
 const SUPPORT_FAILURE_DISMISSED_KEY = 'ai-town-support-failure-dismissed';
 
-export default function Game() {
-  const convex = useConvex();
+export default function Game({ active = true }: { active?: boolean }) {
+  const [simulationEnabled, setSimulationEnabled] = useState(false);
+  const { game, dispatch, reset } = useLocalBattleGame(simulationEnabled);
   const [selectedElement, setSelectedElement] = useState<{
     kind: 'player';
     id: GameId<'players'>;
@@ -55,12 +51,6 @@ export default function Game() {
   const directorSwitchRef = useRef({ at: 0, eventId: -1 });
   const [gameWrapperRef, { width, height }] = useElementSize();
 
-  const worldStatus = useQuery(api.world.defaultWorldStatus);
-  const worldId = worldStatus?.worldId;
-  const engineId = worldStatus?.engineId;
-  const resetBattleMutation = useMutation(api.world.resetBattle);
-
-  const game = useServerGame(worldId);
   const { audioEnabled, toggleAudio } = useBattleAudio(game, {
     focusPlayerId,
     focusAreaId,
@@ -96,6 +86,10 @@ export default function Game() {
     }
   }, [battleMatchKey]);
 
+  useEffect(() => {
+    setSimulationEnabled(active && Boolean(supportCharacterId));
+  }, [active, supportCharacterId]);
+
   const toggleDanmaku = () => {
     setDanmakuEnabled((enabled) => {
       const next = !enabled;
@@ -103,12 +97,6 @@ export default function Game() {
       return next;
     });
   };
-
-  // Send a periodic heartbeat to our world to keep it alive.
-  useWorldHeartbeat();
-
-  const worldState = useQuery(api.world.worldState, worldId ? { worldId } : 'skip');
-  const { historicalTime, timeManager } = useHistoricalTime(worldState?.engine);
 
   const scrollViewRef = useRef<HTMLDivElement>(null);
 
@@ -141,8 +129,8 @@ export default function Game() {
     return () => window.clearInterval(timer);
   }, [replayActive, replaySpeed, game]);
 
-  if (!worldId || !engineId || !game) {
-    return <GameLoadingScreen stage={!worldId ? '正在连接直播服务器' : !engineId ? '正在唤醒比赛引擎' : '正在同步 12 名 AI 状态'} />;
+  if (!game) {
+    return <GameLoadingScreen stage="正在启动本地比赛引擎" />;
   }
 
   const followPlayer = (playerId: GameId<'players'>, openDrawer = true) => {
@@ -180,11 +168,11 @@ export default function Game() {
     directorSwitchRef.current = { at: 0, eventId: -1 };
   };
   const restartAfterSupportDefeat = async () => {
-    if (!worldId || !battleMatchKey || supportRestartPending) return;
+    if (!battleMatchKey || supportRestartPending) return;
     setSupportRestartPending(true);
     setSupportRestartError('');
     try {
-      await resetBattleMutation({ worldId });
+      await reset();
       window.localStorage.setItem(SUPPORT_FAILURE_DISMISSED_KEY, battleMatchKey);
       setDismissedSupportFailure(battleMatchKey);
       setSupportOpen(false);
@@ -199,34 +187,27 @@ export default function Game() {
   const availableReplayStart = replayStartTime(game.world.battle);
   return (
     <>
-      {SHOW_DEBUG_UI && <DebugTimeManager timeManager={timeManager} width={200} height={100} />}
       <div className="relative h-screen w-screen overflow-hidden bg-brown-900" ref={gameWrapperRef}>
         <div className="absolute inset-0">
           <Stage width={width} height={height} options={{ backgroundColor: 0x203d3b }}>
-            {/* Re-propagate context because contexts are not shared between renderers.
-https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-531549215 */}
-            <ConvexProvider client={convex}>
-              <PixiGame
+            <PixiGame
                 game={game}
-                worldId={worldId}
-                engineId={engineId}
                 width={width}
                 height={height}
-                historicalTime={replayActive ? replayTime : historicalTime}
+                historicalTime={replayActive ? replayTime : Date.now()}
                 replayMode={replayActive}
                 replayFrame={replayFrame}
                 selectedPlayerId={focusPlayerId}
                 focusAreaId={focusAreaId}
                 onFocusArea={focusArea}
                 setSelectedElement={handleSelection}
-              />
-            </ConvexProvider>
+            />
           </Stage>
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_45%,rgba(0,0,0,0.32)_100%)]" />
         {viewMode === 'live' && !replayActive && <BattleBroadcastToasts feed={game.world.battle?.feed} />}
         {viewMode === 'live' && !replayActive && <AudienceDanmaku enabled={danmakuEnabled} feed={game.world.battle?.feed} />}
-        <DecisionDriver worldId={worldId} game={game} enabled={!replayActive} />
+        <DecisionDriver game={game} dispatch={dispatch} enabled={simulationEnabled && !replayActive} />
         <PopularityRankUp
           popularity={game.world.battle?.popularity ?? 0}
           rank={game.world.battle?.popularityRating ?? 'C'}
@@ -265,8 +246,8 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           />}
           {drawerOpen && <BattleCharacterDrawer game={game} playerId={focusPlayerId} replayFrame={replayFrame} replayTime={replayActive ? replayTime : undefined} onClose={() => setDrawerOpen(false)} />}
           {supportOpen && <SupportFactionPanel
-            worldId={worldId}
             game={game}
+            dispatch={dispatch}
             selectionRequired={!supportCharacterId}
             onClose={() => setSupportOpen(false)}
             onFollow={(playerId) => { followPlayer(playerId, false); setSupportOpen(false); }}
@@ -279,8 +260,8 @@ https://github.com/michalochman/react-pixi-fiber/issues/145#issuecomment-5315492
           />}
         </> : <div className="pointer-events-none absolute inset-3 z-10 flex flex-col" ref={scrollViewRef}>
           <BattleRoyalePanel
-            worldId={worldId}
             game={game}
+            dispatch={dispatch}
             selectedPlayerId={selectedElement?.id}
             setSelectedElement={handleSelection}
             onBackToLive={() => setViewMode('live')}
