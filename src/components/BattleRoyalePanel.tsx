@@ -50,7 +50,6 @@ type BattleRoyalePanelProps = {
   setSelectedElement?: SelectElement;
   onBackToLive: () => void;
   onMatchReset: () => void;
-  onFollowPlayer: (playerId: GameId<'players'>) => void;
   onFocusArea: (areaId: string) => void;
   launchModal?: 'mine' | 'reset';
   onLaunchModalHandled: () => void;
@@ -63,7 +62,6 @@ export default function BattleRoyalePanel({
   setSelectedElement: _setSelectedElement,
   onBackToLive,
   onMatchReset,
-  onFollowPlayer,
   onFocusArea,
   launchModal,
   onLaunchModalHandled,
@@ -104,12 +102,15 @@ export default function BattleRoyalePanel({
         }),
     [game],
   );
-  const selected = selectedPlayerId
-    ? game.world.players.get(selectedPlayerId)
-    : players.find((player) => !player.battle?.eliminated);
-  const interventionTarget = targetPlayerId
+  const selected = selectedPlayerId ? game.world.players.get(selectedPlayerId) : undefined;
+  const requestedInterventionTarget = targetPlayerId
     ? game.world.players.get(targetPlayerId as GameId<'players'>)
-    : selected;
+    : undefined;
+  const interventionTarget = requestedInterventionTarget && !requestedInterventionTarget.battle?.eliminated
+    ? requestedInterventionTarget
+    : !selected?.battle?.eliminated
+      ? selected
+      : players.find((player) => !player.battle?.eliminated);
   const aliveCount = players.filter((player) => !player.battle?.eliminated).length;
   const battle = game.world.battle;
   const heat = battle?.popularity ?? 0;
@@ -121,9 +122,12 @@ export default function BattleRoyalePanel({
   const interventionOperations = INTERVENTION_OPERATIONS.filter(
     (operation) => operation.id !== 'TRU_01',
   );
+  const featuredInterventionIds = ['SUP_05', 'FAN_01', 'SUP_01', 'ENV_01'];
   const visibleInterventionOperations = showAllInterventions
     ? interventionOperations
-    : interventionOperations.slice(0, 4);
+    : featuredInterventionIds
+        .map((id) => interventionOperations.find((operation) => operation.id === id))
+        .filter((operation): operation is (typeof interventionOperations)[number] => Boolean(operation));
   const filteredEventFeed = fullEventFeed.filter(
     (event) => logFilter === 'all' || categoryForEvent(event.kind) === logFilter,
   );
@@ -275,7 +279,7 @@ export default function BattleRoyalePanel({
             <span>第 {battle?.day ?? 1} 天</span>
             <span>{battle?.timeOfDay === 'night' ? '夜间' : '白天'}</span>
             <span>{displayPhase(battle?.phase)}</span>
-            <span>{openAreas.length} 区开放</span>
+            <span>{openAreas.filter((areaId) => areaId !== 'S01').length} 区开放</span>
             <strong>禁区 {formatCountdown(zoneCountdownSeconds)}</strong>
           </div>
           <div className="overview-match-actions">
@@ -313,6 +317,7 @@ export default function BattleRoyalePanel({
                 <AreaStatusMarker
                   area={area}
                   targeted={targetAreaId === area.id}
+                  targetedPlayerId={interventionTarget?.id}
                   expanded={expandedAreaId === area.id}
                   popoverPlacement={isRightSideArea(area.id) ? 'left' : 'right'}
                   onSelectArea={() => setTargetAreaId(area.id)}
@@ -321,10 +326,10 @@ export default function BattleRoyalePanel({
                     setExpandedAreaId((current) => (current === area.id ? undefined : area.id))
                   }
                   onCloseOccupants={closeAreaPopover}
-                  onFollowPlayer={(playerId) => {
+                  onSelectPlayer={(playerId) => {
                     setTargetPlayerId(playerId);
                     setExpandedAreaId(undefined);
-                    onFollowPlayer(playerId);
+                    setOverviewTab('intervention');
                   }}
                 />
               </div>
@@ -459,18 +464,28 @@ export default function BattleRoyalePanel({
                 <div className="intervention-operation-grid">
                   {visibleInterventionOperations.map((operation) => {
                     const needsPair = operation.target === 'pair';
+                    const targetLabel = operation.target === 'player'
+                      ? `作用于 ${game.playerDescriptions.get(interventionTarget?.id as GameId<'players'>)?.name ?? '未选择角色'}`
+                      : operation.target === 'area'
+                        ? `作用于 ${displayAreaName(targetAreaId)}`
+                        : operation.target === 'pair'
+                          ? '作用于两名角色'
+                          : '作用于全局';
                     return (
                       <button
                         key={operation.id}
-                        className="arena-action disabled:opacity-40"
+                        className="arena-action intervention-operation-button disabled:opacity-40"
                         disabled={
                           pending ||
                           (battle?.interventionPoints ?? 0) < operation.cost ||
+                          (operation.target === 'player' && !interventionTarget) ||
                           (needsPair && !secondTargetPlayerId)
                         }
                         onClick={() => void intervene(operation.id)}
+                        title={operation.description}
                       >
-                        {operation.name} · {operation.cost}点
+                        <strong>{operation.name} · {operation.cost}点</strong>
+                        <small>{targetLabel}</small>
                       </button>
                     );
                   })}
@@ -536,15 +551,17 @@ export default function BattleRoyalePanel({
                 {players.map((player) => {
                   const stats = player.battle!;
                   const name = game.playerDescriptions.get(player.id)?.name ?? player.id;
-                  const selectedRow = selected?.id === player.id;
+                  const selectedRow = interventionTarget?.id === player.id;
                   return (
                     <button
                       key={player.id}
                       className="commercial-player-row"
                       data-selected={selectedRow}
+                      aria-pressed={selectedRow}
+                      disabled={Boolean(stats.eliminated)}
                       onClick={() => {
                         setTargetPlayerId(player.id);
-                        onFollowPlayer(player.id);
+                        setOverviewTab('intervention');
                       }}
                     >
                       <div>

@@ -1,4 +1,4 @@
-import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, evacuateClosedArea, moveToBattleArea, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, updateSupportOrders } from './battleRoyale';
+import { acceptSupportCounter, activateSupportFinisher, applyBattleItemEffect, applyBattleVitals, applyIntervention, areaEventEligible, battleRandom, battleReplayStateDigest, claimDecisionDriver, defaultBattleState, defaultBattleStats, encounterDisposition, evacuateClosedArea, moveToBattleArea, replayRecordedAction, replayRecordedActions, resetBattleMatch, resolveAreaStoryCheck, resolveCloseEncounters, runCombatReflex, runSupportOrderAction, setBattlePaused, submitAIDecision, submitSupportOrder, tickBattleLocomotion, tickBattleRoyale, triggerAreaSpecialEvent, triggerRelationshipDrama, tryEmergencyHeal, updateSupportOrders } from './battleRoyale';
 import { AREA_SPECIAL_EVENTS, profileForCharacterId } from '../../data/battleRoyaleConfig';
 import { battleAreaNavigationPoints, battleAreaSpawnPoints, isBattleArenaWalkable } from '../../data/battleArena';
 import { blocked } from './movement';
@@ -76,6 +76,32 @@ describe('battle royale host intervention rules', () => {
     expect(player.battle.nextLocomotionAt).toBeGreaterThan(2_000);
     expect(player.activity?.description).toContain('巡查');
     expect(player.activity?.emoji).toBe('ROUTE');
+  });
+
+  it('heals a critically injured contestant before another combat decision', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const game = createGame([player]);
+    player.battle.hp = 45;
+    player.battle.medkits = 1;
+    player.battle.lastBattleAction = 0;
+
+    expect(tryEmergencyHeal(game, 10_000, player)).toBe(true);
+    expect(player.battle.hp).toBe(67);
+    expect(player.battle.medkits).toBe(0);
+    expect(player.battle.lastDecisionStatus).toBe('紧急治疗');
+    expect(game.world.battle.feed[0]).toMatchObject({ kind: 'heal' });
+  });
+
+  it('allows poisoned trap supplies to eliminate a contestant at one health', () => {
+    const player = createPlayer('p:1', 'C01', 'A01');
+    const rival = createPlayer('p:2', 'C02', 'A06');
+    const game = createGame([player, rival]);
+    player.battle.hp = 1;
+    game.world.battle.trappedSupplies = [{ areaId: 'A01', remaining: 1 }];
+
+    expect(replayRecordedAction(game, 2_000, { playerId: player.id, action: 'search' })).toMatchObject({ accepted: true });
+    expect(player.battle).toMatchObject({ hp: 0, eliminated: true });
+    expect(game.world.battle.feed.some((event: any) => event.kind === 'eliminate' && event.text.includes('化学毒剂'))).toBe(true);
   });
 
   it('cancels stale behavior and immediately evacuates a closed area', () => {
@@ -284,6 +310,26 @@ describe('battle royale host intervention rules', () => {
     }
     expect(outcomes.attack).toBeGreaterThan(outcomes.flee);
     expect(outcomes.attack).toBeGreaterThan(outcomes.ally + outcomes.observe);
+  });
+
+  it('ends alliances and forces championship combat when only two of a larger field remain', () => {
+    const first = createPlayer('p:1', 'C01', 'A01');
+    const second = createPlayer('p:2', 'C02', 'A01');
+    const eliminated = createPlayer('p:3', 'C03', 'A01');
+    eliminated.battle.eliminated = true;
+    second.position = { ...first.position };
+    first.battle.alliance = second.id;
+    second.battle.alliance = first.id;
+    const game = createGame([first, second, eliminated]);
+    game.world.battle.temporaryAlliances = [{ first: first.id, second: second.id, until: 99_000 }];
+
+    tickBattleRoyale(game, 7_000);
+
+    expect(first.battle.alliance).toBeUndefined();
+    expect(second.battle.alliance).toBeUndefined();
+    expect(game.world.battle.temporaryAlliances).toHaveLength(0);
+    expect(game.world.battle.storyTriggers).toContain('RULE:FINAL_DUEL');
+    expect(game.world.battle.actionLog.some((entry: any) => entry.action === 'attack')).toBe(true);
   });
 
   it('uses persona combat dialogue when an attack is executed', () => {

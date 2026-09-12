@@ -20,6 +20,7 @@ import AudienceDanmaku from './AudienceDanmaku.tsx';
 import PopularityRankUp from './PopularityRankUp.tsx';
 import SupportDefeatModal from './SupportDefeatModal.tsx';
 import { useLocalBattleGame } from '../hooks/useLocalBattleGame.ts';
+import BattleMatchReport from './BattleMatchReport.tsx';
 
 export const SHOW_DEBUG_UI = !!import.meta.env.VITE_SHOW_DEBUG_UI;
 const DANMAKU_PREFERENCE_KEY = 'ai-town-audience-danmaku-enabled';
@@ -42,6 +43,9 @@ export default function Game({ active = true }: { active?: boolean }) {
   const [dismissedSupportFailure, setDismissedSupportFailure] = useState<string>();
   const [supportRestartPending, setSupportRestartPending] = useState(false);
   const [supportRestartError, setSupportRestartError] = useState('');
+  const [reportDismissedMatchKey, setReportDismissedMatchKey] = useState<string>();
+  const [reportRestartPending, setReportRestartPending] = useState(false);
+  const [reportRestartError, setReportRestartError] = useState('');
   const [launchModal, setLaunchModal] = useState<'mine' | 'reset'>();
   const [replayActive, setReplayActive] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(1);
@@ -80,6 +84,8 @@ export default function Game({ active = true }: { active?: boolean }) {
         : undefined,
     );
     setSupportRestartError('');
+    setReportDismissedMatchKey(undefined);
+    setReportRestartError('');
     if (!characterId) {
       setViewMode('live');
       setSupportOpen(true);
@@ -183,8 +189,23 @@ export default function Game({ active = true }: { active?: boolean }) {
       setSupportRestartPending(false);
     }
   };
+  const restartAfterReport = async () => {
+    if (!battleMatchKey || reportRestartPending) return;
+    setReportRestartPending(true);
+    setReportRestartError('');
+    try {
+      await reset();
+      setReportDismissedMatchKey(battleMatchKey);
+      handleMatchReset();
+    } catch (error) {
+      setReportRestartError(error instanceof Error ? error.message : '重新开局失败，请稍后再试。');
+    } finally {
+      setReportRestartPending(false);
+    }
+  };
   const replayFrame = replayActive ? replayFrameAt(game.world.battle, replayTime) : undefined;
   const availableReplayStart = replayStartTime(game.world.battle);
+  const matchReportOpen = game.world.battle?.phase === 'settlement' && reportDismissedMatchKey !== battleMatchKey;
   return (
     <>
       <div className="relative h-screen w-screen overflow-hidden bg-brown-900" ref={gameWrapperRef}>
@@ -266,15 +287,16 @@ export default function Game({ active = true }: { active?: boolean }) {
             setSelectedElement={handleSelection}
             onBackToLive={() => setViewMode('live')}
             onMatchReset={handleMatchReset}
-            onFollowPlayer={followPlayer}
             onFocusArea={focusArea}
             launchModal={launchModal}
             onLaunchModalHandled={() => setLaunchModal(undefined)}
           />
         </div>}
-        {supportFailed && supportedPlayer?.battle?.characterId && <SupportDefeatModal
+        {supportFailed && !matchReportOpen && supportedPlayer?.battle?.characterId && <SupportDefeatModal
           characterId={supportedPlayer.battle.characterId}
           characterName={game.playerDescriptions.get(supportedPlayer.id)?.name ?? supportedPlayer.id}
+          game={game}
+          playerId={supportedPlayer.id}
           pending={supportRestartPending}
           error={supportRestartError}
           onContinue={() => {
@@ -282,6 +304,16 @@ export default function Game({ active = true }: { active?: boolean }) {
             setDismissedSupportFailure(battleMatchKey);
           }}
           onRestart={() => void restartAfterSupportDefeat()}
+        />}
+        {matchReportOpen && <BattleMatchReport
+          game={game}
+          pending={reportRestartPending}
+          error={reportRestartError}
+          onOverview={() => {
+            setReportDismissedMatchKey(battleMatchKey);
+            setViewMode('overview');
+          }}
+          onRestart={() => void restartAfterReport()}
         />}
       </div>
     </>

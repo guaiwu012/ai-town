@@ -660,12 +660,15 @@ export function tickBattleRoyale(game: Game, now: number) {
     return;
   }
 
+  enforceFinalDuel(game, now, alive);
+
   resolveCloseEncounters(game, now, alive);
 
   for (const player of alive) {
     if (player.battle?.eliminated) continue;
     if (evacuating.has(player.id)) continue;
     const stats = player.battle!;
+    if (tryEmergencyHeal(game, now, player)) continue;
     if (runCombatReflex(game, now, player)) continue;
     if (runSupportOrderAction(game, now, player)) continue;
     const unlimitedLocalDecisions = battle.platform === 'BROWSER_LOCAL';
@@ -686,6 +689,29 @@ export function tickBattleRoyale(game: Game, now: number) {
       : battle.decisionDriverId ? '模型驾驶器离线，规则 AI 接管' : undefined;
     runAgentBattleAction(game, now, player, fallbackReason);
   }
+}
+
+/** Healing is a survival reflex and must run before combat/model decisions. */
+export function tryEmergencyHeal(game: Game, now: number, player: Player) {
+  const stats = player.battle;
+  if (
+    !stats ||
+    stats.eliminated ||
+    stats.medkits <= 0 ||
+    stats.hp >= stats.maxHp * 0.45 ||
+    (stats.lastBattleAction ?? 0) + ACTION_COOLDOWN_MS > now
+  ) return false;
+  const replayBaseline = captureReplayPatchBaseline(game);
+  const result = executeBattleAction(game, now, player, 'heal');
+  if (!result.accepted) return false;
+  stats.lastBattleAction = now;
+  stats.lastDecisionAt = now;
+  stats.lastDecisionAction = 'heal';
+  stats.lastDecisionStatus = '紧急治疗';
+  stats.decisionDueAt = now + BATTLE_CONFIG.match.llmDecisionIntervalMs;
+  player.activity = { description: `${playerName(game, player)} 正在紧急治疗`, emoji: 'MED', until: now + 1800 };
+  recordReplayAction(game, now, player, 'heal', 'rule', true, '低生命值优先使用医疗包', undefined, undefined, replayBaseline);
+  return true;
 }
 
 /** Immediately overrides every other behavior when a contestant is in a closed area. */
@@ -2121,6 +2147,17 @@ function runAgentBattleAction(game: Game, now: number, player: Player, fallbackR
   }
 
   const enemy = nearestEnemy(game, player, now);
+  if (isFinalDuel(game) && enemy) {
+    const weapon = BATTLE_CONFIG.weapons[stats.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
+    if (enemy.battle?.areaId === stats.areaId && distance(player.position, enemy.position) <= weapon.range) {
+      performRuleAction('attack', enemy);
+      return;
+    }
+    if (enemy.battle?.areaId === stats.areaId && performRuleAction('move', enemy)) return;
+    const destination = nextOpenAreaToward(game, stats.areaId ?? 'A01', enemy.battle?.areaId ?? 'A01');
+    if (destination) performRuleAction('move', undefined, destination);
+    return;
+  }
   if ((stats.stress ?? 0) >= (stats.stressThreshold ?? 80)) {
     const destination = adjacentAreaIds(stats.areaId ?? 'A01')
       .filter((areaId) => game.world.battle?.openAreas?.includes(areaId))
@@ -2446,7 +2483,10 @@ function loot(game: Game, now: number, player: Player) {
   if (trap) {
     trap.remaining -= 1;
     const immune = itemModifier(stats, 'chem_immune', now) > 0;
-    if (!immune) stats.hp = Math.max(1, stats.hp - 10);
+    if (!immune) {
+      stats.hp = Math.max(0, stats.hp - 10);
+      if (stats.hp === 0) eliminateByHazard(game, now, player, '陷阱物资中的化学毒剂');
+    }
     pushEvent(game, now, 'item', immune ? '防护服阻挡了补给中的化学毒剂。' : '拾取陷阱物资，受到10点化学伤害。', player, undefined, { to: player.position, effectKey: 'aoe_damage', itemName: '陷阱物资' });
     return;
   }
@@ -2508,7 +2548,9 @@ export function applyBattleItemEffect(game: Game, now: number, player: Player, i
   if (definition.characterExclusive && definition.exclusiveCharacterId !== stats.characterId) return false;
   if (!definition.consumable && stats.itemEffects?.some(entry => entry.source === item && (entry.until === undefined || entry.until > now))) return false;
   if (key === 'hp' || key === 'heal') {
+    const previousHp = stats.hp;
     stats.hp = Math.min(stats.maxHp, stats.hp + value);
+    if (stats.hp > previousHp) pushEvent(game, now, 'heal', `【恢复】${playerName(game, player)} 使用${item}恢复 ${Math.ceil(stats.hp - previousHp)} 点生命。`, player);
     if (value2 > 0) collectTruthClue(game, now, `物品-${definition.id}`, player);
   }
   else if (key === 'stamina') stats.stamina = Math.min(stats.maxStamina ?? 100, (stats.stamina ?? 0) + value);
@@ -2958,6 +3000,50 @@ function alivePlayers(game: Game) {
   return [...game.world.players.values()].filter((player) => !player.battle?.eliminated);
 }
 
+function eliminateByHazard(game: Game, now: number, player: Player, cause: string) {
+  const stats = player.battle;
+  if (!stats || stats.eliminated) return;
+  stats.hp = 0;
+  stats.eliminated = true;
+  stats.combatTargetId = undefined;
+  stats.combatUntil = 0;
+  delete player.pathfinding;
+  player.speed = 0;
+  freezeEliminatedRelationships(game, stats.characterId);
+  pushEvent(game, now + 1, 'eliminate', `【淘汰】${playerName(game, player)}因${cause}被淘汰。`, player);
+}
+
+function isFinalDuel(game: Game, players = alivePlayers(game)) {
+  const contestants = [...game.world.players.values()].filter((player) => player.battle);
+  return contestants.length > 2 && players.length === 2;
+}
+
+/** The last two contestants must resolve the championship unless a double-victory rule is active. */
+function enforceFinalDuel(game: Game, now: number, players: Player[]) {
+  if (!isFinalDuel(game, players)) return false;
+  const battle = game.world.battle!;
+  const [first, second] = players;
+  if ((battle.doubleVictory?.until ?? 0) > now) return false;
+  first.battle!.alliance = undefined;
+  second.battle!.alliance = undefined;
+  battle.temporaryAlliances = (battle.temporaryAlliances ?? []).filter(
+    (pair) => !(
+      (pair.first === first.id && pair.second === second.id) ||
+      (pair.first === second.id && pair.second === first.id)
+    ),
+  );
+  battle.decisionDriverUntil = 0;
+  first.battle!.combatTargetId = second.id;
+  second.battle!.combatTargetId = first.id;
+  first.battle!.combatUntil = now + 30_000;
+  second.battle!.combatUntil = now + 30_000;
+  if (!(battle.storyTriggers ?? []).includes('RULE:FINAL_DUEL')) {
+    battle.storyTriggers!.push('RULE:FINAL_DUEL');
+    pushEvent(game, now, 'combat', `【决赛圈】${playerName(game, first)}与${playerName(game, second)}进入冠军争夺，临时同盟终止。`, first, second, { eventType: 'combat_start' });
+  }
+  return true;
+}
+
 export function resolveCloseEncounters(game: Game, now: number, players = alivePlayers(game)) {
   const battle = game.world.battle!;
   const busy = new Set<string>();
@@ -2974,7 +3060,11 @@ export function resolveCloseEncounters(game: Game, now: number, players = aliveP
 
       const speaker = battleRandom(game) < 0.5 ? first : second;
       const listener = speaker.id === first.id ? second : first;
-      const disposition = speaker.battle!.alliance === listener.id ? 'ally' : encounterDisposition(game, speaker, listener);
+      const disposition = isFinalDuel(game, players)
+        ? 'attack'
+        : speaker.battle!.alliance === listener.id
+          ? 'ally'
+          : encounterDisposition(game, speaker, listener);
       const weapon = BATTLE_CONFIG.weapons[speaker.battle!.weapon as keyof typeof BATTLE_CONFIG.weapons] ?? BATTLE_CONFIG.weapons.Fists;
       const canShoot = disposition === 'attack' && distance(speaker.position, listener.position) <= weapon.range;
       const baseline = captureReplayPatchBaseline(game);
@@ -3102,6 +3192,7 @@ function nextOpenAreaToward(game: Game, startAreaId: string, targetAreaId: strin
 }
 
 export function encounterDisposition(game: Game, player: Player, target: Player): 'attack' | 'ally' | 'flee' | 'observe' {
+  if (isFinalDuel(game)) return 'attack';
   const persona = personaForCharacter(player.battle?.characterId);
   const relation = relationshipBetween(game, player, target);
   const hpRatio = (player.battle?.hp ?? 0) / Math.max(1, player.battle?.maxHp ?? 100);

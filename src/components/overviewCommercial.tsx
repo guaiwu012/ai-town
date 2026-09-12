@@ -73,25 +73,27 @@ export function OverviewTerrainBoundaries({
 type AreaStatusMarkerProps = {
   area: AreaOverview;
   targeted: boolean;
+  targetedPlayerId?: string;
   expanded: boolean;
   popoverPlacement?: 'left' | 'right';
   onSelectArea: () => void;
   onFocusArea: () => void;
   onToggleOccupants: () => void;
   onCloseOccupants: () => void;
-  onFollowPlayer: (playerId: GameId<'players'>) => void;
+  onSelectPlayer: (playerId: GameId<'players'>) => void;
 };
 
 export function AreaStatusMarker({
   area,
   targeted,
+  targetedPlayerId,
   expanded,
   popoverPlacement = 'right',
   onSelectArea,
   onFocusArea,
   onToggleOccupants,
   onCloseOccupants,
-  onFollowPlayer,
+  onSelectPlayer,
 }: AreaStatusMarkerProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -176,7 +178,10 @@ export function AreaStatusMarker({
               <button
                 key={occupant.id}
                 className="area-occupant-row"
-                onClick={() => onFollowPlayer(occupant.id)}
+                data-selected={targetedPlayerId === occupant.id}
+                aria-pressed={targetedPlayerId === occupant.id}
+                disabled={occupant.eliminated}
+                onClick={() => onSelectPlayer(occupant.id)}
               >
                 <AgentMarkerIcon owner={occupant.heat >= 120} />
                 <span>
@@ -189,7 +194,7 @@ export function AreaStatusMarker({
               </button>
             ))}
           </div>
-          <footer>选择角色后直接进入直播跟随</footer>
+          <footer>选择角色作为主办方干预目标</footer>
         </div>
       )}
     </div>
